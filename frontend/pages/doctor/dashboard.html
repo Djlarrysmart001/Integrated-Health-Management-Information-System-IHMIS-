@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — Doctor Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+  <style>
+    .priority-badge { font-size:0.68rem; font-weight:700; padding:0.2rem 0.55rem; border-radius:20px; }
+    .priority-emergency { background:#fef2f2; color:var(--danger); }
+    .priority-high      { background:#fff7ed; color:#e67e22; }
+    .priority-normal     { background:#eff6ff; color:var(--info); }
+    .priority-low        { background:#f0fdf4; color:var(--success); }
+  </style>
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link active">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="patients.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+          <span class="nav-label">My Patients</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Clinical</div>
+      <div class="nav-item">
+        <a href="queue.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-layer-group"></i></span>
+          <span class="nav-label">Queue</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="consultations.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-stethoscope"></i></span>
+          <span class="nav-label">Consultations</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="laboratory.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-flask"></i></span>
+          <span class="nav-label">Laboratory</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="referrals.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-paper-plane"></i></span>
+          <span class="nav-label">Referrals</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="certificates.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-file-medical"></i></span>
+          <span class="nav-label">Certificates</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="reports.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-chart-column"></i></span>
+          <span class="nav-label">Reports</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">DR</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">Doctor</div>
+        <div class="sidebar-user-role" id="sidebarRole">Doctor</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="navbar-page-title">Dashboard</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> Doctor <span>/</span> Dashboard</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <button class="navbar-icon-btn">
+        <i class="fa-solid fa-bell"></i>
+        <span class="notif-dot" id="notifDot" style="display:none"></span>
+      </button>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">DR</div>
+        <span class="navbar-user-name" id="navbarName">Doctor</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">Doctor</div>
+      <div class="dropdown-header-role" id="dropdownRole">Doctor</div>
+    </div>
+    <a href="#" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <a href="#" class="dropdown-item"><i class="fa-solid fa-gear"></i> Settings</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <h2>Doctor Dashboard</h2>
+      <p id="dashGreeting">Welcome back!</p>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="fa-solid fa-layer-group"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statQueue">—</div>
+          <div class="stat-label">Waiting in Queue</div>
+          <div class="stat-change up" id="statQueueSub">
+            <i class="fa-solid fa-clock"></i> Loading...
+          </div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="fa-solid fa-stethoscope"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statConsultations">—</div>
+          <div class="stat-label">Open Consultations</div>
+          <div class="stat-change up" id="statConsultationsSub">
+            <i class="fa-solid fa-file-medical"></i> Loading...
+          </div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon orange"><i class="fa-solid fa-flask"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statLabResults">—</div>
+          <div class="stat-label">Pending Lab Results</div>
+          <div class="stat-change down">
+            <i class="fa-solid fa-hourglass-half"></i> Awaiting results
+          </div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon purple"><i class="fa-solid fa-pills"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statPrescriptions">—</div>
+          <div class="stat-label">Prescriptions This Month</div>
+          <div class="stat-change up" id="statLabSub">
+            <i class="fa-solid fa-vial"></i> Loading...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="dashboard-grid">
+
+      <!-- Queue Snapshot -->
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-layer-group" style="color:var(--primary);margin-right:0.4rem"></i>Queue</h3>
+          <a href="queue.html" class="btn-link">View all</a>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div id="queueList" style="padding:0 1.5rem"></div>
+        </div>
+        <div class="card-footer">
+          <a href="queue.html" class="btn-link">Go to Queue</a>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div style="display:flex;flex-direction:column;gap:1.25rem">
+
+        <!-- Open Consultations -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-notes-medical" style="color:var(--primary);margin-right:0.4rem"></i>Open Consultations</h3>
+            <a href="consultations.html" class="btn-link">View all</a>
+          </div>
+          <div class="card-body" style="padding:0 1.5rem">
+            <div id="consultationList"></div>
+          </div>
+        </div>
+
+        <!-- Top Diagnoses -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-heart-pulse" style="color:var(--primary);margin-right:0.4rem"></i>Top Diagnoses This Month</h3>
+          </div>
+          <div class="card-body" style="padding:0 1.5rem">
+            <div id="diagnosisList"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script>
+  const user = requireAuth('doctor');
+
+  /* Greeting */
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('dashGreeting').textContent =
+    `${greeting}, Dr. ${user?.last_name || user?.full_name || user?.username || ''}! Here's your clinical overview for today.`;
+
+  const urgencyMeta = {
+    emergency: { label: 'Emergency', cls: 'priority-emergency' },
+    high:      { label: 'High',      cls: 'priority-high' },
+    normal:    { label: 'Normal',    cls: 'priority-normal' },
+    low:       { label: 'Low',       cls: 'priority-low' },
+  };
+
+  // Same defensive unwrap used on queue.html — the exact key holding the
+  // array under /health-files/queue/<status> isn't fixed yet.
+  function extractQueueList(resData) {
+    if (!resData) return [];
+    if (Array.isArray(resData)) return resData;
+    const candidates = ['health_files', 'items', 'data', 'results', 'queue', 'records', 'patients'];
+    for (const key of candidates) { if (Array.isArray(resData[key])) return resData[key]; }
+    for (const key in resData) { if (Array.isArray(resData[key])) return resData[key]; }
+    return [];
+  }
+
+  /* ── Queue snapshot (replaces the old Appointments panel) ── */
+  async function loadQueueSnapshot() {
+    const listDiv = document.getElementById('queueList');
+    try {
+      const res = await api.get('/health-files/queue/with_doctor?per_page=50');
+      const files = extractQueueList(res.data);
+
+      setText('statQueue', formatNumber(files.length));
+      const urgent = files.filter(f => ['emergency','high'].includes(f.urgency_level)).length;
+      setText('statQueueSub', urgent > 0 ? `${urgent} high priority` : `${files.length} waiting`);
+
+      if (files.length === 0) {
+        listDiv.innerHTML = `
+          <div class="empty-state" style="padding:1.5rem 0">
+            <i class="fa-solid fa-clipboard-check"></i>
+            <h4>Queue is clear</h4>
+            <p>No patients waiting for consultation right now</p>
+          </div>`;
+        return;
+      }
+
+      listDiv.innerHTML = files.slice(0, 5).map(f => {
+        const name = f.patient_name || 'Patient';
+        const opened = f.opened_at ? new Date(f.opened_at) : null;
+        const waitMin = opened ? Math.floor((Date.now() - opened.getTime()) / 60000) : null;
+        const waitLabel = waitMin == null ? '—' : waitMin < 60 ? `${waitMin}m` : `${Math.floor(waitMin/60)}h ${waitMin%60}m`;
+        const um = urgencyMeta[f.urgency_level];
+        return `
+          <a href="consultation.html?patient_id=${f.patient_id}&health_file_id=${f.id}" class="activity-item" style="text-decoration:none;color:inherit">
+            <div class="activity-icon" style="background:var(--primary-light);color:var(--primary);width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.9rem;font-weight:700;flex-shrink:0">
+              ${name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
+            </div>
+            <div class="activity-content">
+              <div class="activity-title">${name}</div>
+              <div class="activity-desc">Queue #${f.queue_number ?? '—'} · waiting ${waitLabel}</div>
+            </div>
+            ${um ? `<span class="priority-badge ${um.cls}">${um.label}</span>` : ''}
+          </a>`;
+      }).join('');
+
+    } catch (err) {
+      setText('statQueue', '—');
+      listDiv.innerHTML = `
+        <div class="empty-state" style="padding:1.5rem 0">
+          <i class="fa-solid fa-circle-exclamation" style="color:var(--danger)"></i>
+          <p>Could not load the queue</p>
+        </div>`;
+    }
+  }
+
+  /* ── Load Dashboard (consultations / labs / prescriptions / diagnoses) ── */
+  async function loadDoctorDashboard() {
+    try {
+      const res = await api.get('/dashboard');
+      const d   = res.data;
+
+      const openConsult  = d.open_consultations?.total  ?? 0;
+      const pendingLab   = d.pending_lab_results        ?? 0;
+      const scripts      = d.this_month?.prescriptions  ?? 0;
+      const labReqs      = d.this_month?.lab_requests   ?? 0;
+      const monthConsult = d.this_month?.consultations  ?? 0;
+
+      setText('statConsultations',    openConsult);
+      setText('statConsultationsSub', `${monthConsult} consultations this month`);
+      setText('statLabResults',       pendingLab);
+      setText('statPrescriptions',    scripts);
+      setText('statLabSub',           `${labReqs} lab requests this month`);
+
+      if ((d.unread_notifications ?? 0) > 0) {
+        document.getElementById('notifDot').style.display = 'block';
+      }
+
+      /* Open consultations list */
+      const consults   = d.open_consultations?.list || [];
+      const consultDiv = document.getElementById('consultationList');
+      if (consults.length === 0) {
+        consultDiv.innerHTML = `
+          <div class="empty-state" style="padding:1rem 0">
+            <i class="fa-solid fa-notes-medical"></i>
+            <p>No open consultations</p>
+          </div>`;
+      } else {
+        consultDiv.innerHTML = consults.slice(0,5).map(c => {
+          const name = c.patient?.full_name || c.patient_name || 'Patient';
+          return `
+            <div class="activity-item">
+              <div style="width:8px;height:8px;background:var(--warning);border-radius:50%;flex-shrink:0;margin-top:6px"></div>
+              <div class="activity-content">
+                <div class="activity-title">${name}</div>
+                <div class="activity-desc">${c.chief_complaint || c.complaint || 'Open consultation'}</div>
+              </div>
+              <div class="activity-time">${timeAgo(c.visit_date || c.created_at)}</div>
+            </div>`;
+        }).join('');
+      }
+
+      /* Top diagnoses */
+      const diags    = d.top_diagnoses_this_month || [];
+      const diagDiv  = document.getElementById('diagnosisList');
+      if (diags.length === 0) {
+        diagDiv.innerHTML = `
+          <div class="empty-state" style="padding:1rem 0">
+            <i class="fa-solid fa-heart-pulse"></i>
+            <p>No diagnosis data this month</p>
+          </div>`;
+      } else {
+        const maxCount = Math.max(...diags.map(d => d.count), 1);
+        diagDiv.innerHTML = diags.map((d, i) => `
+          <div style="margin-bottom:0.875rem">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="font-size:0.85rem;font-weight:500;color:var(--text-dark)">${d.diagnosis}</span>
+              <span style="font-size:0.8rem;color:var(--text-muted)">${d.count} case${d.count!==1?'s':''}</span>
+            </div>
+            <div style="height:6px;background:var(--border-light);border-radius:3px;overflow:hidden">
+              <div style="width:${Math.round(d.count/maxCount*100)}%;height:100%;background:var(--primary);border-radius:3px;transition:width 0.5s ${i*0.1}s"></div>
+            </div>
+          </div>`).join('');
+      }
+
+    } catch(err) {
+      console.warn('Doctor dashboard error:', err.message);
+      ['statConsultations','statLabResults','statPrescriptions'].forEach(id => setText(id, '—'));
+    }
+  }
+
+  loadQueueSnapshot();
+  loadDoctorDashboard();
+</script>
+</body>
+</html>

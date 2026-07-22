@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — Sign In</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="assets/css/main.css" />
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      background: var(--page-bg);
+    }
+
+    /* ── Left panel: single image, blurred, branding overlaid on top ── */
+    .login-left {
+      flex: 1;
+      min-width: 0;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 3rem 2rem;
+    }
+
+    /* Blurred hospital photo, scaled up slightly so the blur doesn't
+       reveal soft edges around the panel */
+    .login-left-bg {
+      position: absolute;
+      inset: 0;
+      background-image: url('assets/img/hospital-login.webp');
+      background-size: cover;
+      background-position: center;
+      filter: blur(4px);
+      transform: scale(1.08);
+    }
+
+    /* Soft teal wash over the blurred photo — light enough that the
+       building stays visible, just enough tint for the white text to
+       stay readable */
+    .login-left-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(160deg, rgba(15,20,35,0.4) 0%, rgba(15,52,96,0.38) 55%, rgba(0,153,125,0.42) 100%);
+    }
+
+    .login-left-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+    }
+
+    .brand-logo {
+      width: 72px; height: 72px;
+      background: var(--primary);
+      border-radius: 18px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 8px 32px rgba(0,184,148,0.45);
+    }
+    .brand-logo i { font-size: 2rem; color: #fff; }
+    .brand-name   {
+      font-size: 2rem; font-weight: 800; color: #fff; margin-bottom: 0.5rem;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.55), 0 4px 18px rgba(0,0,0,0.5);
+    }
+    .brand-tagline {
+      font-size: 0.95rem; font-weight: 700; color: #fff;
+      text-align: center; max-width: 320px; line-height: 1.7;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.6), 0 2px 12px rgba(0,0,0,0.5);
+    }
+    .brand-features { margin-top: 3rem; display: flex; flex-direction: column; gap: 1rem; }
+    .brand-feature  {
+      display: flex; align-items: center; gap: 0.875rem;
+      color: #fff; font-weight: 700; font-size: 0.875rem;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.6), 0 2px 10px rgba(0,0,0,0.5);
+    }
+    .brand-feature i {
+      width: 32px; height: 32px;
+      background: rgba(6,78,59,0.55); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 0.875rem; flex-shrink: 0;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3);
+    }
+
+    /* ── Right form panel ── */
+    .login-right {
+      width: 480px;
+      flex-shrink: 0;
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 3rem 3.5rem;
+      background: #fff;
+      box-shadow: -8px 0 40px rgba(0,0,0,0.06);
+    }
+    .login-header { margin-bottom: 2.25rem; }
+    .login-header h2 { font-size: 1.625rem; font-weight: 700; color: var(--text-dark); margin-bottom: 0.4rem; }
+    .login-header p  { font-size: 0.9rem; color: var(--text-muted); }
+
+    .form-group   { margin-bottom: 1.25rem; }
+    .form-label   { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-dark); margin-bottom: 0.45rem; }
+    .input-wrapper { position: relative; }
+    .input-icon   { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-light); font-size: 0.9rem; pointer-events: none; }
+
+    .form-input {
+      width: 100%; height: 46px;
+      padding: 0 14px 0 40px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--border-radius-sm);
+      font-size: 0.9375rem; color: var(--text-dark); background: #fff;
+      transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+    }
+    .form-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,184,148,0.12); }
+    .form-input::placeholder { color: var(--text-light); }
+
+    /* Role select — same visual language as form-input, plus a caret */
+    select.form-input {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      cursor: pointer;
+      padding-right: 36px;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' stroke='%239ca3af' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+    }
+    select.form-input:invalid { color: var(--text-light); }
+
+    .toggle-password {
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      color: var(--text-light); font-size: 0.9rem; cursor: pointer;
+      background: none; border: none; padding: 4px; transition: color 0.2s;
+    }
+    .toggle-password:hover { color: var(--text-muted); }
+
+    .form-footer-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1.5rem; margin-top: -0.25rem;
+    }
+    .checkbox-label {
+      display: flex; align-items: center; gap: 0.45rem;
+      font-size: 0.85rem; color: var(--text-muted); cursor: pointer;
+    }
+    .checkbox-label input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--primary); }
+    .forgot-link { font-size: 0.85rem; color: var(--primary); font-weight: 500; }
+    .forgot-link:hover { opacity: 0.75; }
+
+    .error-box {
+      display: none; align-items: center; gap: 0.6rem;
+      padding: 0.75rem 1rem;
+      background: #fff5f5; border: 1.5px solid #ffd5d5;
+      border-radius: var(--border-radius-sm);
+      color: var(--danger); font-size: 0.875rem; margin-bottom: 1.25rem;
+    }
+
+    .btn-login {
+      width: 100%; height: 48px;
+      background: var(--primary); color: #fff;
+      border-radius: var(--border-radius-sm);
+      font-size: 0.9375rem; font-weight: 600;
+      display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+      transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+      box-shadow: 0 4px 14px rgba(0,184,148,0.3);
+    }
+    .btn-login:hover:not(:disabled) { background: var(--primary-dark); box-shadow: 0 6px 18px rgba(0,184,148,0.4); }
+    .btn-login:active:not(:disabled){ transform: translateY(1px); }
+    .btn-login:disabled { opacity: 0.7; cursor: not-allowed; }
+
+    .spinner {
+      display: none; width: 18px; height: 18px;
+      border: 2.5px solid rgba(255,255,255,0.35);
+      border-top-color: #fff; border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .login-page-footer { margin-top: 2rem; text-align: center; font-size: 0.8rem; color: var(--text-light); }
+
+    @media (max-width: 900px) {
+      .login-left { display: none; }
+      .login-right { width: 100%; padding: 2.5rem 1.75rem; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Left: blurred hospital photo with branding text overlaid on top -->
+  <div class="login-left">
+    <div class="login-left-bg" role="img" aria-label="Federal Polytechnic Ilaro Health Centre building"></div>
+    <div class="login-left-overlay"></div>
+
+    <div class="login-left-content">
+      <div class="brand-logo"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="brand-name">IHMIS</div>
+      <p class="brand-tagline">Integrated Health Management Information System<br/>Federal Polytechnic Ilaro</p>
+      <div class="brand-features">
+        <div class="brand-feature"><i class="fa-solid fa-shield-halved"></i><span>Role-based access for all health staff</span></div>
+        <div class="brand-feature"><i class="fa-solid fa-file-medical"></i><span>Electronic health records management</span></div>
+        <div class="brand-feature"><i class="fa-solid fa-flask"></i><span>Lab, pharmacy &amp; consultation tracking</span></div>
+        <div class="brand-feature"><i class="fa-solid fa-chart-pie"></i><span>Real-time reports &amp; audit logging</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Login Form -->
+  <div class="login-right">
+    <div class="login-header">
+      <h2>Welcome back</h2>
+      <p>Sign in to your IHMIS account to continue</p>
+    </div>
+
+    <div class="error-box" id="loginError" role="alert">
+      <i class="fa-solid fa-circle-exclamation"></i>
+      <span></span>
+    </div>
+
+    <form id="loginForm" novalidate>
+
+      <!-- Role -->
+      <div class="form-group">
+        <label class="form-label" for="role">Login as</label>
+        <div class="input-wrapper">
+          <span class="input-icon"><i class="fa-solid fa-user-tag"></i></span>
+          <select id="role" name="role" class="form-input" required>
+            <option value="" disabled selected>Select your role</option>
+            <option value="admin">Admin</option>
+            <option value="mho">Medical Health Officer</option>
+            <option value="nurse">Nurse</option>
+            <option value="doctor">Doctor</option>
+            <option value="lab_tech">Laboratory Technician</option>
+            <option value="pharmacist">Pharmacist</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Username -->
+      <div class="form-group">
+        <label class="form-label" for="username">Username</label>
+        <div class="input-wrapper">
+          <span class="input-icon"><i class="fa-solid fa-user"></i></span>
+          <input type="text" id="username" class="form-input"
+            placeholder="Enter your username"
+            autocomplete="username" required />
+        </div>
+      </div>
+
+      <!-- Password -->
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <div class="input-wrapper">
+          <span class="input-icon"><i class="fa-solid fa-lock"></i></span>
+          <input type="password" id="password" class="form-input"
+            placeholder="Enter your password"
+            autocomplete="current-password" required />
+          <button type="button" class="toggle-password" id="togglePassword">
+            <i class="fa-solid fa-eye"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Remember + Forgot -->
+      <div class="form-footer-row">
+        <label class="checkbox-label">
+          <input type="checkbox" id="rememberMe" /> Remember me
+        </label>
+        <a href="#" class="forgot-link">Forgot password?</a>
+      </div>
+
+      <button type="submit" class="btn-login" id="loginBtn">
+        <span class="spinner" id="loginSpinner"></span>
+        <span id="loginBtnText">Sign In</span>
+      </button>
+
+    </form>
+
+    <p class="login-page-footer">
+      &copy; 2026 Federal Polytechnic Ilaro Health Centre &mdash; IHMIS v1.0
+    </p>
+  </div>
+
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
+</body>
+</html>

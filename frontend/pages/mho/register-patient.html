@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — Register Patient</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+  <style>
+    .type-toggle {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+    .type-toggle-btn {
+      flex: 1;
+      padding: 0.9rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--border-radius-sm);
+      background: var(--card-bg);
+      text-align: center;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      transition: all 0.2s;
+    }
+    .type-toggle-btn.active {
+      border-color: var(--primary);
+      background: var(--primary-xlight);
+      color: var(--primary);
+    }
+    .photo-upload-box {
+      width: 140px;
+      height: 160px;
+      border: 2px dashed var(--border);
+      border-radius: var(--border-radius-sm);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      overflow: hidden;
+      position: relative;
+      background: var(--page-bg);
+      flex-shrink: 0;
+    }
+    .photo-upload-box:hover { border-color: var(--primary); }
+    .photo-upload-box img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-upload-box .placeholder { text-align: center; color: var(--text-light); font-size: 0.75rem; padding: 0.5rem; }
+    .photo-upload-box .placeholder i { font-size: 1.5rem; display: block; margin-bottom: 0.4rem; }
+    .photo-upload-row { display: flex; gap: 1.25rem; align-items: flex-start; }
+    .age-display {
+      display: flex; align-items: center; gap: 0.5rem;
+      font-size: 0.82rem; color: var(--text-muted);
+      margin-top: 0.3rem;
+    }
+    .age-display strong { color: var(--text-dark); }
+  </style>
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="patients.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+          <span class="nav-label">Patients</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="register-patient.html" class="nav-link active">
+          <span class="nav-icon"><i class="fa-solid fa-user-plus"></i></span>
+          <span class="nav-label">Register Patient</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Patient Flow</div>
+      <div class="nav-item">
+        <a href="checkin.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-clipboard-check"></i></span>
+          <span class="nav-label">Check-In</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="queue.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-layer-group"></i></span>
+          <span class="nav-label">Active Queue</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">MH</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">MHO</div>
+        <div class="sidebar-user-role" id="sidebarRole">Medical Health Officer</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="navbar-page-title">Register Patient</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> MHO <span>/</span> Register Patient</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <a href="notifications.html" class="navbar-icon-btn" title="Notifications">
+        <i class="fa-solid fa-bell"></i>
+        <span class="notif-dot" style="display:none"></span>
+      </a>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">MH</div>
+        <span class="navbar-user-name" id="navbarName">MHO</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">MHO</div>
+      <div class="dropdown-header-role" id="dropdownRole">Medical Health Officer</div>
+    </div>
+    <a href="profile.html" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="page-header">
+      <h2>Register Patient</h2>
+      <p>Medical Registration Form — Federal Polytechnic Ilaro Health Centre</p>
+    </div>
+
+    <!-- Duplicate warning banner (hidden by default) -->
+    <div class="alert alert-warning" id="duplicateWarning" style="display:none">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <span id="duplicateWarningText"></span>
+    </div>
+
+    <form id="registerForm">
+
+      <!-- Patient Type -->
+      <div class="form-section">
+        <div class="form-section-title">Patient Type</div>
+        <div class="type-toggle">
+          <div class="type-toggle-btn active" data-type="student" id="typeStudentBtn">
+            <i class="fa-solid fa-user-graduate"></i> Student
+          </div>
+          <div class="type-toggle-btn" data-type="staff" id="typeStaffBtn">
+            <i class="fa-solid fa-user-tie"></i> Staff
+          </div>
+          <div class="type-toggle-btn" data-type="other" id="typeOtherBtn">
+            <i class="fa-solid fa-user"></i> Other
+          </div>
+        </div>
+      </div>
+
+      <!-- Personal Information -->
+      <div class="form-section">
+        <div class="form-section-title">Personal Information</div>
+
+        <div class="photo-upload-row" style="margin-bottom:1.25rem">
+          <div class="photo-upload-box" id="photoUploadBox">
+            <div class="placeholder" id="photoPlaceholder">
+              <i class="fa-solid fa-camera"></i>
+              Affix a Passport
+            </div>
+            <img id="photoPreview" style="display:none" />
+          </div>
+          <input type="file" id="photoInput" accept="image/*" style="display:none" />
+          <div>
+            <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.5rem">
+              Click the box to upload a passport photograph (JPG or PNG, max 2MB).
+            </p>
+            <button type="button" class="btn btn-secondary btn-sm" id="photoBtnTrigger">
+              <i class="fa-solid fa-upload"></i> Choose Photo
+            </button>
+          </div>
+        </div>
+
+        <div class="form-grid form-grid-3">
+          <div class="form-group">
+            <label class="form-label">Surname <span class="required">*</span></label>
+            <input type="text" class="form-control" id="regLastName" placeholder="Surname" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">First Name <span class="required">*</span></label>
+            <input type="text" class="form-control" id="regFirstName" placeholder="First name" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sex <span class="required">*</span></label>
+            <select class="form-control" id="regGender">
+              <option value="">Select</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date of Birth</label>
+            <input type="date" class="form-control" id="regDOB" />
+            <div class="age-display" id="ageDisplay" style="display:none">
+              Age: <strong id="ageValue">—</strong>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Blood Group</label>
+            <select class="form-control" id="regBloodGroup">
+              <option value="unknown">Unknown</option>
+              <option value="A+">A+</option>
+              <option value="A-">A-</option>
+              <option value="B+">B+</option>
+              <option value="B-">B-</option>
+              <option value="AB+">AB+</option>
+              <option value="AB-">AB-</option>
+              <option value="O+">O+</option>
+              <option value="O-">O-</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Genotype</label>
+            <input type="text" class="form-control" id="regGenotype" placeholder="e.g. AA, AS" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Identification (hidden entirely for "Other" patients -- no
+           department/matric/staff ID applies to a walk-in outsider) -->
+      <div class="form-section" id="identificationSection">
+        <div class="form-section-title" id="idSectionTitle">Student Identification</div>
+        <div class="form-grid form-grid-3">
+          <div class="form-group" id="matricGroup">
+            <label class="form-label">Matric Number <span class="required">*</span></label>
+            <input type="text" class="form-control" id="regMatric" placeholder="e.g. CS/2023/001" />
+          </div>
+          <div class="form-group" id="staffIdGroup" style="display:none">
+            <label class="form-label">Staff ID Number <span class="required">*</span></label>
+            <input type="text" class="form-control" id="regStaffId" placeholder="e.g. STAFF-045" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Department <span class="required">*</span></label>
+            <input type="text" class="form-control" id="regDepartment" placeholder="Department" />
+          </div>
+          <div class="form-group" id="facultyGroup">
+            <label class="form-label">Faculty</label>
+            <input type="text" class="form-control" id="regFaculty" placeholder="Faculty" />
+          </div>
+          <div class="form-group" id="levelGroup">
+            <label class="form-label">Level</label>
+            <input type="text" class="form-control" id="regLevel" placeholder="e.g. ND2, HND1" />
+          </div>
+          <div class="form-group" id="designationGroup" style="display:none">
+            <label class="form-label">Designation</label>
+            <input type="text" class="form-control" id="regDesignation" placeholder="e.g. Lecturer II" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact Information -->
+      <div class="form-section">
+        <div class="form-section-title">Contact Information</div>
+        <div class="form-grid form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Phone Number</label>
+            <input type="tel" class="form-control" id="regPhone" placeholder="e.g. 08012345678" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" class="form-control" id="regEmail" placeholder="Optional" />
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label class="form-label">Ilaro Address</label>
+            <input type="text" class="form-control" id="regAddress" placeholder="Home/residential address" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Next of Kin -->
+      <div class="form-section">
+        <div class="form-section-title">Next of Kin Details</div>
+        <div class="form-grid form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Name</label>
+            <input type="text" class="form-control" id="regKinName" placeholder="Full name" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Relationship</label>
+            <input type="text" class="form-control" id="regKinRelationship" placeholder="e.g. Mother, Father, Spouse" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone Number</label>
+            <input type="tel" class="form-control" id="regKinPhone" placeholder="Phone number" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Address</label>
+            <input type="text" class="form-control" id="regKinAddress" placeholder="Address" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Error box -->
+      <div class="alert alert-danger" id="registerError" style="display:none">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span id="registerErrorMsg"></span>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:0.75rem">
+        <a href="dashboard.html" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary" id="submitRegisterBtn">
+          <span class="spinner-sm" id="registerSpinner" style="display:none;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+          <i class="fa-solid fa-user-plus" id="registerBtnIcon"></i>
+          <span id="registerBtnText">Register Patient</span>
+        </button>
+      </div>
+    </form>
+
+  </main>
+</div>
+
+<!-- ── Post-registration modal: offer immediate check-in ── -->
+<div class="modal-overlay" id="successModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-circle-check" style="color:var(--success);margin-right:0.5rem"></i>Patient Registered</h3>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom:0.5rem">
+        <strong id="successName"></strong> was registered successfully.
+      </p>
+      <p style="color:var(--text-muted);font-size:0.875rem">
+        Patient Number: <span id="successNumber" style="font-family:monospace;color:var(--primary)"></span>
+      </p>
+      <p style="margin-top:1rem;font-size:0.9rem">Would you like to check this patient in now?</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="successLaterBtn">Not now</button>
+      <button class="btn btn-primary" id="successCheckInBtn">
+        <i class="fa-solid fa-clipboard-check"></i> Check In Now
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script>
+  requireAuth('mho');
+
+  let patientType = 'student';
+  let photoBase64 = null;
+  let photoMime   = null;
+  let duplicateCheckTimer;
+  let lastRegisteredPatientId = null;
+
+  /* ── Type toggle ── */
+  function setType(type) {
+    patientType = type;
+    document.getElementById('typeStudentBtn').classList.toggle('active', type === 'student');
+    document.getElementById('typeStaffBtn').classList.toggle('active', type === 'staff');
+    document.getElementById('typeOtherBtn').classList.toggle('active', type === 'other');
+
+    // "Other" patients have no department/matric/staff ID -- hide the
+    // whole Identification section rather than toggling individual fields.
+    document.getElementById('identificationSection').style.display = type === 'other' ? 'none' : '';
+
+    document.getElementById('matricGroup').style.display      = type === 'student' ? '' : 'none';
+    document.getElementById('facultyGroup').style.display     = type === 'student' ? '' : 'none';
+    document.getElementById('levelGroup').style.display       = type === 'student' ? '' : 'none';
+    document.getElementById('staffIdGroup').style.display     = type === 'staff' ? '' : 'none';
+    document.getElementById('designationGroup').style.display = type === 'staff' ? '' : 'none';
+    document.getElementById('idSectionTitle').textContent     = type === 'student' ? 'Student Identification' : 'Staff Identification';
+  }
+  document.getElementById('typeStudentBtn').addEventListener('click', () => setType('student'));
+  document.getElementById('typeStaffBtn').addEventListener('click', () => setType('staff'));
+  document.getElementById('typeOtherBtn').addEventListener('click', () => setType('other'));
+
+  /* ── Age calculation from DOB ── */
+  document.getElementById('regDOB').addEventListener('change', (e) => {
+    const dob = e.target.value;
+    const ageDisplay = document.getElementById('ageDisplay');
+    if (!dob) { ageDisplay.style.display = 'none'; return; }
+
+    const today = new Date();
+    const birth = new Date(dob);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--;
+
+    document.getElementById('ageValue').textContent = age >= 0 ? `${age} years` : '—';
+    ageDisplay.style.display = 'flex';
+
+    checkDuplicate();
+  });
+
+  /* ── Soft duplicate check (Name + DOB) ── */
+  ['regFirstName', 'regLastName'].forEach(id => {
+    document.getElementById(id).addEventListener('blur', checkDuplicate);
+  });
+
+  async function checkDuplicate() {
+    const firstName = document.getElementById('regFirstName').value.trim();
+    const lastName  = document.getElementById('regLastName').value.trim();
+    const dob       = document.getElementById('regDOB').value;
+    const warning   = document.getElementById('duplicateWarning');
+
+    if (!firstName || !lastName || !dob) { warning.style.display = 'none'; return; }
+
+    clearTimeout(duplicateCheckTimer);
+    duplicateCheckTimer = setTimeout(async () => {
+      try {
+        const res = await api.get(
+          `/patients/check-duplicate?first_name=${encodeURIComponent(firstName)}&last_name=${encodeURIComponent(lastName)}&date_of_birth=${dob}`
+        );
+        const matches = res.data?.matches || [];
+        if (matches.length > 0) {
+          const names = matches.map(m => `${m.full_name} (${m.patient_number})`).join(', ');
+          document.getElementById('duplicateWarningText').textContent =
+            `Possible existing record found: ${names}. Please verify before registering a new patient.`;
+          warning.style.display = 'flex';
+        } else {
+          warning.style.display = 'none';
+        }
+      } catch (err) {
+        // Non-blocking -- silently skip the warning if the check itself fails
+        warning.style.display = 'none';
+      }
+    }, 400);
+  }
+
+  /* ── Photo upload ── */
+  const photoBox   = document.getElementById('photoUploadBox');
+  const photoInput = document.getElementById('photoInput');
+  photoBox.addEventListener('click', () => photoInput.click());
+  document.getElementById('photoBtnTrigger').addEventListener('click', () => photoInput.click());
+
+  photoInput.addEventListener('change', () => {
+    const file = photoInput.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('Photo must be under 2MB.', 'error');
+      photoInput.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const fullDataUrl = e.target.result;               // e.g. "data:image/jpeg;base64,...."
+      photoBase64 = fullDataUrl.split(',')[1];            // strip the data URL prefix
+      photoMime   = file.type;
+
+      document.getElementById('photoPreview').src = fullDataUrl;
+      document.getElementById('photoPreview').style.display = 'block';
+      document.getElementById('photoPlaceholder').style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  /* ── Submit ── */
+  document.getElementById('registerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const firstName = document.getElementById('regFirstName').value.trim();
+    const lastName  = document.getElementById('regLastName').value.trim();
+    const gender    = document.getElementById('regGender').value;
+    const department = document.getElementById('regDepartment').value.trim();
+    const matric    = document.getElementById('regMatric').value.trim();
+    const staffId   = document.getElementById('regStaffId').value.trim();
+
+    const errBox = document.getElementById('registerError');
+    const errMsg = document.getElementById('registerErrorMsg');
+
+    if (!firstName || !lastName || !gender) {
+      errMsg.textContent = 'Please fill in all required personal information fields.';
+      errBox.style.display = 'flex';
+      return;
+    }
+    // Department only applies to Student/Staff -- Other patients skip it entirely.
+    if (patientType !== 'other' && !department) {
+      errMsg.textContent = 'Department is required.';
+      errBox.style.display = 'flex';
+      return;
+    }
+    if (patientType === 'student' && !matric) {
+      errMsg.textContent = 'Matric number is required for student registration.';
+      errBox.style.display = 'flex';
+      return;
+    }
+    if (patientType === 'staff' && !staffId) {
+      errMsg.textContent = 'Staff ID number is required for staff registration.';
+      errBox.style.display = 'flex';
+      return;
+    }
+
+    errBox.style.display = 'none';
+    setLoading(true);
+
+    const payload = {
+      first_name:  firstName,
+      last_name:   lastName,
+      gender,
+      date_of_birth: document.getElementById('regDOB').value || null,
+      blood_group:   document.getElementById('regBloodGroup').value || 'unknown',
+      genotype:      document.getElementById('regGenotype').value.trim() || null,
+      phone:         document.getElementById('regPhone').value.trim() || null,
+      email:         document.getElementById('regEmail').value.trim() || null,
+      address:       document.getElementById('regAddress').value.trim() || null,
+      emergency_contact_name:         document.getElementById('regKinName').value.trim() || null,
+      emergency_contact_relationship: document.getElementById('regKinRelationship').value.trim() || null,
+      emergency_contact_phone:        document.getElementById('regKinPhone').value.trim() || null,
+      emergency_contact_address:      document.getElementById('regKinAddress').value.trim() || null,
+    };
+
+    let endpoint;
+    if (patientType === 'student') {
+      payload.department = department;
+      payload.matric_number = matric;
+      payload.faculty = document.getElementById('regFaculty').value.trim() || null;
+      payload.level   = document.getElementById('regLevel').value.trim() || null;
+      endpoint = '/patients/students';
+    } else if (patientType === 'staff') {
+      payload.department = department;
+      payload.staff_id_number = staffId;
+      payload.designation = document.getElementById('regDesignation').value.trim() || null;
+      endpoint = '/patients/staff';
+    } else {
+      // "other" -- no department, matric, staff ID, faculty, level, or designation
+      endpoint = '/patients/others';
+    }
+
+    try {
+      const res = await api.post(endpoint, payload);
+      const patient = res.data;
+
+      // Photo upload is a separate step (BLOB), fired only after the
+      // patient record exists and we have an ID to attach it to.
+      // NOTE: POST /patients/<id>/photo does not exist on the backend
+      // yet -- this call will fail gracefully (caught below) until that
+      // route is built. Registration itself is unaffected either way.
+      if (photoBase64 && patient?.id) {
+        try {
+          await api.post(`/patients/${patient.id}/photo`, {
+            photo_data: photoBase64,
+            photo_mime: photoMime,
+          });
+        } catch (photoErr) {
+          console.warn('Photo upload failed:', photoErr.message);
+          showToast('Patient registered, but photo upload failed. You can add it later from the patient file.', 'warning');
+        }
+      }
+
+      lastRegisteredPatientId = patient.id;
+      document.getElementById('successName').textContent   = patient.full_name;
+      document.getElementById('successNumber').textContent = patient.patient_number;
+      document.getElementById('successModal').classList.add('open');
+
+    } catch (err) {
+      errMsg.textContent = err.message;
+      errBox.style.display = 'flex';
+    } finally {
+      setLoading(false);
+    }
+  });
+
+  function setLoading(state) {
+    document.getElementById('registerSpinner').style.display = state ? 'inline-block' : 'none';
+    document.getElementById('registerBtnIcon').style.display = state ? 'none' : 'inline-block';
+    document.getElementById('registerBtnText').textContent   = state ? 'Registering...' : 'Register Patient';
+    document.getElementById('submitRegisterBtn').disabled    = state;
+  }
+
+  /* ── Success modal actions ── */
+  document.getElementById('successLaterBtn').addEventListener('click', () => {
+    window.location.href = 'dashboard.html';
+  });
+  document.getElementById('successCheckInBtn').addEventListener('click', () => {
+    window.location.href = `checkin.html?patient_id=${lastRegisteredPatientId}`;
+  });
+</script>
+</body>
+</html>

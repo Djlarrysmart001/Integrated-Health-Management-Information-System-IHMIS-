@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — Documents</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+  <style>
+    .patient-result {
+      display: flex; align-items: center; gap: 0.9rem;
+      padding: 0.9rem 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--border-radius-sm);
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-bottom: 0.6rem;
+    }
+    .patient-result:hover { border-color: var(--primary); background: var(--primary-xlight); }
+    .patient-result-avatar {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: var(--primary-light); color: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.9rem; flex-shrink: 0;
+    }
+    .patient-result-info { flex: 1; min-width: 0; }
+    .patient-result-name { font-weight: 600; color: var(--text-dark); font-size: 0.92rem; }
+    .patient-result-meta { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+
+    .selected-patient-card {
+      display: flex; align-items: center; gap: 1.25rem;
+      padding: 1.5rem; background: var(--primary-xlight);
+      border: 1.5px solid var(--primary); border-radius: var(--border-radius);
+      margin-bottom: 1.25rem;
+    }
+    .selected-patient-avatar {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: var(--primary-light); color: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 1.4rem; flex-shrink: 0;
+      overflow: hidden;
+    }
+    .selected-patient-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    .photo-box {
+      width: 120px; height: 140px;
+      border: 2px dashed var(--border);
+      border-radius: var(--border-radius-sm);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      cursor: pointer; overflow: hidden; background: var(--page-bg); flex-shrink: 0;
+    }
+    .photo-box:hover { border-color: var(--primary); }
+    .photo-box img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-box .placeholder { text-align: center; color: var(--text-light); font-size: 0.72rem; padding: 0.4rem; }
+    .photo-box .placeholder i { font-size: 1.3rem; display: block; margin-bottom: 0.3rem; }
+
+    .doc-row {
+      display: flex; align-items: center; gap: 0.9rem;
+      padding: 0.9rem 1rem;
+      border: 1px solid var(--border-light);
+      border-radius: var(--border-radius-sm);
+      margin-bottom: 0.6rem;
+    }
+    .doc-icon {
+      width: 40px; height: 40px; border-radius: 8px;
+      background: var(--primary-xlight); color: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; flex-shrink: 0;
+    }
+    .doc-info { flex: 1; min-width: 0; }
+    .doc-name { font-weight: 600; font-size: 0.88rem; color: var(--text-dark); }
+    .doc-meta { font-size: 0.76rem; color: var(--text-muted); margin-top: 2px; }
+  </style>
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="patients.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+          <span class="nav-label">Patients</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="register-patient.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-user-plus"></i></span>
+          <span class="nav-label">Register Patient</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Patient Flow</div>
+      <div class="nav-item">
+        <a href="checkin.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-clipboard-check"></i></span>
+          <span class="nav-label">Check-In</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="queue.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-layer-group"></i></span>
+          <span class="nav-label">Active Queue</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Records</div>
+      <div class="nav-item">
+        <a href="documents.html" class="nav-link active">
+          <span class="nav-icon"><i class="fa-solid fa-file-lines"></i></span>
+          <span class="nav-label">Documents</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">MH</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">MHO</div>
+        <div class="sidebar-user-role" id="sidebarRole">Medical Health Officer</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="navbar-page-title">Documents</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> MHO <span>/</span> Documents</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <a href="notifications.html" class="navbar-icon-btn" title="Notifications">
+        <i class="fa-solid fa-bell"></i>
+        <span class="notif-dot" style="display:none"></span>
+      </a>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">MH</div>
+        <span class="navbar-user-name" id="navbarName">MHO</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">MHO</div>
+      <div class="dropdown-header-role" id="dropdownRole">Medical Health Officer</div>
+    </div>
+    <a href="profile.html" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="page-header">
+      <h2>Documents</h2>
+      <p>Passport photo and supporting documents (ID cards, referral letters, consent forms)</p>
+    </div>
+
+    <!-- Step 1: Find patient -->
+    <div class="card" id="searchStep" style="margin-bottom:1.25rem">
+      <div class="card-header">
+        <h3><i class="fa-solid fa-magnifying-glass" style="color:var(--primary);margin-right:0.4rem"></i>Find Patient</h3>
+      </div>
+      <div class="card-body">
+        <div class="search-input-wrapper" style="max-width:100%;margin-bottom:1rem">
+          <i class="fa-solid fa-search"></i>
+          <input type="text" class="search-input" id="patientSearch"
+            placeholder="Search by name, patient number, matric or staff ID..." />
+        </div>
+        <div id="searchResults"></div>
+        <div class="empty-state" id="searchEmptyState">
+          <i class="fa-solid fa-user-magnifying-glass"></i>
+          <p>Search for a patient to manage their documents</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Selected patient + documents -->
+    <div id="documentsStep" style="display:none">
+      <div class="selected-patient-card" id="selectedPatientCard"></div>
+
+      <!-- Passport photo -->
+      <div class="card" style="margin-bottom:1.25rem">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-image" style="color:var(--primary);margin-right:0.4rem"></i>Passport Photo</h3>
+        </div>
+        <div class="card-body" style="display:flex;gap:1.25rem;align-items:flex-start">
+          <div class="photo-box" id="photoBox">
+            <div class="placeholder" id="photoPlaceholder">
+              <i class="fa-solid fa-camera"></i>
+              No photo
+            </div>
+            <img id="photoPreview" style="display:none" />
+          </div>
+          <input type="file" id="photoInput" accept="image/*" style="display:none" />
+          <div>
+            <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.75rem">
+              JPG or PNG, max 2MB. Uploading a new photo replaces the existing one.
+            </p>
+            <button type="button" class="btn btn-primary btn-sm" id="photoUploadBtn">
+              <span class="spinner-sm" id="photoSpinner" style="display:none;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+              <i class="fa-solid fa-upload" id="photoUploadIcon"></i>
+              <span id="photoUploadText">Choose & Upload Photo</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Other documents -->
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-file-lines" style="color:var(--primary);margin-right:0.4rem"></i>Documents</h3>
+          <button class="btn btn-primary btn-sm" id="openUploadModalBtn">
+            <i class="fa-solid fa-plus"></i> Upload Document
+          </button>
+        </div>
+        <div class="card-body">
+          <div id="documentsList">
+            <div class="empty-state"><div class="spinner-sm" style="margin:0 auto"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── Upload Document Modal ── -->
+<div class="modal-overlay" id="uploadModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-upload" style="color:var(--primary);margin-right:0.5rem"></i>Upload Document</h3>
+      <button class="modal-close" id="closeUploadModal"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:1rem">
+        <label class="form-label">Document Type <span class="required">*</span></label>
+        <select class="form-control" id="docType">
+          <option value="id_card">ID Card</option>
+          <option value="referral_letter">Referral Letter</option>
+          <option value="consent_form">Consent Form</option>
+          <option value="medical_document">Medical Document</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:1rem">
+        <label class="form-label">File <span class="required">*</span></label>
+        <input type="file" class="form-control" id="docFile" accept="image/*,application/pdf" />
+        <div class="form-hint">JPG, PNG, or PDF, max 5MB</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <input type="text" class="form-control" id="docNotes" placeholder="Optional note about this document" />
+      </div>
+      <div class="alert alert-danger" id="uploadError" style="display:none;margin-top:1rem">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span id="uploadErrorMsg"></span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="cancelUploadBtn">Cancel</button>
+      <button class="btn btn-primary" id="submitUploadBtn">
+        <span class="spinner-sm" id="uploadSpinner" style="display:none;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+        <i class="fa-solid fa-upload" id="uploadIcon"></i>
+        <span id="uploadBtnText">Upload</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script>
+  requireAuth('mho');
+
+  let selectedPatient = null;
+  let searchTimer;
+  let pendingPhotoBase64 = null;
+  let pendingPhotoMime = null;
+  let pendingDocBase64 = null;
+  let pendingDocMime = null;
+
+  const DOC_TYPE_LABELS = {
+    id_card: 'ID Card', referral_letter: 'Referral Letter',
+    consent_form: 'Consent Form', medical_document: 'Medical Document', other: 'Other'
+  };
+  const DOC_TYPE_ICONS = {
+    id_card: 'fa-id-card', referral_letter: 'fa-file-export',
+    consent_form: 'fa-file-signature', medical_document: 'fa-file-medical', other: 'fa-file'
+  };
+
+  /* ── Pre-fill from ?patient_id= (e.g. linked from Patient File) ── */
+  const urlParams = new URLSearchParams(window.location.search);
+  const prefillId = urlParams.get('patient_id');
+  if (prefillId) loadAndSelectPatient(prefillId);
+
+  async function loadAndSelectPatient(id) {
+    try {
+      const res = await api.get(`/patients/${id}`);
+      selectPatient(res.data);
+    } catch (err) {
+      showToast('Could not load patient: ' + err.message, 'error');
+    }
+  }
+
+  /* ── Search ── */
+  const searchInput = document.getElementById('patientSearch');
+  searchInput.addEventListener('input', (e) => {
+    clearTimeout(searchTimer);
+    const term = e.target.value.trim();
+    if (!term) {
+      document.getElementById('searchResults').innerHTML = '';
+      document.getElementById('searchEmptyState').style.display = 'block';
+      return;
+    }
+    searchTimer = setTimeout(() => runSearch(term), 350);
+  });
+
+  async function runSearch(term) {
+    const box = document.getElementById('searchResults');
+    document.getElementById('searchEmptyState').style.display = 'none';
+    box.innerHTML = `<div class="empty-state" style="padding:1.5rem 0"><div class="spinner-sm" style="margin:0 auto"></div></div>`;
+
+    try {
+      const res = await api.get(`/patients?search=${encodeURIComponent(term)}&per_page=8`);
+      const patients = res.data?.patients || [];
+      if (patients.length === 0) {
+        box.innerHTML = `<div class="empty-state" style="padding:1.5rem 0"><i class="fa-solid fa-user-slash"></i><p>No matching patients found</p></div>`;
+        return;
+      }
+      box.innerHTML = patients.map(p => `
+        <div class="patient-result" onclick='selectPatientFromSearch(${JSON.stringify(p).replace(/'/g, "&apos;")})'>
+          <div class="patient-result-avatar">${(p.first_name?.[0]||'')}${(p.last_name?.[0]||'')}</div>
+          <div class="patient-result-info">
+            <div class="patient-result-name">${p.full_name}</div>
+            <div class="patient-result-meta">${p.patient_number} · ${capitalize(p.patient_type)}</div>
+          </div>
+          <i class="fa-solid fa-chevron-right" style="color:var(--text-light)"></i>
+        </div>
+      `).join('');
+    } catch (err) {
+      box.innerHTML = `<div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i><span>${err.message}</span></div>`;
+    }
+  }
+
+  function selectPatientFromSearch(patient) { selectPatient(patient); }
+
+  function selectPatient(patient) {
+    selectedPatient = patient;
+    document.getElementById('searchStep').style.display = 'none';
+    document.getElementById('documentsStep').style.display = 'block';
+
+    document.getElementById('selectedPatientCard').innerHTML = `
+      <div class="selected-patient-avatar" id="selectedAvatar">${(patient.first_name?.[0]||'')}${(patient.last_name?.[0]||'')}</div>
+      <div style="flex:1">
+        <div style="font-size:1.15rem;font-weight:700;color:var(--text-dark)">${patient.full_name}</div>
+        <div style="color:var(--text-muted);font-size:0.85rem;margin-top:2px">${patient.patient_number} · ${capitalize(patient.patient_type)}</div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="resetSelection()">
+        <i class="fa-solid fa-rotate-left"></i> Change Patient
+      </button>
+    `;
+
+    // Show existing photo if there is one
+    if (patient.has_photo) {
+      const img = `<img src="${apiPhotoUrl(patient.id)}" />`;
+      document.getElementById('selectedAvatar').innerHTML = img;
+      document.getElementById('photoPreview').src = apiPhotoUrl(patient.id);
+      document.getElementById('photoPreview').style.display = 'block';
+      document.getElementById('photoPlaceholder').style.display = 'none';
+    } else {
+      document.getElementById('photoPreview').style.display = 'none';
+      document.getElementById('photoPlaceholder').style.display = 'flex';
+    }
+
+    loadDocuments(patient.id);
+  }
+
+  function apiPhotoUrl(patientId) {
+    // Direct image URL -- api.js's API_BASE already points at /api/v1
+    return `${API_BASE}/patients/${patientId}/photo`;
+  }
+
+  function resetSelection() {
+    selectedPatient = null;
+    document.getElementById('searchStep').style.display = 'block';
+    document.getElementById('documentsStep').style.display = 'none';
+    searchInput.value = '';
+    document.getElementById('searchResults').innerHTML = '';
+    document.getElementById('searchEmptyState').style.display = 'block';
+  }
+
+  /* ── Photo upload ── */
+  const photoBox = document.getElementById('photoBox');
+  const photoInput = document.getElementById('photoInput');
+  photoBox.addEventListener('click', () => photoInput.click());
+
+  photoInput.addEventListener('change', () => {
+    const file = photoInput.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('Photo must be under 2MB.', 'error');
+      photoInput.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      pendingPhotoBase64 = e.target.result.split(',')[1];
+      pendingPhotoMime = file.type;
+      document.getElementById('photoPreview').src = e.target.result;
+      document.getElementById('photoPreview').style.display = 'block';
+      document.getElementById('photoPlaceholder').style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById('photoUploadBtn').addEventListener('click', async () => {
+    if (!pendingPhotoBase64) {
+      photoInput.click();
+      return;
+    }
+    setPhotoLoading(true);
+    try {
+      await api.post(`/patients/${selectedPatient.id}/photo`, {
+        photo_data: pendingPhotoBase64,
+        photo_mime: pendingPhotoMime,
+      });
+      showToast('Photo uploaded successfully.', 'success');
+      pendingPhotoBase64 = null;
+      selectedPatient.has_photo = true;
+      document.getElementById('selectedAvatar').innerHTML = `<img src="${apiPhotoUrl(selectedPatient.id)}?t=${Date.now()}" />`;
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setPhotoLoading(false);
+    }
+  });
+
+  function setPhotoLoading(state) {
+    document.getElementById('photoSpinner').style.display = state ? 'inline-block' : 'none';
+    document.getElementById('photoUploadIcon').style.display = state ? 'none' : 'inline-block';
+    document.getElementById('photoUploadText').textContent = state ? 'Uploading...' : 'Choose & Upload Photo';
+    document.getElementById('photoUploadBtn').disabled = state;
+  }
+
+  /* ── Documents list ── */
+  async function loadDocuments(patientId) {
+    const box = document.getElementById('documentsList');
+    box.innerHTML = `<div class="empty-state"><div class="spinner-sm" style="margin:0 auto"></div></div>`;
+    try {
+      const res = await api.get(`/documents/patients/${patientId}`);
+      const docs = res.data?.documents || [];
+
+      if (docs.length === 0) {
+        box.innerHTML = `<div class="empty-state"><i class="fa-solid fa-folder-open"></i><p>No documents uploaded yet</p></div>`;
+        return;
+      }
+
+      box.innerHTML = docs.map(d => `
+        <div class="doc-row">
+          <div class="doc-icon"><i class="fa-solid ${DOC_TYPE_ICONS[d.doc_type] || 'fa-file'}"></i></div>
+          <div class="doc-info">
+            <div class="doc-name">${d.file_name}</div>
+            <div class="doc-meta">${DOC_TYPE_LABELS[d.doc_type] || d.doc_type} · Uploaded ${timeAgo(d.uploaded_at)} by ${d.uploaded_by_name || '—'}${d.notes ? ' · ' + d.notes : ''}</div>
+          </div>
+          <div style="display:flex;gap:0.4rem">
+            <a href="${API_BASE}/documents/${d.id}/download" target="_blank" class="btn btn-secondary btn-sm" title="View/Download">
+              <i class="fa-solid fa-eye"></i>
+            </a>
+            <button class="btn btn-secondary btn-sm" onclick="deleteDocument(${d.id})" title="Delete">
+              <i class="fa-solid fa-trash" style="color:var(--danger)"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    } catch (err) {
+      box.innerHTML = `<div class="empty-state"><i class="fa-solid fa-circle-exclamation"></i><p>Could not load documents</p></div>`;
+    }
+  }
+
+  async function deleteDocument(docId) {
+    if (!confirm('Delete this document? This cannot be undone.')) return;
+    try {
+      await api.delete(`/documents/${docId}`);
+      showToast('Document deleted.', 'success');
+      loadDocuments(selectedPatient.id);
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  /* ── Upload modal ── */
+  document.getElementById('openUploadModalBtn').addEventListener('click', () => {
+    document.getElementById('uploadModal').classList.add('open');
+  });
+  function closeUploadModal() {
+    document.getElementById('uploadModal').classList.remove('open');
+    document.getElementById('uploadError').style.display = 'none';
+    document.getElementById('docFile').value = '';
+    document.getElementById('docNotes').value = '';
+    pendingDocBase64 = null;
+    pendingDocMime = null;
+  }
+  document.getElementById('closeUploadModal').addEventListener('click', closeUploadModal);
+  document.getElementById('cancelUploadBtn').addEventListener('click', closeUploadModal);
+  document.getElementById('uploadModal').addEventListener('click', function(e) { if (e.target === this) closeUploadModal(); });
+
+  document.getElementById('docFile').addEventListener('change', () => {
+    const file = document.getElementById('docFile').files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('File must be under 5MB.', 'error');
+      document.getElementById('docFile').value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      pendingDocBase64 = e.target.result.split(',')[1];
+      pendingDocMime = file.type;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById('submitUploadBtn').addEventListener('click', async () => {
+    const errBox = document.getElementById('uploadError');
+    const file = document.getElementById('docFile').files[0];
+
+    if (!pendingDocBase64 || !file) {
+      document.getElementById('uploadErrorMsg').textContent = 'Please choose a file to upload.';
+      errBox.style.display = 'flex';
+      return;
+    }
+
+    errBox.style.display = 'none';
+    setUploadLoading(true);
+
+    try {
+      await api.post(`/documents/patients/${selectedPatient.id}`, {
+        doc_type: document.getElementById('docType').value,
+        file_name: file.name,
+        file_mime: pendingDocMime,
+        file_data: pendingDocBase64,
+        notes: document.getElementById('docNotes').value.trim() || null,
+      });
+      showToast('Document uploaded successfully.', 'success');
+      closeUploadModal();
+      loadDocuments(selectedPatient.id);
+    } catch (err) {
+      document.getElementById('uploadErrorMsg').textContent = err.message;
+      errBox.style.display = 'flex';
+    } finally {
+      setUploadLoading(false);
+    }
+  });
+
+  function setUploadLoading(state) {
+    document.getElementById('uploadSpinner').style.display = state ? 'inline-block' : 'none';
+    document.getElementById('uploadIcon').style.display = state ? 'none' : 'inline-block';
+    document.getElementById('uploadBtnText').textContent = state ? 'Uploading...' : 'Upload';
+    document.getElementById('submitUploadBtn').disabled = state;
+  }
+</script>
+</body>
+</html>

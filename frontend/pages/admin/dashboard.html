@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — Admin Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link active">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="patients.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+          <span class="nav-label">Patients</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Management</div>
+      <div class="nav-item">
+        <a href="users.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-user-gear"></i></span>
+          <span class="nav-label">User Management</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="reports.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-chart-pie"></i></span>
+          <span class="nav-label">Reports</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="audit-log.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-shield-halved"></i></span>
+          <span class="nav-label">Audit Log</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">AD</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">Admin</div>
+        <div class="sidebar-user-role" id="sidebarRole">Administrator</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div>
+        <div class="navbar-page-title">Dashboard</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> Admin <span>/</span> Dashboard</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <button class="navbar-icon-btn" title="Notifications">
+        <i class="fa-solid fa-bell"></i>
+        <span class="notif-dot"></span>
+      </button>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">AD</div>
+        <span class="navbar-user-name" id="navbarName">Admin</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">Admin</div>
+      <div class="dropdown-header-role" id="dropdownRole">Administrator</div>
+    </div>
+    <a href="#" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <a href="#" class="dropdown-item"><i class="fa-solid fa-gear"></i> Settings</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="page-header">
+      <h2>Admin Dashboard</h2>
+      <p id="dashGreeting">Welcome back!</p>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="fa-solid fa-users"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statPatients">—</div>
+          <div class="stat-label">Total Patients</div>
+          <div class="stat-change up" id="statPatientsNew"><i class="fa-solid fa-arrow-up"></i> —</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="fa-solid fa-calendar-check"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statAppointments">—</div>
+          <div class="stat-label">Appointments Today</div>
+          <div class="stat-change up" id="statConsultations"><i class="fa-solid fa-stethoscope"></i> — consultations</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon orange"><i class="fa-solid fa-user-doctor"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statStaff">—</div>
+          <div class="stat-label">Active Staff</div>
+          <div class="stat-change up"><i class="fa-solid fa-circle-check"></i> All active</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon purple"><i class="fa-solid fa-flask"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statLab">—</div>
+          <div class="stat-label">Pending Lab Tests</div>
+          <div class="stat-change down" id="statPharmacy"><i class="fa-solid fa-pills"></i> — prescriptions</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard Grid -->
+    <div class="dashboard-grid">
+      <!-- Recent Activity -->
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-clock-rotate-left" style="color:var(--primary);margin-right:0.4rem"></i>Recent Activity</h3>
+          <button class="btn-link">View all</button>
+        </div>
+        <div class="card-body" style="padding:0 1.5rem">
+          <div class="activity-list" id="activityList">
+            <div class="activity-item">
+              <div class="activity-icon skeleton" style="width:34px;height:34px;border-radius:8px"></div>
+              <div class="activity-content">
+                <div class="skeleton" style="height:11px;width:65%;margin-bottom:6px;border-radius:4px"></div>
+                <div class="skeleton" style="height:10px;width:40%;border-radius:4px"></div>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-icon skeleton" style="width:34px;height:34px;border-radius:8px"></div>
+              <div class="activity-content">
+                <div class="skeleton" style="height:11px;width:55%;margin-bottom:6px;border-radius:4px"></div>
+                <div class="skeleton" style="height:10px;width:35%;border-radius:4px"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <a href="audit-log.html" class="btn-link">View all activity</a>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-bolt" style="color:var(--primary);margin-right:0.4rem"></i>Quick Actions</h3>
+        </div>
+        <div class="card-body">
+          <div class="quick-actions">
+            <a href="patients.html" class="quick-action-btn">
+              <i class="fa-solid fa-user-plus"></i>
+              <span>Register Patient</span>
+            </a>
+            <a href="users.html" class="quick-action-btn">
+              <i class="fa-solid fa-user-gear"></i>
+              <span>Manage Users</span>
+            </a>
+            <a href="reports.html" class="quick-action-btn">
+              <i class="fa-solid fa-chart-bar"></i>
+              <span>View Reports</span>
+            </a>
+            <a href="audit-log.html" class="quick-action-btn">
+              <i class="fa-solid fa-shield-halved"></i>
+              <span>Audit Log</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Pharmacy Alerts -->
+        <div class="card-header" style="border-top:1px solid var(--border-light)">
+          <h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--warning);margin-right:0.4rem"></i>Pharmacy Alerts</h3>
+        </div>
+        <div class="card-body" id="pharmacyAlerts">
+          <p style="color:var(--text-light);font-size:0.85rem">Loading alerts...</p>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script>
+  const user = requireAuth('admin');
+
+  // Greeting
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('dashGreeting').textContent =
+    `${greeting}, ${user?.full_name || user?.username || 'Admin'}! Here's what's happening today.`;
+
+  async function loadDashboard() {
+    try {
+      const res = await api.get('/dashboard');
+      const d   = res.data;
+
+      // Stat cards — using correct nested paths
+      setText('statPatients',    formatNumber(d.patients?.total ?? 0));
+      setText('statPatientsNew', `+${d.patients?.new_this_month ?? 0} this month`);
+
+      setText('statAppointments', formatNumber(d.today?.appointments ?? 0));
+      setText('statConsultations', `${d.today?.consultations ?? 0} consultations today`);
+
+      setText('statStaff', formatNumber(d.staff?.total_active ?? 0));
+
+      setText('statLab',      formatNumber(d.laboratory?.pending_requests ?? 0));
+      setText('statPharmacy', `${d.pharmacy_alerts?.pending_prescriptions ?? 0} prescriptions pending`);
+
+      // Recent activity
+      const logs = d.recent_activity || [];
+      const list = document.getElementById('activityList');
+      if (logs.length === 0) {
+        list.innerHTML = `<div class="empty-state" style="padding:1.5rem 0">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <p>No recent activity</p>
+        </div>`;
+      } else {
+        list.innerHTML = logs.map(log => `
+          <div class="activity-item">
+            <div class="activity-icon green" style="background:var(--primary-light);color:var(--primary);width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;flex-shrink:0">
+              <i class="fa-solid fa-circle-dot"></i>
+            </div>
+            <div class="activity-content">
+              <div class="activity-title">${log.action || log.event || 'System event'}</div>
+              <div class="activity-desc">${log.description || log.details || ''}</div>
+            </div>
+            <div class="activity-time">${timeAgo(log.created_at || log.timestamp)}</div>
+          </div>
+        `).join('');
+      }
+
+      // Pharmacy alerts
+      const alerts = d.pharmacy_alerts;
+      const alertBox = document.getElementById('pharmacyAlerts');
+      const alertItems = [];
+      if (alerts?.low_stock_drugs > 0)
+        alertItems.push(`<div class="alert alert-warning" style="margin-bottom:0.5rem"><i class="fa-solid fa-triangle-exclamation"></i><span><strong>${alerts.low_stock_drugs}</strong> low stock drug(s)</span></div>`);
+      if (alerts?.expired_batches > 0)
+        alertItems.push(`<div class="alert alert-danger" style="margin-bottom:0.5rem"><i class="fa-solid fa-circle-exclamation"></i><span><strong>${alerts.expired_batches}</strong> expired batch(es)</span></div>`);
+      alertBox.innerHTML = alertItems.length
+        ? alertItems.join('')
+        : `<div class="alert alert-success"><i class="fa-solid fa-circle-check"></i><span>No pharmacy alerts</span></div>`;
+
+    } catch (err) {
+      console.warn('Dashboard error:', err.message);
+      ['statPatients','statAppointments','statStaff','statLab'].forEach(id => setText(id, '—'));
+    }
+  }
+
+  loadDashboard();
+</script>
+</body>
+</html>

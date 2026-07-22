@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — Active Queue</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+  <style>
+    .queue-tabs {
+      display: flex; gap: 0.5rem; margin-bottom: 1.25rem; flex-wrap: wrap;
+    }
+    .queue-tab {
+      padding: 0.55rem 1.1rem;
+      border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: var(--card-bg);
+      font-size: 0.85rem; font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .queue-tab:hover { border-color: var(--primary); }
+    .queue-tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .queue-tab .count-badge {
+      background: rgba(255,255,255,0.25);
+      border-radius: 10px; padding: 0.05rem 0.5rem; font-size: 0.75rem;
+    }
+    .queue-tab:not(.active) .count-badge { background: var(--border-light); color: var(--text-dark); }
+
+    .wait-badge {
+      font-size: 0.78rem; font-weight: 600;
+      padding: 0.2rem 0.55rem; border-radius: 12px;
+      display: inline-flex; align-items: center; gap: 0.3rem;
+    }
+    .wait-badge.normal { background: var(--border-light); color: var(--text-muted); }
+    .wait-badge.long { background: #fef2f2; color: var(--danger); }
+
+    .action-btn-row { display: flex; gap: 0.4rem; }
+  </style>
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="patients.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+          <span class="nav-label">Patients</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="register-patient.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-user-plus"></i></span>
+          <span class="nav-label">Register Patient</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Patient Flow</div>
+      <div class="nav-item">
+        <a href="checkin.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-clipboard-check"></i></span>
+          <span class="nav-label">Check-In</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="queue.html" class="nav-link active">
+          <span class="nav-icon"><i class="fa-solid fa-layer-group"></i></span>
+          <span class="nav-label">Active Queue</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">MH</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">MHO</div>
+        <div class="sidebar-user-role" id="sidebarRole">Medical Health Officer</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="navbar-page-title">Active Queue</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> MHO <span>/</span> Active Queue</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <a href="notifications.html" class="navbar-icon-btn" title="Notifications">
+        <i class="fa-solid fa-bell"></i>
+        <span class="notif-dot" style="display:none"></span>
+      </a>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">MH</div>
+        <span class="navbar-user-name" id="navbarName">MHO</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">MHO</div>
+      <div class="dropdown-header-role" id="dropdownRole">Medical Health Officer</div>
+    </div>
+    <a href="profile.html" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+      <div>
+        <h2>Active Queue</h2>
+        <p>Live view of patients moving through the clinic today</p>
+      </div>
+      <button class="btn btn-secondary btn-sm" id="refreshBtn">
+        <i class="fa-solid fa-rotate-right"></i> Refresh
+      </button>
+    </div>
+
+    <!-- Status tabs -->
+    <div class="queue-tabs" id="queueTabs">
+      <div class="queue-tab active" data-status="with_mho">
+        With MHO <span class="count-badge" id="countWithMho">—</span>
+      </div>
+      <div class="queue-tab" data-status="with_nurse">
+        With Nurse <span class="count-badge" id="countWithNurse">—</span>
+      </div>
+      <div class="queue-tab" data-status="with_doctor">
+        With Doctor <span class="count-badge" id="countWithDoctor">—</span>
+      </div>
+      <div class="queue-tab" data-status="with_lab">
+        At Laboratory <span class="count-badge" id="countWithLab">—</span>
+      </div>
+      <div class="queue-tab" data-status="with_pharmacy">
+        At Pharmacy <span class="count-badge" id="countWithPharmacy">—</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width:70px">Queue #</th>
+              <th>Patient</th>
+              <th>Time In</th>
+              <th>Wait Time</th>
+              <th>Status</th>
+              <th id="actionsHeader">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="queueTableBody">
+            <tr><td colspan="6">
+              <div class="empty-state">
+                <div class="spinner-sm" style="margin:0 auto 0.5rem"></div>
+                <p>Loading queue...</p>
+              </div>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="queuePagination"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── MHO manual close modal ── -->
+<div class="modal-overlay" id="closeModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-circle-xmark" style="color:var(--danger);margin-right:0.5rem"></i>Close Visit</h3>
+      <button class="modal-close" id="closeCloseModal"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom:1rem;color:var(--text-muted);font-size:0.9rem">
+        This manually closes the visit without it going through the normal Pharmacy dispense flow.
+        Use this for edge cases only, e.g. the patient left before being seen.
+      </p>
+      <div class="form-group">
+        <label class="form-label">Reason (optional)</label>
+        <textarea class="form-control" id="closeReason" placeholder="e.g. Patient left without waiting"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="cancelCloseBtn">Cancel</button>
+      <button class="btn btn-danger" id="confirmCloseBtn">
+        <i class="fa-solid fa-circle-xmark"></i> Close Visit
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script>
+  requireAuth('mho');
+
+  let currentStatus = 'with_mho';
+  let currentPage = 1;
+  let closeTargetId = null;
+  const LONG_WAIT_SECONDS = 30 * 60;
+
+  const STATUS_LABELS = {
+    with_mho: 'With MHO', with_nurse: 'With Nurse', with_doctor: 'With Doctor',
+    with_lab: 'At Laboratory', with_pharmacy: 'At Pharmacy', closed: 'Closed'
+  };
+
+  /* ── Tab switching ── */
+  document.querySelectorAll('.queue-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.queue-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentStatus = tab.dataset.status;
+      currentPage = 1;
+      loadQueue();
+    });
+  });
+
+  /* ── Load all tab counts (cheap, small per_page=1 just for totals) ── */
+  async function loadTabCounts() {
+    const statuses = ['with_mho', 'with_nurse', 'with_doctor', 'with_lab', 'with_pharmacy'];
+    const countIds = {
+      with_mho: 'countWithMho', with_nurse: 'countWithNurse', with_doctor: 'countWithDoctor',
+      with_lab: 'countWithLab', with_pharmacy: 'countWithPharmacy'
+    };
+    for (const status of statuses) {
+      try {
+        const res = await api.get(`/health-files/queue/${status}?per_page=1`);
+        setText(countIds[status], formatNumber(res.data?.total ?? 0));
+      } catch (err) {
+        setText(countIds[status], '—');
+      }
+    }
+  }
+
+  /* ── Load queue table for the active tab ── */
+  async function loadQueue() {
+    const tbody = document.getElementById('queueTableBody');
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="spinner-sm" style="margin:0 auto 0.5rem"></div><p>Loading...</p></div></td></tr>`;
+
+    // Only MHO's own stage has real actions here (Forward to Nurse, manual
+    // close). Other stages are shown read-only, matching the role boundary
+    // that MHO doesn't perform clinical actions past their own handoff.
+    const showActions = currentStatus === 'with_mho';
+    document.getElementById('actionsHeader').textContent = showActions ? 'Actions' : 'View Only';
+
+    try {
+      const res = await api.get(`/health-files/queue/${currentStatus}?page=${currentPage}&per_page=20`);
+      const files = res.data?.queue || [];
+      const total = res.data?.total || 0;
+      const pages = res.data?.pages || 1;
+
+      if (files.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-layer-group"></i><h4>No patients in this queue</h4><p>Nothing waiting at the ${STATUS_LABELS[currentStatus]} stage right now</p></div></td></tr>`;
+        renderPagination(1, 1);
+        return;
+      }
+
+      tbody.innerHTML = files.map(f => {
+        const openedAt = new Date(f.opened_at);
+        const waitSeconds = Math.floor((Date.now() - openedAt.getTime()) / 1000);
+        const isLong = waitSeconds > LONG_WAIT_SECONDS;
+
+        let actionsHtml = '<span class="muted" style="font-size:0.8rem">—</span>';
+        if (showActions) {
+          actionsHtml = `
+            <div class="action-btn-row">
+              <button class="btn btn-primary btn-sm" onclick="forwardToNurse(${f.id})" title="Forward to Nurse">
+                <i class="fa-solid fa-arrow-right"></i>
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="openCloseModal(${f.id})" title="Manually close visit">
+                <i class="fa-solid fa-circle-xmark"></i>
+              </button>
+            </div>`;
+        }
+
+        return `
+          <tr>
+            <td><strong>${f.queue_number ?? '—'}</strong></td>
+            <td>
+              <div style="font-weight:500;color:var(--text-dark)">${f.patient_name || '—'}</div>
+            </td>
+            <td class="muted">${formatDateTime(f.opened_at)}</td>
+            <td>
+              <span class="wait-badge ${isLong ? 'long' : 'normal'}">
+                <i class="fa-solid ${isLong ? 'fa-triangle-exclamation' : 'fa-clock'}"></i>
+                ${formatWait(waitSeconds)}
+              </span>
+            </td>
+            <td><span class="badge badge-info">${STATUS_LABELS[f.status] || f.status}</span></td>
+            <td>${actionsHtml}</td>
+          </tr>`;
+      }).join('');
+
+      renderPagination(currentPage, pages);
+
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-circle-exclamation" style="color:var(--danger)"></i><h4>Failed to load</h4><p>${err.message}</p></div></td></tr>`;
+    }
+  }
+
+  function formatWait(seconds) {
+    const mins = Math.floor(seconds / 60);
+    if (mins < 1) return '<1 min';
+    if (mins < 60) return `${mins} min`;
+    const hrs = Math.floor(mins / 60);
+    return `${hrs}h ${mins % 60}m`;
+  }
+
+  function renderPagination(current, total) {
+    const c = document.getElementById('queuePagination');
+    if (total <= 1) { c.innerHTML = ''; return; }
+    let html = `<button class="page-btn" onclick="goPage(${current-1})" ${current===1?'disabled':''}><i class="fa-solid fa-chevron-left"></i></button>`;
+    for (let i = 1; i <= total; i++) {
+      if (i === 1 || i === total || (i >= current-1 && i <= current+1))
+        html += `<button class="page-btn ${i===current?'active':''}" onclick="goPage(${i})">${i}</button>`;
+      else if (i === current-2 || i === current+2)
+        html += `<span style="padding:0 4px;color:var(--text-light)">…</span>`;
+    }
+    html += `<button class="page-btn" onclick="goPage(${current+1})" ${current===total?'disabled':''}><i class="fa-solid fa-chevron-right"></i></button>`;
+    c.innerHTML = html;
+  }
+
+  function goPage(p) { currentPage = p; loadQueue(); }
+
+  /* ── Forward to Nurse ── */
+  async function forwardToNurse(healthFileId) {
+    try {
+      await api.patch(`/health-files/${healthFileId}/forward-to-nurse`, {});
+      showToast('Patient forwarded to Nurse.', 'success');
+      loadQueue();
+      loadTabCounts();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  /* ── MHO manual close ── */
+  function openCloseModal(healthFileId) {
+    closeTargetId = healthFileId;
+    document.getElementById('closeReason').value = '';
+    document.getElementById('closeModal').classList.add('open');
+  }
+  document.getElementById('closeCloseModal').addEventListener('click', () => {
+    document.getElementById('closeModal').classList.remove('open');
+  });
+  document.getElementById('cancelCloseBtn').addEventListener('click', () => {
+    document.getElementById('closeModal').classList.remove('open');
+  });
+  document.getElementById('confirmCloseBtn').addEventListener('click', async () => {
+    if (!closeTargetId) return;
+    try {
+      await api.patch(`/health-files/${closeTargetId}/mho-close`, {
+        reason: document.getElementById('closeReason').value.trim() || null
+      });
+      showToast('Visit closed.', 'success');
+      document.getElementById('closeModal').classList.remove('open');
+      loadQueue();
+      loadTabCounts();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  });
+
+  /* ── Refresh ── */
+  document.getElementById('refreshBtn').addEventListener('click', () => {
+    loadQueue();
+    loadTabCounts();
+  });
+
+  /* ── Auto-refresh every 30s so wait times and new arrivals stay current ── */
+  setInterval(() => {
+    loadQueue();
+    loadTabCounts();
+  }, 30000);
+
+  /* ── Init ── */
+  loadQueue();
+  loadTabCounts();
+</script>
+</body>
+</html>

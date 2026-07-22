@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — MHO Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link active">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="patients.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+          <span class="nav-label">Patients</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="register-patient.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-user-plus"></i></span>
+          <span class="nav-label">Register Patient</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Patient Flow</div>
+      <div class="nav-item">
+        <a href="checkin.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-clipboard-check"></i></span>
+          <span class="nav-label">Check-In</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="queue.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-layer-group"></i></span>
+          <span class="nav-label">Active Queue</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">MH</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">MHO</div>
+        <div class="sidebar-user-role" id="sidebarRole">Medical Health Officer</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div>
+        <div class="navbar-page-title">Dashboard</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> MHO <span>/</span> Dashboard</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <a href="notifications.html" class="navbar-icon-btn" title="Notifications">
+        <i class="fa-solid fa-bell"></i>
+        <span class="notif-dot" id="notifDot" style="display:none"></span>
+      </a>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">MH</div>
+        <span class="navbar-user-name" id="navbarName">MHO</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">MHO</div>
+      <div class="dropdown-header-role" id="dropdownRole">Medical Health Officer</div>
+    </div>
+    <a href="profile.html" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="page-header">
+      <h2>MHO Dashboard</h2>
+      <p id="dashGreeting">Welcome back!</p>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="fa-solid fa-user-plus"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statRegisteredToday">—</div>
+          <div class="stat-label">Registered Today</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="fa-solid fa-user-nurse"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statWaitingNurse">—</div>
+          <div class="stat-label">Waiting for Nurse</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon orange"><i class="fa-solid fa-layer-group"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statTotalQueue">—</div>
+          <div class="stat-label">Total in Queue</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon purple"><i class="fa-solid fa-repeat"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statNewReturning">—</div>
+          <div class="stat-label">New / Returning Today</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon teal"><i class="fa-solid fa-clipboard-check"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statCompletedCheckins">—</div>
+          <div class="stat-label">Completed Check-ins Today</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon red"><i class="fa-solid fa-stopwatch"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statAvgCheckinTime">—</div>
+          <div class="stat-label">Avg. Check-in Time</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard Grid -->
+    <div class="dashboard-grid">
+      <!-- Recent Activity -->
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-clock-rotate-left" style="color:var(--primary);margin-right:0.4rem"></i>My Recent Activity</h3>
+        </div>
+        <div class="card-body" style="padding:0 1.5rem">
+          <div class="activity-list" id="activityList">
+            <div class="activity-item">
+              <div class="activity-icon skeleton" style="width:34px;height:34px;border-radius:8px"></div>
+              <div class="activity-content">
+                <div class="skeleton" style="height:11px;width:65%;margin-bottom:6px;border-radius:4px"></div>
+                <div class="skeleton" style="height:10px;width:40%;border-radius:4px"></div>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-icon skeleton" style="width:34px;height:34px;border-radius:8px"></div>
+              <div class="activity-content">
+                <div class="skeleton" style="height:11px;width:55%;margin-bottom:6px;border-radius:4px"></div>
+                <div class="skeleton" style="height:10px;width:35%;border-radius:4px"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-bolt" style="color:var(--primary);margin-right:0.4rem"></i>Quick Actions</h3>
+        </div>
+        <div class="card-body">
+          <div class="quick-actions">
+            <a href="register-patient.html" class="quick-action-btn">
+              <i class="fa-solid fa-user-plus"></i>
+              <span>Register Patient</span>
+            </a>
+            <a href="patients.html" class="quick-action-btn">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <span>Search Patient</span>
+            </a>
+            <a href="checkin.html" class="quick-action-btn">
+              <i class="fa-solid fa-clipboard-check"></i>
+              <span>Check In Patient</span>
+            </a>
+            <a href="queue.html" class="quick-action-btn">
+              <i class="fa-solid fa-layer-group"></i>
+              <span>View Queue</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Long-waiting alert -->
+        <div class="card-header" style="border-top:1px solid var(--border-light)">
+          <h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--warning);margin-right:0.4rem"></i>Queue Alerts</h3>
+        </div>
+        <div class="card-body" id="queueAlerts">
+          <p style="color:var(--text-light);font-size:0.85rem">Loading alerts...</p>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script>
+  const user = requireAuth('mho');
+
+  // Greeting
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('dashGreeting').textContent =
+    `${greeting}, ${user?.full_name || user?.username || 'there'}! Here's today's clinic activity.`;
+
+  // Formats a raw seconds count into "Xm Ys" (or "Xs" if under a minute).
+  // Backend sends avg_checkin_seconds as a plain integer, not pre-formatted.
+  function formatDuration(totalSeconds) {
+    if (totalSeconds == null) return '—';
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = Math.round(totalSeconds % 60);
+    if (mins === 0) return `${secs}s`;
+    return `${mins}m ${secs}s`;
+  }
+
+  async function loadDashboard() {
+    try {
+      // Backend endpoint: GET /api/v1/mho/dashboard
+      // Actual shape returned by HealthFileService.get_mho_dashboard_stats():
+      // {
+      //   patients_registered_today: int,
+      //   checked_in_today: int,
+      //   waiting_for_nurse: int,
+      //   active_visits: int,
+      //   completed_today: int,
+      //   new_patients_today: int,
+      //   returning_patients_today: int,
+      //   avg_checkin_seconds: int | null,
+      //   long_waiting_count: int,
+      // }
+      // Note: "recent_activity" (MHO-scoped audit trail) is not yet part
+      // of this endpoint -- pending a separate My Activity implementation.
+      // The activity list below stays in its empty state until that lands.
+      const res = await api.get('/mho/dashboard');
+      const d   = res.data;
+
+      setText('statRegisteredToday',   formatNumber(d.patients_registered_today ?? 0));
+      setText('statWaitingNurse',      formatNumber(d.waiting_for_nurse ?? 0));
+      setText('statTotalQueue',        formatNumber(d.active_visits ?? 0));
+      setText('statNewReturning',      `${d.new_patients_today ?? 0} / ${d.returning_patients_today ?? 0}`);
+      setText('statCompletedCheckins', formatNumber(d.completed_today ?? 0));
+      setText('statAvgCheckinTime',    formatDuration(d.avg_checkin_seconds));
+
+      // Notification dot
+      if (d.long_waiting_count > 0) {
+        document.getElementById('notifDot').style.display = 'block';
+      }
+
+      // Recent activity -- endpoint doesn't provide this yet, so show the
+      // empty state rather than a permanent loading skeleton.
+      const logs = [];
+      const list = document.getElementById('activityList');
+      if (logs.length === 0) {
+        list.innerHTML = `<div class="empty-state" style="padding:1.5rem 0">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <p>No recent activity</p>
+        </div>`;
+      } else {
+        list.innerHTML = logs.map(log => `
+          <div class="activity-item">
+            <div class="activity-icon" style="background:var(--primary-light);color:var(--primary);width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;flex-shrink:0">
+              <i class="fa-solid fa-circle-dot"></i>
+            </div>
+            <div class="activity-content">
+              <div class="activity-title">${log.action || 'Action'}</div>
+              <div class="activity-desc">${log.description || ''}</div>
+            </div>
+            <div class="activity-time">${timeAgo(log.created_at)}</div>
+          </div>
+        `).join('');
+      }
+
+      // Queue alerts
+      const alertBox = document.getElementById('queueAlerts');
+      const alertItems = [];
+      if (d.long_waiting_count > 0)
+        alertItems.push(`<div class="alert alert-warning" style="margin-bottom:0.5rem"><i class="fa-solid fa-triangle-exclamation"></i><span><strong>${d.long_waiting_count}</strong> patient(s) waiting over 30 minutes</span></div>`);
+      alertBox.innerHTML = alertItems.length
+        ? alertItems.join('')
+        : `<div class="alert alert-success"><i class="fa-solid fa-circle-check"></i><span>No long-waiting patients</span></div>`;
+
+    } catch (err) {
+      console.warn('MHO dashboard error:', err.message);
+      ['statRegisteredToday','statWaitingNurse','statTotalQueue','statNewReturning','statCompletedCheckins','statAvgCheckinTime']
+        .forEach(id => setText(id, '—'));
+    }
+  }
+
+  loadDashboard();
+</script>
+</body>
+</html>

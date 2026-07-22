@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — Lab Requests</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Laboratory</div>
+      <div class="nav-item">
+        <a href="lab-requests.html" class="nav-link active">
+          <span class="nav-icon"><i class="fa-solid fa-flask-vial"></i></span>
+          <span class="nav-label">Lab Requests</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">LT</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">Lab Tech</div>
+        <div class="sidebar-user-role" id="sidebarRole">Lab Technician</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="navbar-page-title">Lab Requests</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> Lab <span>/</span> Requests</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <button class="navbar-icon-btn"><i class="fa-solid fa-bell"></i></button>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">LT</div>
+        <span class="navbar-user-name" id="navbarName">Lab Tech</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">Lab Tech</div>
+      <div class="dropdown-header-role" id="dropdownRole">Lab Technician</div>
+    </div>
+    <a href="#" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+      <div>
+        <h2>Lab Requests</h2>
+        <p>Process and manage laboratory test requests</p>
+      </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:1.25rem 0">
+      <div class="stat-card">
+        <div class="stat-icon orange"><i class="fa-solid fa-hourglass-half"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="pendingCount">—</div>
+          <div class="stat-label">Pending</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="fa-solid fa-vial-circle-check"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="inProgressCount">—</div>
+          <div class="stat-label">In Progress</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon red"><i class="fa-solid fa-circle-exclamation"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="urgentCount">—</div>
+          <div class="stat-label">Urgent / STAT</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="completedCount">—</div>
+          <div class="stat-label">Completed</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+      <div class="table-toolbar">
+        <div class="search-input-wrapper">
+          <i class="fa-solid fa-search"></i>
+          <input type="text" class="search-input" id="labSearch"
+            placeholder="Search patient or test..." />
+        </div>
+        <div class="toolbar-actions">
+          <select class="form-control btn-sm" id="statusFilter" style="height:38px;min-width:160px">
+            <option value="">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="sample_collected">Sample Collected</option>
+            <option value="in_progress">In Progress</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+          <select class="form-control btn-sm" id="priorityFilter" style="height:38px;min-width:130px">
+            <option value="">All Priority</option>
+            <option value="routine">Routine</option>
+            <option value="urgent">Urgent</option>
+            <option value="stat">STAT</option>
+          </select>
+          <button class="btn btn-secondary btn-sm" id="refreshLabBtn">
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Patient</th>
+              <th>Test</th>
+              <th>Requested By</th>
+              <th>Priority</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="labTableBody">
+            <tr><td colspan="7">
+              <div class="empty-state">
+                <div class="spinner-sm" style="margin:0 auto 0.5rem"></div>
+                <p>Loading lab requests...</p>
+              </div>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="labPagination"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── View & Update Modal ── -->
+<div class="modal-overlay" id="labModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-flask-vial" style="color:var(--primary);margin-right:0.5rem"></i>Lab Request Details</h3>
+      <button class="modal-close" id="closeLabModal"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="labModalBody">
+      <div class="empty-state"><div class="spinner-sm" style="margin:0 auto"></div></div>
+    </div>
+    <div class="modal-footer" id="labModalFooter">
+      <button class="btn btn-secondary" id="closeLabBtn">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Enter Results Modal ── -->
+<div class="modal-overlay" id="resultsModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-file-medical" style="color:var(--primary);margin-right:0.5rem"></i>Enter Lab Results</h3>
+      <button class="modal-close" id="closeResultsModal"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="resultLabId" />
+      <div class="form-group">
+        <label class="form-label">Test Name</label>
+        <input type="text" class="form-control" id="resultTestName" disabled />
+      </div>
+      <div class="form-group" style="margin-top:1rem">
+        <label class="form-label">Result Value <span class="required">*</span></label>
+        <input type="text" class="form-control" id="resultValue" placeholder="e.g. 120/80, Positive, 5.2 mmol/L" />
+      </div>
+      <div class="form-group" style="margin-top:1rem">
+        <label class="form-label">Reference Range</label>
+        <input type="text" class="form-control" id="resultReference" placeholder="e.g. 70-100 mg/dL" />
+      </div>
+      <div class="form-group" style="margin-top:1rem">
+        <label class="form-label">Interpretation</label>
+        <select class="form-control" id="resultInterpretation">
+          <option value="">Select...</option>
+          <option value="normal">Normal</option>
+          <option value="abnormal">Abnormal</option>
+          <option value="critical">Critical</option>
+          <option value="inconclusive">Inconclusive</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-top:1rem">
+        <label class="form-label">Notes / Comments</label>
+        <textarea class="form-control" id="resultNotes" rows="3" placeholder="Additional observations..."></textarea>
+      </div>
+      <div class="alert alert-danger" id="resultError" style="display:none;margin-top:1rem">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span id="resultErrorMsg"></span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="cancelResultsBtn">Cancel</button>
+      <button class="btn btn-primary" id="submitResultsBtn">
+        <span class="spinner-sm" id="resultSpinner" style="display:none;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+        <i class="fa-solid fa-file-medical" id="resultIcon"></i>
+        <span id="resultBtnText">Submit Results</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script>
+  requireAuth('lab_tech');
+
+  let currentPage    = 1;
+  let searchQuery    = '';
+  let statusFilter   = '';
+  let priorityFilter = '';
+
+  const statusConfig = {
+    pending:          { color: 'badge-warning', label: 'Pending' },
+    sample_collected: { color: 'badge-info',    label: 'Sample Collected' },
+    in_progress:      { color: 'badge-info',    label: 'In Progress' },
+    completed:        { color: 'badge-success',  label: 'Completed' },
+    cancelled:        { color: 'badge-danger',   label: 'Cancelled' },
+  };
+
+  const priorityConfig = {
+    routine: { color: 'badge-muted',   label: 'Routine' },
+    urgent:  { color: 'badge-warning', label: 'Urgent' },
+    stat:    { color: 'badge-danger',  label: 'STAT' },
+  };
+
+  /* ── Load Lab Requests ── */
+  async function loadLabRequests() {
+    const tbody = document.getElementById('labTableBody');
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="spinner-sm" style="margin:0 auto 0.5rem"></div><p>Loading...</p></div></td></tr>`;
+
+    try {
+      let url = `/laboratory/requests?page=${currentPage}&per_page=15`;
+      if (searchQuery)    url += `&search=${encodeURIComponent(searchQuery)}`;
+      if (statusFilter)   url += `&status=${statusFilter}`;
+      if (priorityFilter) url += `&priority=${priorityFilter}`;
+
+      const res  = await api.get(url);
+      const data = res.data;
+      const reqs = data.requests || data.lab_requests || data.items || data || [];
+      const total= data.total || reqs.length;
+      const pages= data.pages || 1;
+
+      /* Summary counts */
+      setText('pendingCount',    formatNumber(reqs.filter(r=>r.status==='pending'||r.status==='sample_collected').length));
+      setText('inProgressCount', formatNumber(reqs.filter(r=>r.status==='in_progress').length));
+      setText('urgentCount',     formatNumber(reqs.filter(r=>r.priority==='urgent'||r.priority==='stat').length));
+      setText('completedCount',  formatNumber(reqs.filter(r=>r.status==='completed').length));
+
+      if (reqs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fa-solid fa-flask-vial"></i><h4>No lab requests found</h4><p>Try adjusting your filters</p></div></td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = reqs.map(r => {
+        const s  = statusConfig[r.status]     || { color: 'badge-muted', label: r.status||'—' };
+        const p  = priorityConfig[r.priority] || { color: 'badge-muted', label: r.priority||'Routine' };
+        const patient = r.patient?.full_name  || r.patient_name || '—';
+        const test    = r.test_name || r.laboratory_test?.name || r.test_type || '—';
+        const doctor  = r.requested_by_name  || r.doctor?.full_name || '—';
+
+        return `
+          <tr style="cursor:pointer" onclick="viewRequest(${r.id})">
+            <td>
+              <div style="font-weight:500">${patient}</div>
+              <div style="font-size:0.75rem;color:var(--text-muted)">${r.patient?.patient_id||''}</div>
+            </td>
+            <td>
+              <div style="font-weight:500;color:var(--text-dark)">${test}</div>
+            </td>
+            <td class="muted">${doctor}</td>
+            <td><span class="badge ${p.color}">${p.label}</span></td>
+            <td class="muted">${formatDate(r.created_at)}</td>
+            <td><span class="badge ${s.color}">${s.label}</span></td>
+            <td>
+              <div style="display:flex;gap:0.4rem">
+                <button class="btn btn-info btn-sm" onclick="event.stopPropagation();viewRequest(${r.id})">
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+                ${r.status !== 'completed' && r.status !== 'cancelled' ? `
+                <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openResults(${r.id},'${test}')">
+                  <i class="fa-solid fa-file-medical"></i> Results
+                </button>` : ''}
+              </div>
+            </td>
+          </tr>`;
+      }).join('');
+
+      renderPagination(currentPage, pages);
+
+    } catch(err) {
+      tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fa-solid fa-circle-exclamation" style="color:var(--danger)"></i><h4>Failed to load</h4><p>${err.message}</p></div></td></tr>`;
+    }
+  }
+
+  function renderPagination(current, total) {
+    const c = document.getElementById('labPagination');
+    if (total <= 1) { c.innerHTML = ''; return; }
+    let html = `<button class="page-btn" onclick="goPage(${current-1})" ${current===1?'disabled':''}><i class="fa-solid fa-chevron-left"></i></button>`;
+    for (let i = 1; i <= total; i++) {
+      if (i===1||i===total||(i>=current-1&&i<=current+1))
+        html += `<button class="page-btn ${i===current?'active':''}" onclick="goPage(${i})">${i}</button>`;
+      else if (i===current-2||i===current+2)
+        html += `<span style="padding:0 4px;color:var(--text-light)">…</span>`;
+    }
+    html += `<button class="page-btn" onclick="goPage(${current+1})" ${current===total?'disabled':''}><i class="fa-solid fa-chevron-right"></i></button>`;
+    c.innerHTML = html;
+  }
+
+  function goPage(p) { currentPage = p; loadLabRequests(); }
+
+  /* ── Filters ── */
+  let searchTimer;
+  document.getElementById('labSearch').addEventListener('input', e => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { searchQuery = e.target.value.trim(); currentPage=1; loadLabRequests(); }, 400);
+  });
+  document.getElementById('statusFilter').addEventListener('change', e => {
+    statusFilter = e.target.value; currentPage=1; loadLabRequests();
+  });
+  document.getElementById('priorityFilter').addEventListener('change', e => {
+    priorityFilter = e.target.value; currentPage=1; loadLabRequests();
+  });
+  document.getElementById('refreshLabBtn').addEventListener('click', loadLabRequests);
+
+  /* ── View Request Detail ── */
+  async function viewRequest(id) {
+    document.getElementById('labModal').classList.add('open');
+    document.getElementById('labModalFooter').innerHTML = `<button class="btn btn-secondary" id="closeLabBtn">Close</button>`;
+    document.getElementById('labModalBody').innerHTML =
+      '<div class="empty-state"><div class="spinner-sm" style="margin:0 auto"></div></div>';
+
+    document.getElementById('closeLabBtn').addEventListener('click', () =>
+      document.getElementById('labModal').classList.remove('open'));
+
+    try {
+      const res = await api.get(`/laboratory/requests/${id}`);
+      const r   = res.data;
+      const s   = statusConfig[r.status]     || { color: 'badge-muted', label: r.status||'—' };
+      const p   = priorityConfig[r.priority] || { color: 'badge-muted', label: r.priority||'Routine' };
+      const patient = r.patient?.full_name   || r.patient_name || '—';
+      const test    = r.test_name || r.laboratory_test?.name || '—';
+
+      /* Update footer with action buttons */
+      if (r.status !== 'completed' && r.status !== 'cancelled') {
+        document.getElementById('labModalFooter').innerHTML = `
+          <button class="btn btn-secondary" onclick="document.getElementById('labModal').classList.remove('open')">Close</button>
+          <button class="btn btn-info" onclick="updateLabStatus(${r.id},'sample_collected')" ${r.status==='sample_collected'||r.status==='in_progress'?'disabled':''}>
+            <i class="fa-solid fa-vial"></i> Mark Sample Collected
+          </button>
+          <button class="btn btn-primary" onclick="openResults(${r.id},'${test}');document.getElementById('labModal').classList.remove('open')">
+            <i class="fa-solid fa-file-medical"></i> Enter Results
+          </button>`;
+      }
+
+      document.getElementById('labModalBody').innerHTML = `
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--border-light)">
+          <div>
+            <div style="font-size:1rem;font-weight:600;color:var(--text-dark)">${patient}</div>
+            <div style="font-size:0.8rem;color:var(--text-muted)">${test} &bull; Requested ${formatDate(r.created_at)}</div>
+          </div>
+          <div style="display:flex;gap:0.5rem">
+            <span class="badge ${p.color}">${p.label}</span>
+            <span class="badge ${s.color}">${s.label}</span>
+          </div>
+        </div>
+
+        <!-- Details -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
+          <div>
+            <div class="form-section-title" style="margin-bottom:0.75rem">Request Details</div>
+            <table style="width:100%;font-size:0.875rem;border-collapse:collapse">
+              ${dRow('Test', test)}
+              ${dRow('Patient', patient)}
+              ${dRow('Requested By', r.requested_by_name||r.doctor?.full_name||'—')}
+              ${dRow('Priority', `<span class="badge ${p.color}">${p.label}</span>`)}
+              ${dRow('Date Requested', formatDate(r.created_at))}
+              ${r.clinical_notes ? dRow('Clinical Notes', r.clinical_notes) : ''}
+            </table>
+          </div>
+          ${r.result ? `
+          <div>
+            <div class="form-section-title" style="margin-bottom:0.75rem">Results</div>
+            <table style="width:100%;font-size:0.875rem;border-collapse:collapse">
+              ${dRow('Result', `<strong>${r.result.result_value||'—'}</strong>`)}
+              ${dRow('Reference', r.result.reference_range||'—')}
+              ${dRow('Interpretation', r.result.interpretation ? `<span class="badge ${r.result.interpretation==='normal'?'badge-success':r.result.interpretation==='critical'?'badge-danger':'badge-warning'}">${r.result.interpretation}</span>` : '—')}
+              ${dRow('Notes', r.result.notes||'—')}
+              ${dRow('Entered', formatDateTime(r.result.created_at))}
+            </table>
+          </div>` : `
+          <div>
+            <div class="form-section-title" style="margin-bottom:0.75rem">Results</div>
+            <div class="empty-state" style="padding:1rem 0">
+              <i class="fa-solid fa-flask" style="color:var(--text-light)"></i>
+              <p>No results entered yet</p>
+            </div>
+          </div>`}
+        </div>
+      `;
+
+    } catch(err) {
+      document.getElementById('labModalBody').innerHTML =
+        `<div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i><span>${err.message}</span></div>`;
+    }
+  }
+
+  function dRow(label, value) {
+    return `<tr style="border-bottom:1px solid var(--border-light)">
+      <td style="padding:0.5rem 0;color:var(--text-muted);width:40%">${label}</td>
+      <td style="padding:0.5rem 0;color:var(--text-dark)">${value}</td>
+    </tr>`;
+  }
+
+  /* ── Update Status ── */
+  async function updateLabStatus(id, status) {
+    try {
+      await api.patch(`/laboratory/requests/${id}/status`, { status });
+      showToast(`Status updated to ${status.replace('_',' ')}`, 'success');
+      document.getElementById('labModal').classList.remove('open');
+      loadLabRequests();
+    } catch(err) { showToast(err.message, 'error'); }
+  }
+
+  /* ── Enter Results Modal ── */
+  function openResults(id, testName) {
+    document.getElementById('resultLabId').value    = id;
+    document.getElementById('resultTestName').value = testName;
+    document.getElementById('resultValue').value    = '';
+    document.getElementById('resultReference').value= '';
+    document.getElementById('resultNotes').value    = '';
+    document.getElementById('resultInterpretation').value = '';
+    document.getElementById('resultError').style.display  = 'none';
+    document.getElementById('resultsModal').classList.add('open');
+  }
+
+  document.getElementById('closeResultsModal').addEventListener('click', () =>
+    document.getElementById('resultsModal').classList.remove('open'));
+  document.getElementById('cancelResultsBtn').addEventListener('click', () =>
+    document.getElementById('resultsModal').classList.remove('open'));
+  document.getElementById('resultsModal').addEventListener('click', function(e) {
+    if (e.target===this) this.classList.remove('open');
+  });
+
+  document.getElementById('submitResultsBtn').addEventListener('click', async () => {
+    const id     = document.getElementById('resultLabId').value;
+    const value  = document.getElementById('resultValue').value.trim();
+    const ref    = document.getElementById('resultReference').value.trim();
+    const interp = document.getElementById('resultInterpretation').value;
+    const notes  = document.getElementById('resultNotes').value.trim();
+
+    if (!value) {
+      document.getElementById('resultErrorMsg').textContent = 'Result value is required.';
+      document.getElementById('resultError').style.display = 'flex';
+      return;
+    }
+
+    document.getElementById('resultError').style.display  = 'none';
+    document.getElementById('resultSpinner').style.display = 'inline-block';
+    document.getElementById('resultIcon').style.display   = 'none';
+    document.getElementById('resultBtnText').textContent  = 'Submitting...';
+    document.getElementById('submitResultsBtn').disabled  = true;
+
+    try {
+      await api.post(`/laboratory/requests/${id}/results`, {
+        result_value:    value,
+        reference_range: ref    || null,
+        interpretation:  interp || null,
+        notes:           notes  || null,
+      });
+      showToast('Lab results submitted successfully!', 'success');
+      document.getElementById('resultsModal').classList.remove('open');
+      loadLabRequests();
+    } catch(err) {
+      document.getElementById('resultErrorMsg').textContent = err.message;
+      document.getElementById('resultError').style.display  = 'flex';
+    } finally {
+      document.getElementById('resultSpinner').style.display = 'none';
+      document.getElementById('resultIcon').style.display   = 'inline-block';
+      document.getElementById('resultBtnText').textContent  = 'Submit Results';
+      document.getElementById('submitResultsBtn').disabled  = false;
+    }
+  });
+
+  /* ── Close modals ── */
+  document.getElementById('closeLabModal').addEventListener('click', () =>
+    document.getElementById('labModal').classList.remove('open'));
+  document.getElementById('labModal').addEventListener('click', function(e) {
+    if (e.target===this) this.classList.remove('open');
+  });
+
+  /* ── Init ── */
+  loadLabRequests();
+</script>
+</body>
+</html>

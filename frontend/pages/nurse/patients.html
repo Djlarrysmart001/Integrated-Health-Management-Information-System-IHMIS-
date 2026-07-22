@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — Patients</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Patient Flow</div>
+      <div class="nav-item">
+        <a href="queue.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-layer-group"></i></span>
+          <span class="nav-label">Queue</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="patients.html" class="nav-link active">
+          <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+          <span class="nav-label">Patients</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">NR</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">Nurse</div>
+        <div class="sidebar-user-role" id="sidebarRole">Nurse</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="navbar-page-title">Patients</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> Nurse <span>/</span> Patients</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <a href="notifications.html" class="navbar-icon-btn"><i class="fa-solid fa-bell"></i></a>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">NR</div>
+        <span class="navbar-user-name" id="navbarName">Nurse</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">Nurse</div>
+      <div class="dropdown-header-role" id="dropdownRole">Nurse</div>
+    </div>
+    <a href="profile.html" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <div class="page-header">
+      <h2>Patients</h2>
+      <p>Look up any registered patient's file. Registration is handled by the MHO desk.</p>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+      <div class="table-toolbar">
+        <div class="search-input-wrapper">
+          <i class="fa-solid fa-search"></i>
+          <input type="text" class="search-input" id="patientSearch"
+            placeholder="Search by name, patient number or phone..." />
+        </div>
+        <div class="toolbar-actions">
+          <select class="form-control btn-sm" id="typeFilter" style="height:38px;min-width:130px">
+            <option value="">All Types</option>
+            <option value="student">Student</option>
+            <option value="staff">Staff</option>
+            <option value="other">Other</option>
+          </select>
+          <button class="btn btn-secondary btn-sm" id="refreshBtn">
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Patient</th>
+              <th>Patient Number</th>
+              <th>Type</th>
+              <th>Phone</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="patientTableBody">
+            <tr><td colspan="6">
+              <div class="empty-state">
+                <div class="spinner-sm" style="margin:0 auto 0.5rem"></div>
+                <p>Loading patients...</p>
+              </div>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="paginationContainer"></div>
+    </div>
+
+  </main>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script>
+  requireAuth('nurse');
+
+  let currentPage = 1;
+  let searchQuery = '';
+  let typeFilter  = '';
+  let searchTimer;
+  const perPage = 15;
+
+  async function loadPatients() {
+    const tbody = document.getElementById('patientTableBody');
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="spinner-sm" style="margin:0 auto 0.5rem"></div><p>Loading...</p></div></td></tr>`;
+
+    try {
+      let url = `/patients?page=${currentPage}&per_page=${perPage}`;
+      if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
+      if (typeFilter)  url += `&type=${typeFilter}`;
+
+      const res      = await api.get(url);
+      const data     = res.data;
+      const patients = data.patients || data.items || [];
+      const pages    = data.pages || 1;
+
+      if (patients.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-users-slash"></i><h4>No patients found</h4><p>Try adjusting your search or filters</p></div></td></tr>`;
+        renderPagination(1, 1);
+        return;
+      }
+
+      tbody.innerHTML = patients.map(p => `
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:0.7rem">
+              <div style="width:38px;height:38px;background:var(--primary-light);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.8rem;color:var(--primary);flex-shrink:0">
+                ${(p.first_name?.[0]||'')}${(p.last_name?.[0]||'')}
+              </div>
+              <div>
+                <div style="font-weight:500;color:var(--text-dark)">${p.full_name}</div>
+                <div style="font-size:0.75rem;color:var(--text-muted)">${p.age != null ? 'Age ' + p.age : ''} ${p.gender ? '· ' + capitalize(p.gender) : ''}</div>
+              </div>
+            </div>
+          </td>
+          <td style="font-family:monospace;font-size:0.8rem;color:var(--primary)">${p.patient_number}</td>
+          <td><span class="badge badge-info">${capitalize(p.patient_type)}</span></td>
+          <td class="muted">${p.phone || '—'}</td>
+          <td><span class="badge ${p.is_active ? 'badge-success' : 'badge-muted'}">${p.is_active ? 'Active' : 'Inactive'}</span></td>
+          <td>
+            <a href="patient-file.html?patient_id=${p.id}" class="btn btn-info btn-sm" title="View File">
+              <i class="fa-solid fa-folder-open"></i>
+            </a>
+          </td>
+        </tr>
+      `).join('');
+
+      renderPagination(currentPage, pages);
+
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-circle-exclamation" style="color:var(--danger)"></i><h4>Failed to load</h4><p>${err.message}</p></div></td></tr>`;
+    }
+  }
+
+  function renderPagination(current, total) {
+    const container = document.getElementById('paginationContainer');
+    if (total <= 1) { container.innerHTML = ''; return; }
+    let html = `<button class="page-btn" onclick="goPage(${current-1})" ${current===1?'disabled':''}><i class="fa-solid fa-chevron-left"></i></button>`;
+    for (let i = 1; i <= total; i++) {
+      if (i === 1 || i === total || (i >= current-1 && i <= current+1)) {
+        html += `<button class="page-btn ${i===current?'active':''}" onclick="goPage(${i})">${i}</button>`;
+      } else if (i === current-2 || i === current+2) {
+        html += `<span style="padding:0 4px;color:var(--text-light)">…</span>`;
+      }
+    }
+    html += `<button class="page-btn" onclick="goPage(${current+1})" ${current===total?'disabled':''}><i class="fa-solid fa-chevron-right"></i></button>`;
+    container.innerHTML = html;
+  }
+
+  function goPage(p) { currentPage = p; loadPatients(); }
+
+  document.getElementById('patientSearch').addEventListener('input', e => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { searchQuery = e.target.value.trim(); currentPage = 1; loadPatients(); }, 400);
+  });
+  document.getElementById('typeFilter').addEventListener('change', e => { typeFilter = e.target.value; currentPage = 1; loadPatients(); });
+  document.getElementById('refreshBtn').addEventListener('click', loadPatients);
+
+  loadPatients();
+</script>
+</body>
+</html>

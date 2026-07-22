@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — Nurse Queue</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+  <style>
+    .wait-badge { display:inline-flex; align-items:center; gap:0.3rem; font-weight:600; font-size:0.8rem; }
+    .wait-ok   { color: var(--text-muted); }
+    .wait-warn { color: var(--warning); }
+    .wait-late { color: var(--danger); }
+  </style>
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Patient Flow</div>
+      <div class="nav-item">
+        <a href="queue.html" class="nav-link active">
+          <span class="nav-icon"><i class="fa-solid fa-layer-group"></i></span>
+          <span class="nav-label">Queue</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="patients.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+          <span class="nav-label">Patients</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">NR</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">Nurse</div>
+        <div class="sidebar-user-role" id="sidebarRole">Nurse</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="navbar-page-title">Queue</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> Nurse <span>/</span> Queue</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <a href="notifications.html" class="navbar-icon-btn"><i class="fa-solid fa-bell"></i></a>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">NR</div>
+        <span class="navbar-user-name" id="navbarName">Nurse</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">Nurse</div>
+      <div class="dropdown-header-role" id="dropdownRole">Nurse</div>
+    </div>
+    <a href="profile.html" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+      <div>
+        <h2>Nursing Queue</h2>
+        <p>Patients forwarded from MHO, waiting to have vitals recorded and be triaged to the Doctor</p>
+      </div>
+      <button class="btn btn-secondary" id="refreshBtn">
+        <i class="fa-solid fa-rotate-right"></i> Refresh
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Queue #</th>
+              <th>Patient</th>
+              <th>Patient Number</th>
+              <th>Time In</th>
+              <th>Wait Time</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="queueTableBody">
+            <tr><td colspan="6">
+              <div class="empty-state">
+                <div class="spinner-sm" style="margin:0 auto 0.5rem"></div>
+                <p>Loading queue...</p>
+              </div>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script>
+  requireAuth('nurse');
+
+  // Your backend's exact response shape for /health-files/queue/<status> isn't
+  // confirmed yet, so instead of hardcoding one key name, this scans for
+  // whatever array is actually present in the response and uses that.
+  function extractQueueList(resData) {
+    if (!resData) return [];
+    if (Array.isArray(resData)) return resData;
+    const candidates = ['health_files', 'items', 'data', 'results', 'queue', 'records', 'patients'];
+    for (const key of candidates) {
+      if (Array.isArray(resData[key])) return resData[key];
+    }
+    for (const key in resData) {
+      if (Array.isArray(resData[key])) return resData[key];
+    }
+    return [];
+  }
+
+  async function loadQueue() {
+    const tbody = document.getElementById('queueTableBody');
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="spinner-sm" style="margin:0 auto 0.5rem"></div><p>Loading...</p></div></td></tr>`;
+
+    try {
+      const res = await api.get('/health-files/queue/with_nurse?per_page=50');
+      const files = extractQueueList(res.data);
+
+      if (files.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-clipboard-check"></i><h4>Queue is clear</h4><p>No patients waiting for vitals right now</p></div></td></tr>`;
+        return;
+      }
+
+      // The queue endpoint returns patient_id + patient_name but not
+      // patient_number, so fetch each patient record to fill that column in.
+      const patientDetails = await Promise.all(
+        files.map(f => api.get(`/patients/${f.patient_id}`).then(r => r.data).catch(() => null))
+      );
+      files.forEach((f, i) => { f._patient = patientDetails[i]; });
+
+      tbody.innerHTML = files.map(f => {
+        const name = f._patient?.full_name || f.patient?.full_name || f.patient_name || 'Patient';
+        const patientId = f.patient_id || f.patient?.id;
+        const patientNumber = f._patient?.patient_number || f.patient?.patient_number || f.patient_number || '—';
+        const opened = f.opened_at ? new Date(f.opened_at) : null;
+        const waitMinutes = opened ? Math.floor((Date.now() - opened.getTime()) / 60000) : null;
+
+        let waitClass = 'wait-ok', waitIcon = 'fa-clock';
+        if (waitMinutes != null) {
+          if (waitMinutes >= 45) { waitClass = 'wait-late'; waitIcon = 'fa-triangle-exclamation'; }
+          else if (waitMinutes >= 20) { waitClass = 'wait-warn'; waitIcon = 'fa-triangle-exclamation'; }
+        }
+        const waitLabel = waitMinutes == null ? '—'
+          : waitMinutes < 60 ? `${waitMinutes}m`
+          : `${Math.floor(waitMinutes/60)}h ${waitMinutes%60}m`;
+
+        return `
+          <tr>
+            <td><strong>${f.queue_number ?? '—'}</strong></td>
+            <td style="font-weight:500;color:var(--text-dark)">${name}</td>
+            <td><span style="font-family:monospace;font-size:0.8rem;color:var(--primary)">${patientNumber}</span></td>
+            <td class="muted">${opened ? formatDate(f.opened_at) : '—'}</td>
+            <td><span class="wait-badge ${waitClass}"><i class="fa-solid ${waitIcon}"></i> ${waitLabel}</span></td>
+            <td>
+              <div style="display:flex;gap:0.4rem">
+                <a href="patient-file.html?patient_id=${patientId}" class="btn btn-secondary btn-sm" title="View File">
+                  <i class="fa-solid fa-folder-open"></i>
+                </a>
+                <a href="vitals.html?health_file_id=${f.id}&patient_id=${patientId}" class="btn btn-primary btn-sm">
+                  <i class="fa-solid fa-heart-pulse"></i> Record Vitals
+                </a>
+              </div>
+            </td>
+          </tr>`;
+      }).join('');
+
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-circle-exclamation" style="color:var(--danger)"></i><h4>Failed to load</h4><p>${err.message}</p></div></td></tr>`;
+    }
+  }
+
+  document.getElementById('refreshBtn').addEventListener('click', loadQueue);
+  loadQueue();
+
+  // Keep the queue current without requiring a manual refresh
+  setInterval(loadQueue, 30000);
+</script>
+</body>
+</html>

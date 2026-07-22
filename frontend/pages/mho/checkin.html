@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — Check-In</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+  <style>
+    .patient-result {
+      display: flex; align-items: center; gap: 0.9rem;
+      padding: 0.9rem 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--border-radius-sm);
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-bottom: 0.6rem;
+    }
+    .patient-result:hover { border-color: var(--primary); background: var(--primary-xlight); }
+    .patient-result-avatar {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: var(--primary-light); color: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.9rem; flex-shrink: 0;
+    }
+    .patient-result-info { flex: 1; min-width: 0; }
+    .patient-result-name { font-weight: 600; color: var(--text-dark); font-size: 0.92rem; }
+    .patient-result-meta { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+
+    .selected-patient-card {
+      display: flex; align-items: center; gap: 1.25rem;
+      padding: 1.5rem; background: var(--primary-xlight);
+      border: 1.5px solid var(--primary); border-radius: var(--border-radius);
+      margin-bottom: 1.25rem;
+    }
+    .selected-patient-avatar {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: var(--primary-light); color: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 1.4rem; flex-shrink: 0;
+    }
+    .queue-number-badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: var(--success); color: #fff;
+      padding: 0.6rem 1.2rem; border-radius: 20px;
+      font-weight: 700; font-size: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="patients.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+          <span class="nav-label">Patients</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="register-patient.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-user-plus"></i></span>
+          <span class="nav-label">Register Patient</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Patient Flow</div>
+      <div class="nav-item">
+        <a href="checkin.html" class="nav-link active">
+          <span class="nav-icon"><i class="fa-solid fa-clipboard-check"></i></span>
+          <span class="nav-label">Check-In</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="queue.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-layer-group"></i></span>
+          <span class="nav-label">Active Queue</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">MH</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">MHO</div>
+        <div class="sidebar-user-role" id="sidebarRole">Medical Health Officer</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="navbar-page-title">Check-In</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> MHO <span>/</span> Check-In</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <a href="notifications.html" class="navbar-icon-btn" title="Notifications">
+        <i class="fa-solid fa-bell"></i>
+        <span class="notif-dot" style="display:none"></span>
+      </a>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">MH</div>
+        <span class="navbar-user-name" id="navbarName">MHO</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">MHO</div>
+      <div class="dropdown-header-role" id="dropdownRole">Medical Health Officer</div>
+    </div>
+    <a href="profile.html" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="page-header">
+      <h2>Check-In</h2>
+      <p>Search for a patient and open today's visit</p>
+    </div>
+
+    <!-- Step 1: Search -->
+    <div class="card" id="searchStep" style="margin-bottom:1.25rem">
+      <div class="card-header">
+        <h3><i class="fa-solid fa-magnifying-glass" style="color:var(--primary);margin-right:0.4rem"></i>Find Patient</h3>
+      </div>
+      <div class="card-body">
+        <div class="search-input-wrapper" style="max-width:100%;margin-bottom:1rem">
+          <i class="fa-solid fa-search"></i>
+          <input type="text" class="search-input" id="patientSearch"
+            placeholder="Search by name, patient number, matric or staff ID..." />
+        </div>
+        <div id="searchResults"></div>
+        <div class="empty-state" id="searchEmptyState" style="display:none">
+          <i class="fa-solid fa-user-magnifying-glass"></i>
+          <p>Type a name, patient number, or ID to find a patient</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Selected patient + check-in action -->
+    <div class="card" id="checkinStep" style="display:none">
+      <div class="card-body">
+        <div class="selected-patient-card" id="selectedPatientCard"></div>
+
+        <!-- Already has an open visit -->
+        <div id="alreadyOpenBlock" style="display:none">
+          <div class="alert alert-warning">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span id="alreadyOpenText"></span>
+          </div>
+          <div style="display:flex;gap:0.75rem">
+            <button class="btn btn-primary" id="forwardExistingBtn">
+              <i class="fa-solid fa-arrow-right"></i> Forward to Nurse
+            </button>
+            <a href="queue.html" class="btn btn-secondary">View in Queue</a>
+          </div>
+        </div>
+
+        <!-- Fresh check-in -->
+        <div id="freshCheckinBlock">
+          <button class="btn btn-primary btn-lg" id="checkInBtn">
+            <span class="spinner-sm" id="checkInSpinner" style="display:none;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+            <i class="fa-solid fa-clipboard-check" id="checkInIcon"></i>
+            <span id="checkInBtnText">Check In Patient</span>
+          </button>
+        </div>
+
+        <!-- Post check-in: queue number + forward option -->
+        <div id="checkedInResultBlock" style="display:none">
+          <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.25rem">
+            <span class="queue-number-badge" id="queueNumberBadge">
+              <i class="fa-solid fa-hashtag"></i> —
+            </span>
+            <span style="color:var(--text-muted);font-size:0.9rem">Patient checked in successfully</span>
+          </div>
+          <div style="display:flex;gap:0.75rem">
+            <button class="btn btn-primary" id="forwardNurseBtn">
+              <i class="fa-solid fa-arrow-right"></i> Forward to Nurse
+            </button>
+            <button class="btn btn-secondary" id="checkInAnotherBtn">
+              <i class="fa-solid fa-plus"></i> Check In Another Patient
+            </button>
+          </div>
+        </div>
+
+        <div class="alert alert-danger" id="checkinError" style="display:none;margin-top:1rem">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          <span id="checkinErrorMsg"></span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script>
+  requireAuth('mho');
+
+  let selectedPatient = null;
+  let openHealthFileId = null;
+  let searchTimer;
+
+  /* ── Pre-fill from Register Patient's "Check In Now" redirect ── */
+  const urlParams = new URLSearchParams(window.location.search);
+  const prefillId = urlParams.get('patient_id');
+  if (prefillId) {
+    loadAndSelectPatient(prefillId);
+  }
+
+  async function loadAndSelectPatient(patientId) {
+    try {
+      const res = await api.get(`/patients/${patientId}`);
+      selectPatient(res.data);
+    } catch (err) {
+      showToast('Could not load patient for check-in: ' + err.message, 'error');
+    }
+  }
+
+  /* ── Search ── */
+  const searchInput = document.getElementById('patientSearch');
+  searchInput.addEventListener('input', (e) => {
+    clearTimeout(searchTimer);
+    const term = e.target.value.trim();
+    if (!term) {
+      document.getElementById('searchResults').innerHTML = '';
+      document.getElementById('searchEmptyState').style.display = 'block';
+      return;
+    }
+    searchTimer = setTimeout(() => runSearch(term), 350);
+  });
+
+  async function runSearch(term) {
+    const resultsBox = document.getElementById('searchResults');
+    document.getElementById('searchEmptyState').style.display = 'none';
+    resultsBox.innerHTML = `<div class="empty-state" style="padding:1.5rem 0"><div class="spinner-sm" style="margin:0 auto"></div></div>`;
+
+    try {
+      const res = await api.get(`/patients?search=${encodeURIComponent(term)}&per_page=8&is_active=true`);
+      const patients = res.data?.patients || [];
+
+      if (patients.length === 0) {
+        resultsBox.innerHTML = `<div class="empty-state" style="padding:1.5rem 0"><i class="fa-solid fa-user-slash"></i><p>No matching patients found</p></div>`;
+        return;
+      }
+
+      resultsBox.innerHTML = patients.map(p => `
+        <div class="patient-result" onclick='selectPatientFromSearch(${JSON.stringify(p).replace(/'/g, "&apos;")})'>
+          <div class="patient-result-avatar">${(p.first_name?.[0]||'')}${(p.last_name?.[0]||'')}</div>
+          <div class="patient-result-info">
+            <div class="patient-result-name">${p.full_name}</div>
+            <div class="patient-result-meta">${p.patient_number} · ${capitalize(p.patient_type)} · ${p.phone || 'No phone'}</div>
+          </div>
+          <i class="fa-solid fa-chevron-right" style="color:var(--text-light)"></i>
+        </div>
+      `).join('');
+    } catch (err) {
+      resultsBox.innerHTML = `<div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i><span>${err.message}</span></div>`;
+    }
+  }
+
+  function selectPatientFromSearch(patient) {
+    selectPatient(patient);
+  }
+
+  /* ── Select a patient -> move to Step 2 ── */
+  async function selectPatient(patient) {
+    selectedPatient = patient;
+    document.getElementById('searchStep').style.display = 'none';
+    document.getElementById('checkinStep').style.display = 'block';
+
+    document.getElementById('selectedPatientCard').innerHTML = `
+      <div class="selected-patient-avatar">${(patient.first_name?.[0]||'')}${(patient.last_name?.[0]||'')}</div>
+      <div style="flex:1">
+        <div style="font-size:1.15rem;font-weight:700;color:var(--text-dark)">${patient.full_name}</div>
+        <div style="color:var(--text-muted);font-size:0.85rem;margin-top:2px">
+          ${patient.patient_number} · ${capitalize(patient.patient_type)}${patient.age != null ? ' · Age ' + patient.age : ''}${patient.gender ? ' · ' + capitalize(patient.gender) : ''}
+        </div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="resetCheckin()">
+        <i class="fa-solid fa-rotate-left"></i> Change Patient
+      </button>
+    `;
+
+    // Check whether this patient already has an open health file today
+    await checkExistingHealthFile(patient.id);
+  }
+
+  async function checkExistingHealthFile(patientId) {
+    try {
+      const res = await api.get(`/health-files/patient/${patientId}?per_page=5`);
+      const files = res.data?.health_files || [];
+      const openFile = files.find(f => f.status !== 'closed');
+
+      if (openFile) {
+        openHealthFileId = openFile.id;
+        document.getElementById('alreadyOpenBlock').style.display = 'block';
+        document.getElementById('freshCheckinBlock').style.display = 'none';
+        document.getElementById('checkedInResultBlock').style.display = 'none';
+        document.getElementById('alreadyOpenText').textContent =
+          `This patient already has an open visit (Queue #${openFile.queue_number ?? '—'}, status: ${formatStatus(openFile.status)}).`;
+        // Only show "Forward to Nurse" if still sitting with MHO
+        document.getElementById('forwardExistingBtn').style.display = openFile.status === 'with_mho' ? 'inline-flex' : 'none';
+      } else {
+        openHealthFileId = null;
+        document.getElementById('alreadyOpenBlock').style.display = 'none';
+        document.getElementById('freshCheckinBlock').style.display = 'block';
+        document.getElementById('checkedInResultBlock').style.display = 'none';
+      }
+    } catch (err) {
+      // If history lookup fails, don't block check-in -- just proceed fresh
+      document.getElementById('alreadyOpenBlock').style.display = 'none';
+      document.getElementById('freshCheckinBlock').style.display = 'block';
+    }
+  }
+
+  function formatStatus(status) {
+    const map = {
+      with_mho: 'With MHO', with_nurse: 'With Nurse', with_doctor: 'With Doctor',
+      with_lab: 'At Laboratory', with_pharmacy: 'At Pharmacy', closed: 'Closed'
+    };
+    return map[status] || status;
+  }
+
+  function resetCheckin() {
+    selectedPatient = null;
+    openHealthFileId = null;
+    document.getElementById('searchStep').style.display = 'block';
+    document.getElementById('checkinStep').style.display = 'none';
+    document.getElementById('checkinError').style.display = 'none';
+    searchInput.value = '';
+    document.getElementById('searchResults').innerHTML = '';
+    document.getElementById('searchEmptyState').style.display = 'block';
+  }
+  document.getElementById('checkInAnotherBtn').addEventListener('click', resetCheckin);
+
+  /* ── Check In (open health file) ── */
+  document.getElementById('checkInBtn').addEventListener('click', async () => {
+    const errBox = document.getElementById('checkinError');
+    errBox.style.display = 'none';
+    setCheckinLoading(true);
+
+    try {
+      const res = await api.post('/health-files', { patient_id: selectedPatient.id });
+      const file = res.data;
+      openHealthFileId = file.id;
+
+      document.getElementById('queueNumberBadge').innerHTML =
+        `<i class="fa-solid fa-hashtag"></i> Queue ${file.queue_number ?? '—'}`;
+      document.getElementById('freshCheckinBlock').style.display = 'none';
+      document.getElementById('checkedInResultBlock').style.display = 'block';
+
+    } catch (err) {
+      document.getElementById('checkinErrorMsg').textContent = err.message;
+      errBox.style.display = 'flex';
+    } finally {
+      setCheckinLoading(false);
+    }
+  });
+
+  function setCheckinLoading(state) {
+    document.getElementById('checkInSpinner').style.display = state ? 'inline-block' : 'none';
+    document.getElementById('checkInIcon').style.display = state ? 'none' : 'inline-block';
+    document.getElementById('checkInBtnText').textContent = state ? 'Checking in...' : 'Check In Patient';
+    document.getElementById('checkInBtn').disabled = state;
+  }
+
+  /* ── Forward to Nurse (from either fresh check-in or an already-open file) ── */
+  async function forwardToNurse() {
+    if (!openHealthFileId) return;
+    try {
+      await api.patch(`/health-files/${openHealthFileId}/forward-to-nurse`, {});
+      showToast('Patient forwarded to Nurse.', 'success');
+      window.location.href = 'queue.html';
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+  document.getElementById('forwardNurseBtn').addEventListener('click', forwardToNurse);
+  document.getElementById('forwardExistingBtn').addEventListener('click', forwardToNurse);
+</script>
+</body>
+</html>

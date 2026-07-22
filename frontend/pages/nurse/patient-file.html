@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — Patient File</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+  <style>
+    .file-header {
+      display: flex; align-items: center; gap: 1.5rem;
+      padding: 1.75rem; background: var(--card-bg);
+      border: 1px solid var(--border-light); border-radius: var(--border-radius);
+      box-shadow: var(--shadow); margin-bottom: 1.25rem;
+    }
+    .file-avatar {
+      width: 80px; height: 80px; border-radius: 50%;
+      background: var(--primary-light); color: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 1.8rem; flex-shrink: 0; overflow: hidden;
+    }
+    .file-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .file-meta-row { display: flex; flex-wrap: wrap; gap: 0.4rem 1.25rem; margin-top: 0.4rem; }
+    .file-meta-item { font-size: 0.85rem; color: var(--text-muted); }
+    .file-meta-item strong { color: var(--text-dark); }
+    .read-only-badge {
+      background: var(--border-light); color: var(--text-muted);
+      font-size: 0.72rem; font-weight: 600; padding: 0.25rem 0.7rem;
+      border-radius: 12px; display: inline-flex; align-items: center; gap: 0.3rem;
+    }
+    .alerts-banner { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem; }
+    .tabs-nav { display: flex; gap: 0.25rem; border-bottom: 2px solid var(--border-light); margin-bottom: 1.25rem; overflow-x: auto; }
+    .tab-btn {
+      padding: 0.75rem 1.25rem; border: none; background: none; cursor: pointer;
+      font-size: 0.88rem; font-weight: 600; color: var(--text-muted);
+      border-bottom: 2.5px solid transparent; margin-bottom: -2px; white-space: nowrap; transition: all 0.15s;
+    }
+    .tab-btn:hover { color: var(--primary); }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .record-item { padding: 1rem; border: 1px solid var(--border-light); border-radius: var(--border-radius-sm); margin-bottom: 0.75rem; }
+    .record-item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; }
+    .record-item-title { font-weight: 600; color: var(--text-dark); font-size: 0.92rem; }
+    .record-item-date { font-size: 0.78rem; color: var(--text-muted); }
+    .record-item-body { font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; }
+    .doc-row { display: flex; align-items: center; gap: 0.9rem; padding: 0.9rem 1rem; border: 1px solid var(--border-light); border-radius: var(--border-radius-sm); margin-bottom: 0.6rem; }
+    .doc-icon { width: 40px; height: 40px; border-radius: 8px; background: var(--primary-xlight); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+    .doc-info { flex: 1; min-width: 0; }
+    .doc-name { font-weight: 600; font-size: 0.88rem; color: var(--text-dark); }
+    .doc-meta { font-size: 0.76rem; color: var(--text-muted); margin-top: 2px; }
+    .flag-badge { display:inline-flex; align-items:center; gap:0.3rem; background:#fef2f2; color:var(--danger); font-size:0.75rem; font-weight:600; padding:0.3rem 0.7rem; border-radius:14px; margin:0.2rem 0.3rem 0.2rem 0; }
+  </style>
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Patient Flow</div>
+      <div class="nav-item">
+        <a href="queue.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-layer-group"></i></span>
+          <span class="nav-label">Queue</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="patients.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+          <span class="nav-label">Patients</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">NR</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">Nurse</div>
+        <div class="sidebar-user-role" id="sidebarRole">Nurse</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="navbar-page-title">Patient File</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> Nurse <span>/</span> Patient File</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <a href="notifications.html" class="navbar-icon-btn"><i class="fa-solid fa-bell"></i></a>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">NR</div>
+        <span class="navbar-user-name" id="navbarName">Nurse</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">Nurse</div>
+      <div class="dropdown-header-role" id="dropdownRole">Nurse</div>
+    </div>
+    <a href="profile.html" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+      <div>
+        <h2>Patient File</h2>
+        <p>Read-only clinical record</p>
+      </div>
+      <span class="read-only-badge"><i class="fa-solid fa-lock"></i> View Only</span>
+    </div>
+
+    <div id="loadingState" class="empty-state">
+      <div class="spinner-sm" style="margin:0 auto 0.5rem"></div>
+      <p>Loading patient file...</p>
+    </div>
+
+    <div id="fileContent" style="display:none">
+
+      <!-- Header -->
+      <div class="file-header">
+        <div class="file-avatar" id="fileAvatar">--</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:1.35rem;font-weight:700;color:var(--text-dark)" id="fileName">—</div>
+          <div class="file-meta-row">
+            <span class="file-meta-item"><strong id="filePatientNumber">—</strong></span>
+            <span class="file-meta-item" id="fileType">—</span>
+            <span class="file-meta-item" id="fileAgeGender">—</span>
+            <span class="file-meta-item">Blood Group: <strong id="fileBloodGroup">—</strong></span>
+            <span class="file-meta-item">Genotype: <strong id="fileGenotype">—</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Medical Alerts -->
+      <div class="alerts-banner" id="alertsBanner"></div>
+
+      <!-- Nursing assessment, if this patient already has one for the
+           current visit — read-only summary of what a nurse recorded -->
+      <div class="card" id="nursingCard" style="display:none;margin-bottom:1.25rem">
+        <div class="card-header"><h3><i class="fa-solid fa-heart-pulse" style="color:var(--primary);margin-right:0.4rem"></i>Latest Vitals &amp; Triage</h3></div>
+        <div class="card-body" id="nursingCardBody"></div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs-nav">
+        <button class="tab-btn active" data-tab="biodata">Biodata</button>
+        <button class="tab-btn" data-tab="history">Visit History</button>
+        <button class="tab-btn" data-tab="diagnoses">Diagnoses</button>
+        <button class="tab-btn" data-tab="prescriptions">Prescriptions</button>
+        <button class="tab-btn" data-tab="labs">Lab Results</button>
+        <button class="tab-btn" data-tab="documents">Documents</button>
+      </div>
+
+      <!-- Biodata -->
+      <div class="tab-panel active" id="panel-biodata">
+        <div class="card"><div class="card-body">
+          <table style="width:100%;font-size:0.875rem;border-collapse:collapse" id="biodataTable"></table>
+        </div></div>
+      </div>
+
+      <!-- Visit History -->
+      <div class="tab-panel" id="panel-history">
+        <div class="card">
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead><tr><th>Date</th><th>Queue #</th><th>Status</th><th>Outcome</th></tr></thead>
+              <tbody id="historyTableBody">
+                <tr><td colspan="4"><div class="empty-state"><div class="spinner-sm" style="margin:0 auto"></div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Diagnoses -->
+      <div class="tab-panel" id="panel-diagnoses">
+        <div id="diagnosesList"><div class="empty-state"><div class="spinner-sm" style="margin:0 auto"></div></div></div>
+      </div>
+
+      <!-- Prescriptions -->
+      <div class="tab-panel" id="panel-prescriptions">
+        <div id="prescriptionsList"><div class="empty-state"><div class="spinner-sm" style="margin:0 auto"></div></div></div>
+      </div>
+
+      <!-- Lab Results -->
+      <div class="tab-panel" id="panel-labs">
+        <div id="labsList"><div class="empty-state"><div class="spinner-sm" style="margin:0 auto"></div></div></div>
+      </div>
+
+      <!-- Documents (view/download only) -->
+      <div class="tab-panel" id="panel-documents">
+        <div class="card" style="margin-bottom:1.25rem">
+          <div class="card-header"><h3><i class="fa-solid fa-image" style="color:var(--primary);margin-right:0.4rem"></i>Passport Photo</h3></div>
+          <div class="card-body" style="display:flex;gap:1.25rem;align-items:flex-start">
+            <div style="width:110px;height:130px;border:1.5px solid var(--border);border-radius:var(--border-radius-sm);overflow:hidden;background:var(--page-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <img id="photoPreview" style="display:none;width:100%;height:100%;object-fit:cover" />
+              <div id="photoPlaceholder" style="text-align:center;color:var(--text-light);font-size:0.72rem;padding:0.4rem">
+                <i class="fa-solid fa-camera" style="font-size:1.3rem;display:block;margin-bottom:0.3rem"></i>No photo on file
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3><i class="fa-solid fa-file-lines" style="color:var(--primary);margin-right:0.4rem"></i>Documents</h3></div>
+          <div class="card-body">
+            <div id="documentsList"><div class="empty-state"><div class="spinner-sm" style="margin:0 auto"></div></div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="errorState" class="empty-state" style="display:none">
+      <i class="fa-solid fa-circle-exclamation" style="color:var(--danger)"></i>
+      <h4>Could not load patient file</h4>
+      <p id="errorMessage"></p>
+    </div>
+
+  </main>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script>
+  requireAuth('nurse');
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const patientId = urlParams.get('patient_id');
+
+  if (!patientId) {
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('errorState').style.display = 'block';
+    document.getElementById('errorMessage').textContent = 'No patient specified. Go back to Patients and select one.';
+  } else {
+    loadPatientFile();
+  }
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(`panel-${btn.dataset.tab}`).classList.add('active');
+    });
+  });
+
+  async function loadPatientFile() {
+    try {
+      const res = await api.get(`/patients/${patientId}`);
+      const p = res.data;
+
+      renderHeader(p);
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('fileContent').style.display = 'block';
+
+      loadMedicalAlerts(patientId);
+      loadBiodata(p);
+      loadVisitHistory(patientId);
+      loadDiagnoses(patientId);
+      loadPrescriptions(patientId);
+      loadLabResults(patientId);
+      renderPhotoBox(p);
+      loadDocumentsTab(patientId);
+      loadLatestVitals(patientId);
+
+    } catch (err) {
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('errorState').style.display = 'block';
+      document.getElementById('errorMessage').textContent = err.message;
+    }
+  }
+
+  function renderHeader(p) {
+    document.getElementById('fileAvatar').textContent = `${(p.first_name?.[0]||'')}${(p.last_name?.[0]||'')}`;
+    document.getElementById('fileName').textContent = p.full_name;
+    document.getElementById('filePatientNumber').textContent = p.patient_number;
+    document.getElementById('fileType').textContent = capitalize(p.patient_type);
+    document.getElementById('fileAgeGender').textContent =
+      `${p.age != null ? 'Age ' + p.age : 'Age —'} · ${capitalize(p.gender || '—')}`;
+    document.getElementById('fileBloodGroup').textContent = p.blood_group || 'Unknown';
+    document.getElementById('fileGenotype').textContent = p.genotype || '—';
+  }
+
+  async function loadMedicalAlerts(id) {
+    const banner = document.getElementById('alertsBanner');
+    try {
+      const res = await api.get(`/medical-records/patients/${id}`);
+      const rec = res.data;
+      const alerts = [];
+      if (rec.known_allergies) alerts.push(`<div class="alert alert-danger"><i class="fa-solid fa-triangle-exclamation"></i><span><strong>Allergies:</strong> ${rec.known_allergies}</span></div>`);
+      if (rec.chronic_conditions) alerts.push(`<div class="alert alert-warning"><i class="fa-solid fa-notes-medical"></i><span><strong>Chronic Conditions:</strong> ${rec.chronic_conditions}</span></div>`);
+      if (rec.current_medications) alerts.push(`<div class="alert alert-info"><i class="fa-solid fa-pills"></i><span><strong>Current Medications:</strong> ${rec.current_medications}</span></div>`);
+      banner.innerHTML = alerts.join('') || `<div class="alert alert-success"><i class="fa-solid fa-circle-check"></i><span>No known allergies or chronic conditions on file</span></div>`;
+      window.__medicalRecord = rec;
+      renderBiodataMedical(rec);
+    } catch (err) {
+      banner.innerHTML = `<div class="alert alert-warning"><i class="fa-solid fa-circle-info"></i><span>No medical record on file yet</span></div>`;
+    }
+  }
+
+  /* Latest vitals/triage recorded for this patient — read-only summary,
+     shown so a nurse can see what a prior assessment already captured. */
+  async function loadLatestVitals(id) {
+    try {
+      const res = await api.get(`/vitals/patients/${id}?per_page=1`);
+      const records = res.data?.vitals || res.data?.items || [];
+      if (records.length === 0) return;
+      const v = records[0];
+      const card = document.getElementById('nursingCard');
+      const body = document.getElementById('nursingCardBody');
+
+      const flags = (v.nursing_flags || []).map(f =>
+        `<span class="flag-badge"><i class="fa-solid fa-flag"></i> ${f.replace(/_/g,' ')}</span>`).join('');
+
+      body.innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.9rem;margin-bottom:1rem">
+          ${vitalStat('Weight', v.weight ? v.weight + ' kg' : '—')}
+          ${vitalStat('Height', v.height ? v.height + ' cm' : '—')}
+          ${vitalStat('BMI', v.bmi ?? '—')}
+          ${vitalStat('Temp', v.temperature ? v.temperature + ' °C' : '—')}
+          ${vitalStat('BP', (v.bp_systolic && v.bp_diastolic) ? `${v.bp_systolic}/${v.bp_diastolic}` : '—')}
+          ${vitalStat('Pulse', v.pulse_rate ? v.pulse_rate + ' bpm' : '—')}
+          ${vitalStat('SpO₂', v.spo2 ? v.spo2 + '%' : '—')}
+          ${vitalStat('Pain', v.pain_score ?? '—')}
+        </div>
+        ${v.chief_complaint ? `<p style="font-size:0.85rem;margin-bottom:0.5rem"><strong>Chief Complaint:</strong> ${v.chief_complaint}</p>` : ''}
+        ${v.urgency_level ? `<p style="font-size:0.85rem;margin-bottom:0.5rem"><strong>Urgency:</strong> <span class="badge badge-info">${capitalize(v.urgency_level)}</span></p>` : ''}
+        ${flags ? `<div style="margin-bottom:0.5rem">${flags}</div>` : ''}
+        ${v.nursing_notes ? `<p style="font-size:0.85rem;color:var(--text-muted)"><strong>Notes:</strong> ${v.nursing_notes}</p>` : ''}
+      `;
+      card.style.display = 'block';
+    } catch (err) { /* no vitals yet — fine, card stays hidden */ }
+  }
+
+  function vitalStat(label, value) {
+    return `<div style="text-align:center;background:var(--page-bg);border-radius:8px;padding:0.6rem">
+      <div style="font-weight:700;color:var(--text-dark);font-size:0.95rem">${value}</div>
+      <div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px">${label}</div>
+    </div>`;
+  }
+
+  function loadBiodata(p) {
+    const rows = [
+      ['Full Name', p.full_name],
+      ['Patient Number', p.patient_number],
+      ['Patient Type', capitalize(p.patient_type)],
+      ['Date of Birth', p.date_of_birth ? formatDate(p.date_of_birth) : '—'],
+      ['Age', p.age != null ? `${p.age} years` : '—'],
+      ['Gender', capitalize(p.gender || '—')],
+      ['Blood Group', p.blood_group || 'Unknown'],
+      ['Genotype', p.genotype || '—'],
+      ['Phone', p.phone || '—'],
+      ['Email', p.email || '—'],
+      ['Address', p.address || '—'],
+      ['Emergency Contact', p.emergency_contact_name || '—'],
+      ['Relationship', p.emergency_contact_relationship || '—'],
+      ['Emergency Phone', p.emergency_contact_phone || '—'],
+      ['Emergency Address', p.emergency_contact_address || '—'],
+    ];
+    if (p.profile) {
+      if (p.patient_type === 'student') {
+        rows.push(['Matric Number', p.profile.matric_number || '—']);
+        rows.push(['Faculty', p.profile.faculty || '—']);
+        rows.push(['Level', p.profile.level || '—']);
+      } else if (p.patient_type === 'staff') {
+        rows.push(['Staff ID', p.profile.staff_id_number || '—']);
+        rows.push(['Designation', p.profile.designation || '—']);
+      }
+      rows.push(['Department', p.profile.department || '—']);
+    }
+    const table = document.getElementById('biodataTable');
+    table.innerHTML = rows.map(([label, value]) => `
+      <tr style="border-bottom:1px solid var(--border-light)">
+        <td style="padding:0.6rem 0;color:var(--text-muted);width:35%;font-weight:500">${label}</td>
+        <td style="padding:0.6rem 0;color:var(--text-dark)">${value}</td>
+      </tr>`).join('');
+  }
+
+  function renderBiodataMedical(rec) {
+    const table = document.getElementById('biodataTable');
+    table.innerHTML += `
+      <tr><td colspan="2" style="padding-top:1rem;font-weight:600;color:var(--primary);font-size:0.8rem;text-transform:uppercase">Medical Background</td></tr>
+      <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:0.6rem 0;color:var(--text-muted);width:35%;font-weight:500">Surgical History</td><td style="padding:0.6rem 0">${rec.surgical_history || '—'}</td></tr>
+      <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:0.6rem 0;color:var(--text-muted);width:35%;font-weight:500">Family History</td><td style="padding:0.6rem 0">${rec.family_history || '—'}</td></tr>
+      <tr style="border-bottom:1px solid var(--border-light)"><td style="padding:0.6rem 0;color:var(--text-muted);width:35%;font-weight:500">Immunization History</td><td style="padding:0.6rem 0">${rec.immunization_history || '—'}</td></tr>
+    `;
+  }
+
+  async function loadVisitHistory(id) {
+    const tbody = document.getElementById('historyTableBody');
+    try {
+      const res = await api.get(`/health-files/patient/${id}?per_page=30`);
+      const files = res.data?.health_files || [];
+      if (files.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><i class="fa-solid fa-calendar-xmark"></i><p>No previous visits</p></div></td></tr>`;
+        return;
+      }
+      const statusLabels = { with_mho: 'With MHO', with_nurse: 'With Nurse', with_doctor: 'With Doctor', with_lab: 'At Laboratory', with_pharmacy: 'At Pharmacy', closed: 'Completed' };
+      tbody.innerHTML = files.map(f => `
+        <tr>
+          <td>${formatDate(f.opened_at)}</td>
+          <td>${f.queue_number ?? '—'}</td>
+          <td><span class="badge ${f.status === 'closed' ? 'badge-success' : 'badge-info'}">${statusLabels[f.status] || f.status}</span></td>
+          <td class="muted">${f.status === 'closed' ? 'Visit completed' : 'In progress'}</td>
+        </tr>`).join('');
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><i class="fa-solid fa-circle-exclamation"></i><p>Could not load visit history</p></div></td></tr>`;
+    }
+  }
+
+  async function loadDiagnoses(id) {
+    const box = document.getElementById('diagnosesList');
+    try {
+      const res = await api.get(`/consultations/patients/${id}?per_page=20`);
+      const consultations = res.data?.consultations || res.data?.items || [];
+      if (consultations.length === 0) { box.innerHTML = `<div class="empty-state"><i class="fa-solid fa-stethoscope"></i><p>No diagnoses on file</p></div>`; return; }
+      box.innerHTML = consultations.map(c => `
+        <div class="record-item">
+          <div class="record-item-header">
+            <div class="record-item-title">${c.chief_complaint || c.diagnosis_summary || 'Consultation'}</div>
+            <div class="record-item-date">${formatDate(c.created_at || c.consultation_date)}</div>
+          </div>
+          <div class="record-item-body">Doctor: ${c.doctor_name || '—'} ${c.status ? `· <span class="badge badge-muted" style="font-size:0.68rem">${capitalize(c.status)}</span>` : ''}</div>
+        </div>`).join('');
+    } catch (err) {
+      box.innerHTML = `<div class="empty-state"><i class="fa-solid fa-circle-info"></i><p>No consultation records available</p></div>`;
+    }
+  }
+
+  async function loadPrescriptions(id) {
+    const box = document.getElementById('prescriptionsList');
+    try {
+      const res = await api.get(`/prescriptions/patients/${id}?per_page=20`);
+      const prescriptions = res.data?.prescriptions || res.data?.items || [];
+      if (prescriptions.length === 0) { box.innerHTML = `<div class="empty-state"><i class="fa-solid fa-pills"></i><p>No previous prescriptions</p></div>`; return; }
+      box.innerHTML = prescriptions.map(rx => `
+        <div class="record-item">
+          <div class="record-item-header">
+            <div class="record-item-title">Prescription #${rx.id}</div>
+            <div class="record-item-date">${formatDate(rx.created_at || rx.prescribed_at)}</div>
+          </div>
+          <div class="record-item-body">
+            Status: <span class="badge ${rx.status === 'dispensed' ? 'badge-success' : 'badge-warning'}" style="font-size:0.68rem">${capitalize(rx.status || '—')}</span>
+            ${rx.prescribed_by_name ? ` · Prescribed by ${rx.prescribed_by_name}` : ''}
+          </div>
+        </div>`).join('');
+    } catch (err) {
+      box.innerHTML = `<div class="empty-state"><i class="fa-solid fa-circle-info"></i><p>No prescription records available</p></div>`;
+    }
+  }
+
+  async function loadLabResults(id) {
+    const box = document.getElementById('labsList');
+    try {
+      const res = await api.get(`/laboratory/requests/patients/${id}?per_page=20`);
+      const requests = res.data?.requests || res.data?.items || [];
+      if (requests.length === 0) { box.innerHTML = `<div class="empty-state"><i class="fa-solid fa-flask"></i><p>No previous lab tests</p></div>`; return; }
+      box.innerHTML = requests.map(r => `
+        <div class="record-item">
+          <div class="record-item-header">
+            <div class="record-item-title">${r.test_name || r.test_names || 'Lab Request #' + r.id}</div>
+            <div class="record-item-date">${formatDate(r.created_at || r.requested_at)}</div>
+          </div>
+          <div class="record-item-body">Status: <span class="badge ${r.status === 'completed' ? 'badge-success' : 'badge-info'}" style="font-size:0.68rem">${capitalize(r.status || '—')}</span></div>
+        </div>`).join('');
+    } catch (err) {
+      box.innerHTML = `<div class="empty-state"><i class="fa-solid fa-circle-info"></i><p>No lab records available</p></div>`;
+    }
+  }
+
+  function apiPhotoUrl(id) { return `${API_BASE}/patients/${id}/photo`; }
+
+  function renderPhotoBox(p) {
+    if (p.has_photo) {
+      document.getElementById('photoPreview').src = `${apiPhotoUrl(p.id)}?t=${Date.now()}`;
+      document.getElementById('photoPreview').style.display = 'block';
+      document.getElementById('photoPlaceholder').style.display = 'none';
+    }
+  }
+
+  const DOC_TYPE_LABELS = { id_card: 'ID Card', referral_letter: 'Referral Letter', consent_form: 'Consent Form', medical_document: 'Medical Document', other: 'Other' };
+  const DOC_TYPE_ICONS  = { id_card: 'fa-id-card', referral_letter: 'fa-file-export', consent_form: 'fa-file-signature', medical_document: 'fa-file-medical', other: 'fa-file' };
+
+  async function loadDocumentsTab(id) {
+    const box = document.getElementById('documentsList');
+    try {
+      const res = await api.get(`/documents/patients/${id}`);
+      const docs = res.data?.documents || [];
+      if (docs.length === 0) { box.innerHTML = `<div class="empty-state"><i class="fa-solid fa-folder-open"></i><p>No documents uploaded yet</p></div>`; return; }
+      box.innerHTML = docs.map(d => `
+        <div class="doc-row">
+          <div class="doc-icon"><i class="fa-solid ${DOC_TYPE_ICONS[d.doc_type] || 'fa-file'}"></i></div>
+          <div class="doc-info">
+            <div class="doc-name">${d.file_name}</div>
+            <div class="doc-meta">${DOC_TYPE_LABELS[d.doc_type] || d.doc_type} · Uploaded ${timeAgo(d.uploaded_at)} by ${d.uploaded_by_name || '—'}${d.notes ? ' · ' + d.notes : ''}</div>
+          </div>
+          <a href="${API_BASE}/documents/${d.id}/download" target="_blank" class="btn btn-secondary btn-sm" title="View/Download">
+            <i class="fa-solid fa-eye"></i>
+          </a>
+        </div>`).join('');
+    } catch (err) {
+      box.innerHTML = `<div class="empty-state"><i class="fa-solid fa-circle-exclamation"></i><p>Could not load documents</p></div>`;
+    }
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — Consultations</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="patients.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+          <span class="nav-label">My Patients</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Clinical</div>
+      <div class="nav-item">
+        <a href="queue.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-layer-group"></i></span>
+          <span class="nav-label">Queue</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="consultations.html" class="nav-link active">
+          <span class="nav-icon"><i class="fa-solid fa-stethoscope"></i></span>
+          <span class="nav-label">Consultations</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="laboratory.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-flask"></i></span>
+          <span class="nav-label">Laboratory</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="referrals.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-paper-plane"></i></span>
+          <span class="nav-label">Referrals</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="certificates.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-file-medical"></i></span>
+          <span class="nav-label">Certificates</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="reports.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-chart-column"></i></span>
+          <span class="nav-label">Reports</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">DR</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">Doctor</div>
+        <div class="sidebar-user-role" id="sidebarRole">Doctor</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="navbar-page-title">Consultations</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> Doctor <span>/</span> Consultations</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <button class="navbar-icon-btn"><i class="fa-solid fa-bell"></i></button>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">DR</div>
+        <span class="navbar-user-name" id="navbarName">Doctor</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">Doctor</div>
+      <div class="dropdown-header-role" id="dropdownRole">Doctor</div>
+    </div>
+    <a href="#" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+      <div>
+        <h2>Consultations</h2>
+        <p>View and manage patient consultation records</p>
+      </div>
+      <a href="queue.html" class="btn btn-primary">
+        <i class="fa-solid fa-plus"></i> New Consultation
+      </a>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:1.25rem 0">
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="fa-solid fa-notes-medical"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="totalConsult">—</div>
+          <div class="stat-label">Total</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon orange"><i class="fa-solid fa-folder-open"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="openConsult">—</div>
+          <div class="stat-label">Open</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="closedConsult">—</div>
+          <div class="stat-label">Closed</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon purple"><i class="fa-solid fa-calendar-month"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="monthConsult">—</div>
+          <div class="stat-label">This Month</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Consultations Table -->
+    <div class="card">
+      <div class="table-toolbar">
+        <div class="search-input-wrapper">
+          <i class="fa-solid fa-search"></i>
+          <input type="text" class="search-input" id="consultSearch"
+            placeholder="Search patient or complaint..." />
+        </div>
+        <div class="toolbar-actions">
+          <select class="form-control btn-sm" id="consultStatusFilter" style="height:38px;min-width:130px">
+            <option value="">All Status</option>
+            <option value="open">Open</option>
+            <option value="closed">Closed</option>
+            <option value="referred">Referred</option>
+          </select>
+          <button class="btn btn-secondary btn-sm" id="refreshConsultBtn">
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Patient</th>
+              <th>Chief Complaint</th>
+              <th>Visit Date</th>
+              <th>Diagnoses</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="consultTableBody">
+            <tr><td colspan="6">
+              <div class="empty-state">
+                <div class="spinner-sm" style="margin:0 auto 0.5rem"></div>
+                <p>Loading consultations...</p>
+              </div>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="consultPagination"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── View Consultation Modal ── -->
+<div class="modal-overlay" id="viewConsultModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-stethoscope" style="color:var(--primary);margin-right:0.5rem"></i>Consultation Details</h3>
+      <button class="modal-close" id="closeViewConsult"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="consultDetailBody">
+      <div class="empty-state"><div class="spinner-sm" style="margin:0 auto"></div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="closeViewConsultBtn">Close</button>
+      <button class="btn btn-primary" id="closeConsultBtn" style="display:none">
+        <i class="fa-solid fa-circle-check"></i> Close Consultation
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script>
+  requireAuth('doctor');
+
+  let currentPage    = 1;
+  let searchQuery    = '';
+  let statusFilter   = '';
+  let currentConsultId = null;
+
+  const statusConfig = {
+    open:     { color: 'badge-warning', label: 'Open' },
+    closed:   { color: 'badge-success', label: 'Closed' },
+    referred: { color: 'badge-info',    label: 'Referred' },
+  };
+
+  /* ── Load Consultations ── */
+  async function loadConsultations() {
+    const tbody = document.getElementById('consultTableBody');
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="spinner-sm" style="margin:0 auto 0.5rem"></div><p>Loading...</p></div></td></tr>`;
+
+    try {
+      let url = `/consultations?page=${currentPage}&per_page=15&my_consultations=true`;
+      if (searchQuery)  url += `&search=${encodeURIComponent(searchQuery)}`;
+      if (statusFilter) url += `&status=${statusFilter}`;
+
+      const res    = await api.get(url);
+      const data   = res.data;
+      const consults = data.consultations || data.items || data || [];
+      const total    = data.total  || consults.length;
+      const pages    = data.pages  || 1;
+
+      /* Summary counts */
+      setText('totalConsult',  formatNumber(total));
+      setText('openConsult',   formatNumber(consults.filter(c=>c.status==='open').length));
+      setText('closedConsult', formatNumber(consults.filter(c=>c.status==='closed').length));
+      setText('monthConsult',  formatNumber(consults.filter(c=>{
+        const d = new Date(c.visit_date||c.created_at);
+        const now = new Date();
+        return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+      }).length));
+
+      if (consults.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-notes-medical"></i><h4>No consultations found</h4><p>Try adjusting your filters</p></div></td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = consults.map(c => {
+        const s    = statusConfig[c.status] || { color: 'badge-muted', label: c.status };
+        const name = c.patient?.full_name || c.patient_name || '—';
+        const diagnoses = c.diagnoses?.length
+          ? c.diagnoses.slice(0,2).map(d => `<span class="badge badge-muted" style="margin-right:3px;margin-bottom:2px;font-size:0.7rem">${d.description||d.code||d}</span>`).join('')
+          : '<span style="color:var(--text-light);font-size:0.82rem">None recorded</span>';
+
+        return `
+          <tr style="cursor:pointer" onclick="viewConsultation(${c.id})">
+            <td>
+              <div style="font-weight:500">${name}</div>
+              <div style="font-size:0.75rem;color:var(--text-muted)">${c.patient?.patient_id||''}</div>
+            </td>
+            <td>
+              <div style="font-size:0.875rem;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                ${c.chief_complaint||c.complaint||'—'}
+              </div>
+            </td>
+            <td class="muted">${formatDate(c.visit_date||c.created_at)}</td>
+            <td>${diagnoses}</td>
+            <td><span class="badge ${s.color}">${s.label}</span></td>
+            <td>
+              <button class="btn btn-info btn-sm" onclick="event.stopPropagation();viewConsultation(${c.id})">
+                <i class="fa-solid fa-eye"></i> View
+              </button>
+            </td>
+          </tr>`;
+      }).join('');
+
+      renderPagination(currentPage, pages);
+
+    } catch(err) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-circle-exclamation" style="color:var(--danger)"></i><h4>Failed to load</h4><p>${err.message}</p></div></td></tr>`;
+    }
+  }
+
+  function renderPagination(current, total) {
+    const c = document.getElementById('consultPagination');
+    if (total <= 1) { c.innerHTML = ''; return; }
+    let html = `<button class="page-btn" onclick="goPage(${current-1})" ${current===1?'disabled':''}><i class="fa-solid fa-chevron-left"></i></button>`;
+    for (let i = 1; i <= total; i++) {
+      if (i===1||i===total||(i>=current-1&&i<=current+1))
+        html += `<button class="page-btn ${i===current?'active':''}" onclick="goPage(${i})">${i}</button>`;
+      else if (i===current-2||i===current+2)
+        html += `<span style="padding:0 4px;color:var(--text-light)">…</span>`;
+    }
+    html += `<button class="page-btn" onclick="goPage(${current+1})" ${current===total?'disabled':''}><i class="fa-solid fa-chevron-right"></i></button>`;
+    c.innerHTML = html;
+  }
+
+  function goPage(p) { currentPage = p; loadConsultations(); }
+
+  /* ── Filters ── */
+  let searchTimer;
+  document.getElementById('consultSearch').addEventListener('input', e => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { searchQuery = e.target.value.trim(); currentPage = 1; loadConsultations(); }, 400);
+  });
+  document.getElementById('consultStatusFilter').addEventListener('change', e => {
+    statusFilter = e.target.value; currentPage = 1; loadConsultations();
+  });
+  document.getElementById('refreshConsultBtn').addEventListener('click', loadConsultations);
+
+  /* ── View Consultation Detail ── */
+  async function viewConsultation(id) {
+    currentConsultId = id;
+    document.getElementById('viewConsultModal').classList.add('open');
+    document.getElementById('closeConsultBtn').style.display = 'none';
+    document.getElementById('consultDetailBody').innerHTML =
+      '<div class="empty-state"><div class="spinner-sm" style="margin:0 auto"></div></div>';
+
+    try {
+      const res = await api.get(`/consultations/${id}`);
+      const c   = res.data;
+      const name = c.patient?.full_name || c.patient_name || '—';
+      const s    = statusConfig[c.status] || { color: 'badge-muted', label: c.status };
+
+      /* Show close button only for open consultations */
+      if (c.status === 'open') {
+        document.getElementById('closeConsultBtn').style.display = 'inline-flex';
+      }
+
+      document.getElementById('consultDetailBody').innerHTML = `
+
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--border-light)">
+          <div style="display:flex;align-items:center;gap:1rem">
+            <div style="width:48px;height:48px;background:var(--primary-light);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;color:var(--primary)">
+              ${name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase()}
+            </div>
+            <div>
+              <div style="font-size:1rem;font-weight:600;color:var(--text-dark)">${name}</div>
+              <div style="font-size:0.8rem;color:var(--text-muted)">${formatDate(c.visit_date||c.created_at)}</div>
+            </div>
+          </div>
+          <span class="badge ${s.color}" style="font-size:0.82rem">${s.label}</span>
+        </div>
+
+        <!-- Chief Complaint -->
+        <div class="form-section">
+          <div class="form-section-title">Chief Complaint</div>
+          <p style="font-size:0.9rem;color:var(--text-dark);margin:0">${c.chief_complaint||c.complaint||'Not recorded'}</p>
+        </div>
+
+        <!-- Vitals -->
+        ${c.vitals ? `
+        <div class="form-section">
+          <div class="form-section-title">Vital Signs</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:0.75rem">
+            ${vitalBox('Temperature', c.vitals.temperature, '°C', 'fa-thermometer-half')}
+            ${vitalBox('Blood Pressure', c.vitals.blood_pressure, 'mmHg', 'fa-heart-pulse')}
+            ${vitalBox('Pulse Rate', c.vitals.pulse_rate, 'bpm', 'fa-heart')}
+            ${vitalBox('Respiratory Rate', c.vitals.respiratory_rate, '/min', 'fa-lungs')}
+            ${vitalBox('SpO2', c.vitals.oxygen_saturation, '%', 'fa-circle-dot')}
+            ${vitalBox('Weight', c.vitals.weight, 'kg', 'fa-weight-scale')}
+          </div>
+        </div>` : ''}
+
+        <!-- Examination Notes -->
+        ${c.examination_notes ? `
+        <div class="form-section">
+          <div class="form-section-title">Examination Notes</div>
+          <p style="font-size:0.875rem;color:var(--text-dark);white-space:pre-wrap;margin:0">${c.examination_notes}</p>
+        </div>` : ''}
+
+        <!-- Diagnoses -->
+        <div class="form-section">
+          <div class="form-section-title">Diagnoses</div>
+          ${c.diagnoses?.length
+            ? c.diagnoses.map(d => `
+              <div style="display:flex;align-items:flex-start;gap:0.5rem;margin-bottom:0.5rem">
+                <i class="fa-solid fa-circle-dot" style="color:var(--primary);margin-top:3px;font-size:0.75rem"></i>
+                <span style="font-size:0.875rem;color:var(--text-dark)">${d.description||d}</span>
+              </div>`).join('')
+            : '<p style="color:var(--text-muted);font-size:0.875rem;margin:0">No diagnoses recorded</p>'}
+        </div>
+
+        <!-- Treatment Plan -->
+        ${c.treatment_plan ? `
+        <div class="form-section">
+          <div class="form-section-title">Treatment Plan</div>
+          <p style="font-size:0.875rem;color:var(--text-dark);white-space:pre-wrap;margin:0">${c.treatment_plan}</p>
+        </div>` : ''}
+
+        <!-- Follow-up -->
+        ${c.follow_up_date ? `
+        <div class="form-section">
+          <div class="form-section-title">Follow-up</div>
+          <div style="display:flex;align-items:center;gap:0.5rem">
+            <i class="fa-solid fa-calendar-check" style="color:var(--primary)"></i>
+            <span style="font-size:0.875rem;font-weight:500">${formatDate(c.follow_up_date)}</span>
+            ${c.follow_up_notes ? `<span style="color:var(--text-muted);font-size:0.82rem">— ${c.follow_up_notes}</span>` : ''}
+          </div>
+        </div>` : ''}
+      `;
+
+    } catch(err) {
+      document.getElementById('consultDetailBody').innerHTML =
+        `<div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i><span>${err.message}</span></div>`;
+    }
+  }
+
+  function vitalBox(label, value, unit, icon) {
+    return `
+      <div style="background:var(--page-bg);border-radius:8px;padding:0.75rem;text-align:center">
+        <i class="fa-solid ${icon}" style="color:var(--primary);font-size:1rem;margin-bottom:0.35rem"></i>
+        <div style="font-size:1rem;font-weight:700;color:var(--text-dark)">${value ?? '—'} <span style="font-size:0.7rem;color:var(--text-muted)">${value ? unit : ''}</span></div>
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">${label}</div>
+      </div>`;
+  }
+
+  /* ── Close Consultation ── */
+  document.getElementById('closeConsultBtn').addEventListener('click', async () => {
+    if (!confirm('Mark this consultation as closed?')) return;
+    try {
+      await api.put(`/consultations/${currentConsultId}`, { status: 'closed' });
+      showToast('Consultation closed successfully.', 'success');
+      document.getElementById('viewConsultModal').classList.remove('open');
+      loadConsultations();
+    } catch(err) { showToast(err.message, 'error'); }
+  });
+
+  /* ── Close Modal ── */
+  function closeModal() {
+    document.getElementById('viewConsultModal').classList.remove('open');
+  }
+  document.getElementById('closeViewConsult').addEventListener('click', closeModal);
+  document.getElementById('closeViewConsultBtn').addEventListener('click', closeModal);
+  document.getElementById('viewConsultModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  /* ── Init ── */
+  loadConsultations();
+</script>
+</body>
+</html>

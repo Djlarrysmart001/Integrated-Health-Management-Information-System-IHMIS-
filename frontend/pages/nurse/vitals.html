@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — Record Vitals</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+  <style>
+    .vitals-patient-card {
+      display:flex; align-items:center; gap:1.25rem;
+      padding:1.5rem; background:var(--card-bg);
+      border:1px solid var(--border-light); border-radius:var(--border-radius);
+      box-shadow:var(--shadow); margin-bottom:1.25rem;
+    }
+    .vitals-avatar {
+      width:64px; height:64px; border-radius:50%;
+      background:var(--primary-light); color:var(--primary);
+      display:flex; align-items:center; justify-content:center;
+      font-weight:700; font-size:1.4rem; flex-shrink:0;
+    }
+    .unit-suffix { font-size:0.78rem; color:var(--text-light); margin-top:2px; }
+
+    .bmi-box {
+      display:flex; align-items:center; justify-content:center; flex-direction:column;
+      background:var(--page-bg); border:1.5px solid var(--border); border-radius:var(--border-radius-sm);
+      height:40px; font-weight:700; color:var(--text-dark);
+    }
+    .bmi-label { font-size:0.68rem; font-weight:500; color:var(--text-muted); margin-top:2px; }
+
+    .urgency-option {
+      border:1.5px solid var(--border); border-radius:var(--border-radius-sm);
+      padding:0.8rem 0.6rem; cursor:pointer; text-align:center; transition:all 0.15s;
+    }
+    .urgency-option input { display:none; }
+    .urgency-option.emergency.selected { border-color:var(--danger);  background:#fef2f2; }
+    .urgency-option.high.selected      { border-color:#e67e22;       background:#fff7ed; }
+    .urgency-option.normal.selected    { border-color:var(--info);   background:#eff6ff; }
+    .urgency-option.low.selected       { border-color:var(--success);background:#f0fdf4; }
+    .urgency-option-label { font-weight:600; font-size:0.8rem; margin-top:0.3rem; display:block; }
+
+    .flag-chip {
+      display:inline-flex; align-items:center; gap:0.4rem;
+      border:1.5px solid var(--border); border-radius:20px;
+      padding:0.45rem 0.9rem; font-size:0.82rem; cursor:pointer;
+      transition:all 0.15s; user-select:none;
+    }
+    .flag-chip input { display:none; }
+    .flag-chip.selected { border-color:var(--danger); background:#fef2f2; color:var(--danger); font-weight:600; }
+  </style>
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Patient Flow</div>
+      <div class="nav-item">
+        <a href="queue.html" class="nav-link active">
+          <span class="nav-icon"><i class="fa-solid fa-layer-group"></i></span>
+          <span class="nav-label">Queue</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="patients.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+          <span class="nav-label">Patients</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">NR</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">Nurse</div>
+        <div class="sidebar-user-role" id="sidebarRole">Nurse</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="navbar-page-title">Record Vitals</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> Nurse <span>/</span> Queue <span>/</span> Record Vitals</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <a href="notifications.html" class="navbar-icon-btn"><i class="fa-solid fa-bell"></i></a>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">NR</div>
+        <span class="navbar-user-name" id="navbarName">Nurse</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">Nurse</div>
+      <div class="dropdown-header-role" id="dropdownRole">Nurse</div>
+    </div>
+    <a href="profile.html" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <div class="page-header">
+      <h2>Record Vitals &amp; Triage</h2>
+      <p>Record this patient's vital signs and assessment, then forward the file to the Doctor</p>
+    </div>
+
+    <div id="loadingState" class="empty-state">
+      <div class="spinner-sm" style="margin:0 auto 0.5rem"></div>
+      <p>Loading patient...</p>
+    </div>
+
+    <div id="pageContent" style="display:none">
+
+      <!-- Patient header -->
+      <div class="vitals-patient-card">
+        <div class="vitals-avatar" id="patientAvatar">--</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:1.2rem;font-weight:700;color:var(--text-dark)" id="patientName">—</div>
+          <div style="display:flex;flex-wrap:wrap;gap:0.4rem 1.1rem;margin-top:0.35rem;font-size:0.85rem;color:var(--text-muted)">
+            <span><strong id="patientNumber" style="color:var(--text-dark)">—</strong></span>
+            <span id="patientType">—</span>
+            <span id="patientAgeGender">—</span>
+            <span>Queue #<strong id="queueNumber" style="color:var(--text-dark)">—</strong></span>
+          </div>
+        </div>
+        <a href="patient-file.html" id="viewFileLink" class="btn btn-secondary btn-sm">
+          <i class="fa-solid fa-folder-open"></i> View File
+        </a>
+      </div>
+
+      <!-- Medical alerts -->
+      <div id="alertsBanner" style="margin-bottom:1.25rem"></div>
+
+      <form id="vitalsForm">
+        <!-- Vital Signs -->
+        <div class="form-section">
+          <div class="form-section-title">Vital Signs</div>
+          <div class="form-grid form-grid-3">
+            <div class="form-group">
+              <label class="form-label">Weight <span class="required">*</span></label>
+              <input type="number" step="0.1" min="0" class="form-control" id="vWeight" placeholder="e.g. 62.5" required />
+              <div class="unit-suffix">kg</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Height <span class="required">*</span></label>
+              <input type="number" step="0.1" min="0" class="form-control" id="vHeight" placeholder="e.g. 170" required />
+              <div class="unit-suffix">cm</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">BMI</label>
+              <div class="bmi-box" id="bmiBox">—</div>
+              <div class="bmi-label" id="bmiCategory">Calculated automatically</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Temperature <span class="required">*</span></label>
+              <input type="number" step="0.1" min="0" class="form-control" id="vTemp" placeholder="e.g. 36.8" required />
+              <div class="unit-suffix">°C</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Blood Pressure (Systolic) <span class="required">*</span></label>
+              <input type="number" step="1" min="0" class="form-control" id="vBpSystolic" placeholder="e.g. 120" required />
+              <div class="unit-suffix">mmHg</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Blood Pressure (Diastolic) <span class="required">*</span></label>
+              <input type="number" step="1" min="0" class="form-control" id="vBpDiastolic" placeholder="e.g. 80" required />
+              <div class="unit-suffix">mmHg</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Pulse Rate <span class="required">*</span></label>
+              <input type="number" step="1" min="0" class="form-control" id="vPulse" placeholder="e.g. 78" required />
+              <div class="unit-suffix">bpm</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Respiratory Rate</label>
+              <input type="number" step="1" min="0" class="form-control" id="vRespRate" placeholder="e.g. 16" />
+              <div class="unit-suffix">breaths/min (optional)</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Oxygen Saturation (SpO₂)</label>
+              <input type="number" step="1" min="0" max="100" class="form-control" id="vSpo2" placeholder="e.g. 98" />
+              <div class="unit-suffix">% (optional)</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Blood Sugar</label>
+              <input type="number" step="0.1" min="0" class="form-control" id="vBloodSugar" placeholder="e.g. 5.4" />
+              <div class="unit-suffix">mmol/L (optional)</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Pain Score</label>
+              <input type="number" step="1" min="0" max="10" class="form-control" id="vPainScore" placeholder="0–10" />
+              <div class="unit-suffix">0 = none, 10 = worst (optional)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Triage -->
+        <div class="form-section">
+          <div class="form-section-title">Triage</div>
+          <div class="form-grid form-grid-2">
+            <div class="form-group">
+              <label class="form-label">Chief Complaint <span class="required">*</span></label>
+              <input type="text" class="form-control" id="tComplaint" placeholder="What the patient came in for" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Duration of Illness</label>
+              <input type="text" class="form-control" id="tDuration" placeholder="e.g. 3 days, since this morning" />
+            </div>
+            <div class="form-group" style="grid-column:1/-1">
+              <label class="form-label">Symptoms</label>
+              <textarea class="form-control" id="tSymptoms" placeholder="Reported symptoms..."></textarea>
+            </div>
+            <div class="form-group" style="grid-column:1/-1">
+              <label class="form-label">General Observations</label>
+              <textarea class="form-control" id="tObservations" placeholder="What you observed on assessment..."></textarea>
+            </div>
+          </div>
+
+          <label class="form-label" style="display:block;margin:1.1rem 0 0.6rem">Level of Urgency <span class="required">*</span></label>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.75rem">
+            <label class="urgency-option emergency" id="urgencyEmergencyBox">
+              <input type="radio" name="urgency" value="emergency" />
+              <i class="fa-solid fa-truck-medical" style="color:var(--danger)"></i>
+              <span class="urgency-option-label">Emergency</span>
+            </label>
+            <label class="urgency-option high" id="urgencyHighBox">
+              <input type="radio" name="urgency" value="high" />
+              <i class="fa-solid fa-triangle-exclamation" style="color:#e67e22"></i>
+              <span class="urgency-option-label">High</span>
+            </label>
+            <label class="urgency-option normal" id="urgencyNormalBox">
+              <input type="radio" name="urgency" value="normal" checked />
+              <i class="fa-solid fa-circle-info" style="color:var(--info)"></i>
+              <span class="urgency-option-label">Normal</span>
+            </label>
+            <label class="urgency-option low" id="urgencyLowBox">
+              <input type="radio" name="urgency" value="low" />
+              <i class="fa-solid fa-check-circle" style="color:var(--success)"></i>
+              <span class="urgency-option-label">Low</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Nursing Notes -->
+        <div class="form-section">
+          <div class="form-section-title">Nursing Notes</div>
+          <label class="form-label" style="display:block;margin-bottom:0.6rem">Quick Flags <span style="font-weight:400;color:var(--text-muted);font-size:0.78rem">(select any that apply)</span></label>
+          <div style="display:flex;flex-wrap:wrap;gap:0.6rem;margin-bottom:1.1rem" id="flagContainer">
+            <label class="flag-chip" data-flag="appears_weak"><input type="checkbox" /> Appears weak</label>
+            <label class="flag-chip" data-flag="high_fever"><input type="checkbox" /> High fever observed</label>
+            <label class="flag-chip" data-flag="difficulty_breathing"><input type="checkbox" /> Difficulty breathing</label>
+            <label class="flag-chip" data-flag="bleeding"><input type="checkbox" /> Bleeding</label>
+            <label class="flag-chip" data-flag="pregnant"><input type="checkbox" /> Pregnancy status</label>
+            <label class="flag-chip" data-flag="mobility_concerns"><input type="checkbox" /> Mobility concerns</label>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Additional Notes <span style="font-weight:400;color:var(--text-muted);font-size:0.78rem">(visible to the Doctor)</span></label>
+            <textarea class="form-control" id="nNotes" placeholder="Any other observations worth flagging to the Doctor..."></textarea>
+          </div>
+        </div>
+
+        <div class="alert alert-danger" id="vitalsError" style="display:none">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          <span id="vitalsErrorMsg"></span>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:0.75rem">
+          <a href="queue.html" class="btn btn-secondary">Cancel</a>
+          <button type="submit" class="btn btn-primary" id="submitBtn">
+            <span class="spinner-sm" id="submitSpinner" style="display:none;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+            <i class="fa-solid fa-user-doctor" id="submitIcon"></i>
+            <span id="submitText">Save &amp; Forward to Doctor</span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div id="errorState" class="empty-state" style="display:none">
+      <i class="fa-solid fa-circle-exclamation" style="color:var(--danger)"></i>
+      <h4>Could not load patient</h4>
+      <p id="errorMessage"></p>
+    </div>
+
+  </main>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script>
+  requireAuth('nurse');
+
+  const urlParams     = new URLSearchParams(window.location.search);
+  const healthFileId  = urlParams.get('health_file_id');
+  const patientId     = urlParams.get('patient_id');
+
+  if (!patientId || !healthFileId) {
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('errorState').style.display = 'block';
+    document.getElementById('errorMessage').textContent =
+      'Missing patient or health file reference. Go back to the Queue and select a patient from there.';
+  } else {
+    document.getElementById('viewFileLink').href = `patient-file.html?patient_id=${patientId}`;
+    loadPatient();
+  }
+
+  async function loadPatient() {
+    try {
+      const res = await api.get(`/patients/${patientId}`);
+      const p = res.data;
+
+      document.getElementById('patientAvatar').textContent = `${(p.first_name?.[0]||'')}${(p.last_name?.[0]||'')}`;
+      document.getElementById('patientName').textContent = p.full_name;
+      document.getElementById('patientNumber').textContent = p.patient_number;
+      document.getElementById('patientType').textContent = capitalize(p.patient_type);
+      document.getElementById('patientAgeGender').textContent =
+        `${p.age != null ? 'Age ' + p.age : 'Age —'} · ${capitalize(p.gender || '—')}`;
+
+      try {
+        const qRes = await api.get('/health-files/queue/with_nurse?per_page=50');
+        const files = (function extractQueueList(resData) {
+          if (!resData) return [];
+          if (Array.isArray(resData)) return resData;
+          const candidates = ['health_files', 'items', 'data', 'results', 'queue', 'records', 'patients'];
+          for (const key of candidates) { if (Array.isArray(resData[key])) return resData[key]; }
+          for (const key in resData) { if (Array.isArray(resData[key])) return resData[key]; }
+          return [];
+        })(qRes.data);
+        const match = files.find(f => String(f.id) === String(healthFileId));
+        if (match) document.getElementById('queueNumber').textContent = match.queue_number ?? '—';
+      } catch (e) { /* non-critical */ }
+
+      loadMedicalAlerts();
+
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('pageContent').style.display = 'block';
+
+    } catch (err) {
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('errorState').style.display = 'block';
+      document.getElementById('errorMessage').textContent = err.message;
+    }
+  }
+
+  /* Read-only medical alert banner — allergies / chronic conditions on file */
+  async function loadMedicalAlerts() {
+    const banner = document.getElementById('alertsBanner');
+    try {
+      const res = await api.get(`/medical-records/patients/${patientId}`);
+      const rec = res.data;
+      const alerts = [];
+      if (rec.known_allergies) {
+        alerts.push(`<div class="alert alert-danger"><i class="fa-solid fa-triangle-exclamation"></i><span><strong>Allergies:</strong> ${rec.known_allergies}</span></div>`);
+      }
+      if (rec.chronic_conditions) {
+        alerts.push(`<div class="alert alert-warning"><i class="fa-solid fa-notes-medical"></i><span><strong>Chronic Conditions:</strong> ${rec.chronic_conditions}</span></div>`);
+      }
+      banner.innerHTML = alerts.join('') || `<div class="alert alert-success"><i class="fa-solid fa-circle-check"></i><span>No known allergies or chronic conditions on file</span></div>`;
+    } catch (err) {
+      banner.innerHTML = '';
+    }
+  }
+
+  /* ── BMI auto-calculation ── */
+  const weightInput = document.getElementById('vWeight');
+  const heightInput = document.getElementById('vHeight');
+  function updateBMI() {
+    const w = parseFloat(weightInput.value);
+    const h = parseFloat(heightInput.value);
+    const box = document.getElementById('bmiBox');
+    const cat = document.getElementById('bmiCategory');
+    if (!w || !h) { box.textContent = '—'; cat.textContent = 'Calculated automatically'; return; }
+    const hm = h / 100;
+    const bmi = w / (hm * hm);
+    box.textContent = bmi.toFixed(1);
+    let label = 'Normal', color = 'var(--success)';
+    if (bmi < 18.5)      { label = 'Underweight'; color = 'var(--info)'; }
+    else if (bmi >= 25 && bmi < 30) { label = 'Overweight'; color = 'var(--warning)'; }
+    else if (bmi >= 30)  { label = 'Obese'; color = 'var(--danger)'; }
+    cat.textContent = label;
+    cat.style.color = color;
+  }
+  weightInput.addEventListener('input', updateBMI);
+  heightInput.addEventListener('input', updateBMI);
+
+  /* ── Urgency selector visuals ── */
+  const urgencyBoxIds = { emergency: 'urgencyEmergencyBox', high: 'urgencyHighBox', normal: 'urgencyNormalBox', low: 'urgencyLowBox' };
+  document.querySelectorAll('input[name="urgency"]').forEach(input => {
+    input.addEventListener('change', () => {
+      document.querySelectorAll('.urgency-option').forEach(el => el.classList.remove('selected'));
+      document.getElementById(urgencyBoxIds[input.value]).classList.add('selected');
+    });
+  });
+  document.getElementById('urgencyNormalBox').classList.add('selected');
+
+  /* ── Nursing flag chips ── */
+  document.querySelectorAll('.flag-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const input = chip.querySelector('input');
+      input.checked = !input.checked;
+      chip.classList.toggle('selected', input.checked);
+    });
+  });
+
+  /* ── Submit: record vitals + triage + nursing notes, then forward to doctor ── */
+  document.getElementById('vitalsForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errBox = document.getElementById('vitalsError');
+    errBox.style.display = 'none';
+
+    const weight      = weightInput.value;
+    const height      = heightInput.value;
+    const temperature = document.getElementById('vTemp').value;
+    const bpSystolic  = document.getElementById('vBpSystolic').value;
+    const bpDiastolic = document.getElementById('vBpDiastolic').value;
+    const pulse       = document.getElementById('vPulse').value;
+    const complaint   = document.getElementById('tComplaint').value.trim();
+    const urgencyEl   = document.querySelector('input[name="urgency"]:checked');
+
+    if (!weight || !height || !temperature || !bpSystolic || !bpDiastolic || !pulse) {
+      document.getElementById('vitalsErrorMsg').textContent = 'Please fill in all required vital sign fields.';
+      errBox.style.display = 'flex'; return;
+    }
+    if (!complaint) {
+      document.getElementById('vitalsErrorMsg').textContent = 'Chief complaint is required for triage.';
+      errBox.style.display = 'flex'; return;
+    }
+
+    const nursingFlags = Array.from(document.querySelectorAll('.flag-chip input:checked'))
+      .map(input => input.closest('.flag-chip').dataset.flag);
+
+    setLoading(true);
+
+    try {
+      await api.post('/vitals', {
+        patient_id:       parseInt(patientId),
+        health_file_id:   parseInt(healthFileId),
+        weight:           parseFloat(weight),
+        height:           parseFloat(height),
+        bmi:              parseFloat(document.getElementById('bmiBox').textContent) || null,
+        temperature:      parseFloat(temperature),
+        bp_systolic:      parseInt(bpSystolic),
+        bp_diastolic:     parseInt(bpDiastolic),
+        pulse_rate:       parseInt(pulse),
+        respiratory_rate: document.getElementById('vRespRate').value ? parseInt(document.getElementById('vRespRate').value) : null,
+        spo2:             document.getElementById('vSpo2').value ? parseInt(document.getElementById('vSpo2').value) : null,
+        blood_sugar:      document.getElementById('vBloodSugar').value ? parseFloat(document.getElementById('vBloodSugar').value) : null,
+        pain_score:       document.getElementById('vPainScore').value ? parseInt(document.getElementById('vPainScore').value) : null,
+
+        chief_complaint:  complaint,
+        symptoms:         document.getElementById('tSymptoms').value.trim() || null,
+        duration_of_illness: document.getElementById('tDuration').value.trim() || null,
+        general_observations: document.getElementById('tObservations').value.trim() || null,
+        urgency_level:    urgencyEl.value,
+
+        nursing_flags:    nursingFlags,
+        nursing_notes:    document.getElementById('nNotes').value.trim() || null,
+      });
+
+      // Real health_files route: named PATCH transitions, not a generic
+      // PUT with a status body. Nurse -> Doctor is /forward-to-doctor.
+      await api.patch(`/health-files/${healthFileId}/forward-to-doctor`);
+
+      showToast('Vitals recorded and patient forwarded to Doctor.', 'success');
+      window.location.href = 'queue.html';
+
+    } catch (err) {
+      document.getElementById('vitalsErrorMsg').textContent = err.message;
+      errBox.style.display = 'flex';
+      setLoading(false);
+    }
+  });
+
+  function setLoading(state) {
+    document.getElementById('submitBtn').disabled = state;
+    document.getElementById('submitSpinner').style.display = state ? 'inline-block' : 'none';
+    document.getElementById('submitIcon').style.display = state ? 'none' : 'inline-block';
+    document.getElementById('submitText').textContent = state ? 'Saving...' : 'Save & Forward to Doctor';
+  }
+</script>
+</body>
+</html>

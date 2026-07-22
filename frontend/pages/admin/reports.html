@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — Reports</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+  <!-- Chart.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    .report-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    @media(max-width:900px){ .report-grid { grid-template-columns: 1fr; } }
+    .chart-container { position: relative; height: 260px; }
+    .report-stat-row {
+      display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem;
+    }
+    .report-stat {
+      flex: 1; min-width: 140px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-light);
+      border-radius: var(--border-radius);
+      padding: 1.1rem 1.25rem;
+      box-shadow: var(--shadow);
+    }
+    .report-stat-value { font-size: 1.75rem; font-weight: 700; color: var(--text-dark); }
+    .report-stat-label { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; }
+    .report-stat-icon  { font-size: 1.5rem; margin-bottom: 0.5rem; }
+  </style>
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="patients.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+          <span class="nav-label">Patients</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Management</div>
+      <div class="nav-item">
+        <a href="users.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-user-gear"></i></span>
+          <span class="nav-label">User Management</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="reports.html" class="nav-link active">
+          <span class="nav-icon"><i class="fa-solid fa-chart-pie"></i></span>
+          <span class="nav-label">Reports</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="audit-log.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-shield-halved"></i></span>
+          <span class="nav-label">Audit Log</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">AD</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">Admin</div>
+        <div class="sidebar-user-role" id="sidebarRole">Administrator</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="navbar-page-title">Reports</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> Admin <span>/</span> Reports</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <button class="navbar-icon-btn"><i class="fa-solid fa-bell"></i><span class="notif-dot"></span></button>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">AD</div>
+        <span class="navbar-user-name" id="navbarName">Admin</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">Admin</div>
+      <div class="dropdown-header-role" id="dropdownRole">Administrator</div>
+    </div>
+    <a href="#" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <a href="#" class="dropdown-item"><i class="fa-solid fa-gear"></i> Settings</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <!-- Page Header -->
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.25rem">
+      <div>
+        <h2>Reports &amp; Analytics</h2>
+        <p>Overview of health centre activity and statistics</p>
+      </div>
+      <div style="display:flex;gap:0.75rem;align-items:center">
+        <select class="form-control btn-sm" id="reportPeriod" style="height:38px;min-width:160px">
+          <option value="this_month">This Month</option>
+          <option value="last_month">Last Month</option>
+          <option value="this_year">This Year</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" id="refreshReportBtn">
+          <i class="fa-solid fa-rotate-right"></i> Refresh
+        </button>
+      </div>
+    </div>
+
+    <!-- Top Stats Row -->
+    <div class="report-stat-row" id="reportStatsRow">
+      <div class="report-stat">
+        <div class="report-stat-icon" style="color:var(--info)"><i class="fa-solid fa-users"></i></div>
+        <div class="report-stat-value" id="rTotalPatients">—</div>
+        <div class="report-stat-label">Total Patients</div>
+      </div>
+      <div class="report-stat">
+        <div class="report-stat-icon" style="color:var(--primary)"><i class="fa-solid fa-stethoscope"></i></div>
+        <div class="report-stat-value" id="rConsultations">—</div>
+        <div class="report-stat-label">Consultations</div>
+      </div>
+      <div class="report-stat">
+        <div class="report-stat-icon" style="color:var(--warning)"><i class="fa-solid fa-calendar-check"></i></div>
+        <div class="report-stat-value" id="rAppointments">—</div>
+        <div class="report-stat-label">Appointments</div>
+      </div>
+      <div class="report-stat">
+        <div class="report-stat-icon" style="color:var(--danger)"><i class="fa-solid fa-flask"></i></div>
+        <div class="report-stat-value" id="rLabTests">—</div>
+        <div class="report-stat-label">Lab Tests</div>
+      </div>
+      <div class="report-stat">
+        <div class="report-stat-icon" style="color:#8b5cf6"><i class="fa-solid fa-pills"></i></div>
+        <div class="report-stat-value" id="rPrescriptions">—</div>
+        <div class="report-stat-label">Prescriptions</div>
+      </div>
+      <div class="report-stat">
+        <div class="report-stat-icon" style="color:var(--primary)"><i class="fa-solid fa-user-plus"></i></div>
+        <div class="report-stat-value" id="rNewPatients">—</div>
+        <div class="report-stat-label">New Patients</div>
+      </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="report-grid">
+      <!-- Monthly Visits Trend -->
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-chart-line" style="color:var(--primary);margin-right:0.4rem"></i>Monthly Visit Trend</h3>
+          <span style="font-size:0.78rem;color:var(--text-muted)" id="trendLabel">This month</span>
+        </div>
+        <div class="card-body">
+          <div class="chart-container">
+            <canvas id="visitTrendChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Patient Gender Distribution -->
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-chart-pie" style="color:var(--primary);margin-right:0.4rem"></i>Patient Demographics</h3>
+        </div>
+        <div class="card-body">
+          <div class="chart-container">
+            <canvas id="genderChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="report-grid">
+      <!-- Staff by Role -->
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-chart-bar" style="color:var(--primary);margin-right:0.4rem"></i>Staff by Role</h3>
+        </div>
+        <div class="card-body">
+          <div class="chart-container">
+            <canvas id="staffRoleChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pharmacy & Lab Summary -->
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-chart-column" style="color:var(--primary);margin-right:0.4rem"></i>Clinical Activity Summary</h3>
+        </div>
+        <div class="card-body">
+          <div class="chart-container">
+            <canvas id="clinicalChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monthly Visit Data Table -->
+    <div class="card">
+      <div class="card-header">
+        <h3><i class="fa-solid fa-table" style="color:var(--primary);margin-right:0.4rem"></i>Daily Visit Log (This Month)</h3>
+        <span style="font-size:0.78rem;color:var(--text-muted)" id="visitTableLabel"></span>
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Visits</th>
+              <th>Trend</th>
+            </tr>
+          </thead>
+          <tbody id="visitTableBody">
+            <tr><td colspan="3"><div class="empty-state"><div class="spinner-sm" style="margin:0 auto"></div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script>
+  requireAuth('admin');
+
+  /* Chart defaults */
+  Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
+  Chart.defaults.font.size   = 12;
+  Chart.defaults.color       = '#6b7280';
+
+  let visitChart, genderChart, staffChart, clinicalChart;
+
+  /* ── Load all report data ── */
+  async function loadReports() {
+    try {
+      /* Use the dashboard endpoint which has all summary data */
+      const res = await api.get('/dashboard');
+      const d   = res.data;
+
+      /* Top stats */
+      setText('rTotalPatients',  formatNumber(d.patients?.total         ?? 0));
+      setText('rNewPatients',    formatNumber(d.patients?.new_this_month ?? 0));
+      setText('rConsultations',  formatNumber(d.today?.consultations     ?? 0));
+      setText('rAppointments',   formatNumber(d.today?.appointments      ?? 0));
+      setText('rLabTests',       formatNumber(d.laboratory?.pending_requests ?? 0));
+      setText('rPrescriptions',  formatNumber(d.pharmacy_alerts?.pending_prescriptions ?? 0));
+
+      /* Visit trend chart */
+      const trend = d.monthly_visit_trend || [];
+      renderVisitTrendChart(trend);
+      renderVisitTable(trend);
+
+      /* Load patients for gender chart */
+      loadPatientDemographics();
+
+      /* Load users for staff role chart */
+      loadStaffRoleChart();
+
+      /* Clinical summary chart */
+      renderClinicalChart(d);
+
+    } catch(err) {
+      console.warn('Report load error:', err.message);
+    }
+  }
+
+  /* ── Visit Trend Line Chart ── */
+  function renderVisitTrendChart(trend) {
+    const labels = trend.map(t => {
+      const d = new Date(t.date);
+      return d.toLocaleDateString('en-GB', { day:'2-digit', month:'short' });
+    });
+    const values = trend.map(t => t.visits);
+
+    if (visitChart) visitChart.destroy();
+
+    const ctx = document.getElementById('visitTrendChart').getContext('2d');
+    visitChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Visits',
+          data: values,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16,185,129,0.08)',
+          borderWidth: 2.5,
+          pointBackgroundColor: '#10b981',
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          tension: 0.4,
+          fill: true,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f3f4f6' } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+
+    if (trend.length === 0) {
+      const ctx2 = document.getElementById('visitTrendChart').getContext('2d');
+      renderEmptyChart(ctx2, 'No visit data for this period');
+    }
+  }
+
+  /* ── Visit Table ── */
+  function renderVisitTable(trend) {
+    const tbody = document.getElementById('visitTableBody');
+    if (trend.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state"><i class="fa-solid fa-chart-line"></i><p>No visit data available</p></div></td></tr>`;
+      return;
+    }
+    const max = Math.max(...trend.map(t => t.visits), 1);
+    tbody.innerHTML = trend.map(t => {
+      const pct = Math.round((t.visits / max) * 100);
+      return `
+        <tr>
+          <td>${formatDate(t.date)}</td>
+          <td><strong>${t.visits}</strong></td>
+          <td>
+            <div style="display:flex;align-items:center;gap:0.5rem">
+              <div style="flex:1;height:8px;background:var(--border-light);border-radius:4px;overflow:hidden">
+                <div style="width:${pct}%;height:100%;background:var(--primary);border-radius:4px;transition:width 0.5s"></div>
+              </div>
+              <span style="font-size:0.75rem;color:var(--text-muted);width:30px">${pct}%</span>
+            </div>
+          </td>
+        </tr>`;
+    }).join('');
+  }
+
+  /* ── Gender / Demographics Doughnut ── */
+  async function loadPatientDemographics() {
+    try {
+      const res      = await api.get('/patients?per_page=200');
+      const patients = res.data?.patients || res.data?.items || [];
+      const male     = patients.filter(p => p.gender === 'male').length;
+      const female   = patients.filter(p => p.gender === 'female').length;
+      const other    = patients.filter(p => p.gender === 'other' || !p.gender).length;
+
+      if (genderChart) genderChart.destroy();
+      const ctx = document.getElementById('genderChart').getContext('2d');
+      genderChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Male', 'Female', 'Other/Unknown'],
+          datasets: [{
+            data: [male, female, other],
+            backgroundColor: ['#3b82f6','#10b981','#f59e0b'],
+            borderWidth: 0,
+            hoverOffset: 6,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          cutout: '65%',
+          plugins: {
+            legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true } }
+          }
+        }
+      });
+    } catch(err) { console.warn('Demographics error:', err.message); }
+  }
+
+  /* ── Staff Role Bar Chart ── */
+  async function loadStaffRoleChart() {
+    try {
+      const res   = await api.get('/users?per_page=100');
+      const users = res.data?.users || res.data?.items || [];
+
+      const roleCounts = { Admin: 0, Doctor: 0, Nurse: 0, Pharmacist: 0, Lab_Tech: 0 };
+      users.forEach(u => {
+        const r = (u.roles && u.roles[0]) || '';
+        if (roleCounts.hasOwnProperty(r)) roleCounts[r]++;
+      });
+
+      if (staffChart) staffChart.destroy();
+      const ctx = document.getElementById('staffRoleChart').getContext('2d');
+      staffChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Admin', 'Doctor', 'Nurse', 'Pharmacist', 'Lab Tech'],
+          datasets: [{
+            label: 'Staff Count',
+            data: Object.values(roleCounts),
+            backgroundColor: ['#ef4444','#3b82f6','#10b981','#f59e0b','#8b5cf6'],
+            borderRadius: 6,
+            borderSkipped: false,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f3f4f6' } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    } catch(err) { console.warn('Staff chart error:', err.message); }
+  }
+
+  /* ── Clinical Activity Bar Chart ── */
+  function renderClinicalChart(d) {
+    if (clinicalChart) clinicalChart.destroy();
+    const ctx = document.getElementById('clinicalChart').getContext('2d');
+    clinicalChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Appointments', 'Consultations', 'Lab Tests', 'Prescriptions', 'Low Stock'],
+        datasets: [{
+          label: 'Count',
+          data: [
+            d.today?.appointments              ?? 0,
+            d.today?.consultations             ?? 0,
+            d.laboratory?.pending_requests     ?? 0,
+            d.pharmacy_alerts?.pending_prescriptions ?? 0,
+            d.pharmacy_alerts?.low_stock_drugs ?? 0,
+          ],
+          backgroundColor: ['#10b981','#3b82f6','#8b5cf6','#f59e0b','#ef4444'],
+          borderRadius: 6,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f3f4f6' } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  function renderEmptyChart(ctx, msg) {
+    ctx.font = '13px Inter';
+    ctx.fillStyle = '#9ca3af';
+    ctx.textAlign = 'center';
+    ctx.fillText(msg, ctx.canvas.width/2, ctx.canvas.height/2);
+  }
+
+  document.getElementById('refreshReportBtn').addEventListener('click', loadReports);
+  document.getElementById('reportPeriod').addEventListener('change', loadReports);
+
+  loadReports();
+</script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+# Core Framework
+Flask==3.1.0
+
+# Database ORM
+Flask-SQLAlchemy==3.1.1
+SQLAlchemy==2.0.36
+
+# Database Migrations
+Flask-Migrate==4.0.7
+
+# JWT Authentication
+Flask-JWT-Extended==4.7.1
+
+# Password Hashing
+bcrypt==4.2.1
+Flask-Bcrypt==1.0.1
+
+# Environment Variables
+python-dotenv==1.0.1
+
+# Input Validation & Serialisation
+marshmallow==3.23.1
+flask-marshmallow==1.2.1
+marshmallow-sqlalchemy==1.4.1
+
+# MySQL Driver
+PyMySQL==1.1.1
+cryptography==43.0.3
+
+# Email Support
+Flask-Mail==0.10.0
+
+# CORS
+Flask-Cors==5.0.0
+
+# Utilities
+python-dateutil==2.9.0

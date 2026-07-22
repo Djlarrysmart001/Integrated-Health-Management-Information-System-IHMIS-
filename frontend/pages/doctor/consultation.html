@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — Consultation</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+  <style>
+    .vitals-patient-card {
+      display:flex; align-items:center; gap:1.25rem;
+      padding:1.5rem; background:var(--card-bg);
+      border:1px solid var(--border-light); border-radius:var(--border-radius);
+      box-shadow:var(--shadow); margin-bottom:1.25rem;
+    }
+    .vitals-avatar {
+      width:64px; height:64px; border-radius:50%;
+      background:var(--primary-light); color:var(--primary);
+      display:flex; align-items:center; justify-content:center;
+      font-weight:700; font-size:1.4rem; flex-shrink:0;
+    }
+    .readonly-box {
+      background:var(--page-bg); border:1px solid var(--border-light);
+      border-radius:var(--border-radius-sm); padding:0.75rem 1rem;
+    }
+    .vital-mini { text-align:center; }
+    .vital-mini-value { font-size:1rem; font-weight:700; color:var(--text-dark); }
+    .vital-mini-label { font-size:0.7rem; color:var(--text-muted); margin-top:2px; }
+
+    .urgency-pill {
+      display:inline-flex; align-items:center; gap:0.4rem;
+      padding:0.3rem 0.75rem; border-radius:20px; font-size:0.78rem; font-weight:600;
+    }
+    .urgency-emergency { background:#fef2f2; color:var(--danger); }
+    .urgency-high      { background:#fff7ed; color:#e67e22; }
+    .urgency-normal     { background:#eff6ff; color:var(--info); }
+    .urgency-low        { background:#f0fdf4; color:var(--success); }
+
+    .tag-chip {
+      display:inline-flex; align-items:center; gap:0.5rem;
+      background:var(--primary-light); color:var(--primary);
+      border-radius:20px; padding:0.35rem 0.7rem 0.35rem 0.9rem;
+      font-size:0.82rem; font-weight:500; margin:0 0.4rem 0.4rem 0;
+    }
+    .tag-chip.pending { opacity:0.6; }
+    .tag-chip button {
+      background:none; border:none; color:var(--primary); cursor:pointer;
+      font-size:0.75rem; padding:0; line-height:1; opacity:0.7;
+    }
+    .tag-chip button:hover { opacity:1; }
+
+    .rx-row, .lab-row {
+      display:grid; gap:0.6rem; align-items:end;
+      padding:0.9rem; background:var(--page-bg);
+      border:1px solid var(--border-light); border-radius:var(--border-radius-sm);
+      margin-bottom:0.75rem;
+    }
+    .rx-row { grid-template-columns: 1.4fr 0.9fr 0.9fr 0.8fr 0.7fr 1.2fr auto; }
+    .rx-row .form-group, .lab-row .form-group { margin-bottom:0; }
+    .row-remove-btn {
+      background:none; border:none; color:var(--danger); cursor:pointer;
+      font-size:1rem; padding:0.4rem;
+    }
+
+    .add-row-btn {
+      border:1.5px dashed var(--border); background:transparent;
+      color:var(--primary); border-radius:var(--border-radius-sm);
+      padding:0.6rem; width:100%; font-size:0.85rem; font-weight:600;
+      cursor:pointer; transition:all 0.15s;
+    }
+    .add-row-btn:hover { background:var(--primary-light); border-color:var(--primary); }
+
+    .lab-test-picker {
+      display:flex; flex-wrap:wrap; gap:0.5rem; max-height:180px;
+      overflow-y:auto; padding:0.75rem; border:1px solid var(--border-light);
+      border-radius:var(--border-radius-sm); background:var(--page-bg);
+    }
+    .lab-test-option {
+      border:1.5px solid var(--border); border-radius:20px;
+      padding:0.4rem 0.85rem; font-size:0.8rem; cursor:pointer;
+      background:var(--card-bg); transition:all 0.15s; user-select:none;
+    }
+    .lab-test-option.selected {
+      border-color:var(--primary); background:var(--primary-light); color:var(--primary); font-weight:600;
+    }
+    .custom-test-chip {
+      display:inline-flex; align-items:center; gap:0.4rem;
+      border:1.5px solid var(--primary); background:var(--primary-light); color:var(--primary);
+      border-radius:20px; padding:0.4rem 0.6rem 0.4rem 0.85rem; font-size:0.8rem; font-weight:600;
+    }
+    .custom-test-chip button { background:none; border:none; color:var(--primary); cursor:pointer; padding:0; }
+
+    .outcome-option {
+      border:1.5px solid var(--border); border-radius:var(--border-radius-sm);
+      padding:0.85rem 0.6rem; cursor:pointer; text-align:center; transition:all 0.15s;
+    }
+    .outcome-option input { display:none; }
+    .outcome-option.selected { border-color:var(--primary); background:var(--primary-light); }
+    .outcome-option-label { font-weight:600; font-size:0.78rem; margin-top:0.35rem; display:block; }
+
+    .sent-panel {
+      background:#f0fdf4; border:1px solid #86efac; border-radius:var(--border-radius-sm);
+      padding:0.9rem 1.1rem; margin-bottom:0.75rem;
+    }
+    .sent-panel-title { font-weight:600; font-size:0.88rem; color:#166534; display:flex; align-items:center; gap:0.5rem; }
+    .status-chip { font-size:0.72rem; font-weight:700; padding:0.2rem 0.55rem; border-radius:20px; }
+    .status-chip.pending    { background:#fff7ed; color:#e67e22; }
+    .status-chip.in_progress{ background:#eff6ff; color:var(--info); }
+    .status-chip.completed  { background:#f0fdf4; color:var(--success); }
+    .status-chip.dispensed  { background:#f0fdf4; color:var(--success); }
+    .status-chip.cancelled  { background:#fef2f2; color:var(--danger); }
+
+    .gate-hint {
+      display:flex; align-items:center; gap:0.5rem; font-size:0.82rem;
+      color:#92400e; background:#fff7ed; border:1px solid #fed7aa;
+      border-radius:var(--border-radius-sm); padding:0.7rem 1rem; margin-bottom:0.9rem;
+    }
+    .btn:disabled { opacity:0.5; cursor:not-allowed; }
+
+    .consult-id-tag {
+      font-size:0.7rem; color:var(--text-muted); font-family:monospace;
+      background:var(--page-bg); border-radius:6px; padding:0.15rem 0.5rem;
+    }
+
+    @media (max-width: 900px) {
+      .rx-row { grid-template-columns:1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="patients.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+          <span class="nav-label">My Patients</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Clinical</div>
+      <div class="nav-item">
+        <a href="queue.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-layer-group"></i></span>
+          <span class="nav-label">Queue</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="consultations.html" class="nav-link active">
+          <span class="nav-icon"><i class="fa-solid fa-stethoscope"></i></span>
+          <span class="nav-label">Consultations</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="laboratory.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-flask"></i></span>
+          <span class="nav-label">Laboratory</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="referrals.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-paper-plane"></i></span>
+          <span class="nav-label">Referrals</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="certificates.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-file-medical"></i></span>
+          <span class="nav-label">Certificates</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="reports.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-chart-column"></i></span>
+          <span class="nav-label">Reports</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">DR</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">Doctor</div>
+        <div class="sidebar-user-role" id="sidebarRole">Doctor</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="navbar-page-title">Consultation</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> Doctor <span>/</span> Consultations <span>/</span> <span id="breadcrumbState">New</span></div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <button class="navbar-icon-btn"><i class="fa-solid fa-bell"></i></button>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">DR</div>
+        <span class="navbar-user-name" id="navbarName">Doctor</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">Doctor</div>
+      <div class="dropdown-header-role" id="dropdownRole">Doctor</div>
+    </div>
+    <a href="#" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem">
+      <div>
+        <h2>Consultation <span class="consult-id-tag" id="consultIdTag" style="display:none"></span></h2>
+        <p>Review the nurse's assessment, record your findings, and act on the case</p>
+      </div>
+    </div>
+
+    <div id="loadingState" class="empty-state">
+      <div class="spinner-sm" style="margin:0 auto 0.5rem"></div>
+      <p>Loading patient...</p>
+    </div>
+
+    <div id="errorState" class="empty-state" style="display:none">
+      <i class="fa-solid fa-circle-exclamation" style="color:var(--danger)"></i>
+      <h4>Could not load patient</h4>
+      <p id="errorMessage"></p>
+      <a href="queue.html" class="btn btn-primary" style="margin-top:0.75rem">
+        <i class="fa-solid fa-layer-group"></i> Go to Queue
+      </a>
+    </div>
+
+    <div id="pageContent" style="display:none">
+
+      <!-- Patient header -->
+      <div class="vitals-patient-card">
+        <div class="vitals-avatar" id="patientAvatar">--</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:1.2rem;font-weight:700;color:var(--text-dark)" id="patientName">—</div>
+          <div style="display:flex;flex-wrap:wrap;gap:0.4rem 1.1rem;margin-top:0.35rem;font-size:0.85rem;color:var(--text-muted)">
+            <span><strong id="patientNumber" style="color:var(--text-dark)">—</strong></span>
+            <span id="patientType">—</span>
+            <span id="patientAgeGender">—</span>
+            <span id="patientBloodGroup"></span>
+          </div>
+        </div>
+        <a href="patients.html" id="viewFileLink" class="btn btn-secondary btn-sm">
+          <i class="fa-solid fa-folder-open"></i> View File
+        </a>
+      </div>
+
+      <!-- Medical alerts -->
+      <div id="alertsBanner" style="margin-bottom:1.25rem"></div>
+
+      <!-- Nurse's Assessment (read-only) -->
+      <div class="card" style="margin-bottom:1.25rem">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-user-nurse" style="color:var(--primary);margin-right:0.4rem"></i>Nurse's Assessment</h3>
+          <span id="urgencyPillWrap"></span>
+        </div>
+        <div class="card-body">
+          <div id="nurseAssessmentBody">
+            <div class="empty-state" style="padding:1rem 0">
+              <div class="spinner-sm" style="margin:0 auto"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <form id="consultationForm">
+
+        <!-- Conduct Consultation -->
+        <div class="form-section">
+          <div class="form-section-title">Consultation</div>
+          <div class="form-grid form-grid-2">
+            <div class="form-group" style="grid-column:1/-1">
+              <label class="form-label">Presenting Complaint <span class="required">*</span></label>
+              <input type="text" class="form-control" id="cComplaint" placeholder="In the patient's own words / your summary" required />
+            </div>
+            <div class="form-group" style="grid-column:1/-1">
+              <label class="form-label">History of Present Illness</label>
+              <textarea class="form-control" id="cHpi" placeholder="Onset, progression, associated symptoms..."></textarea>
+            </div>
+            <div class="form-group" style="grid-column:1/-1">
+              <label class="form-label">Physical Examination Findings</label>
+              <textarea class="form-control" id="cExamFindings" placeholder="On examination..."></textarea>
+            </div>
+            <div class="form-group" style="grid-column:1/-1">
+              <label class="form-label">Clinical Notes</label>
+              <textarea class="form-control" id="cClinicalNotes" placeholder="Any other clinical observations..."></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Provisional Diagnosis</label>
+              <input type="text" class="form-control" id="cProvisional" placeholder="Working diagnosis before results/confirmation" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Diagnosis -->
+        <div class="form-section">
+          <div class="form-section-title">Diagnosis <span style="font-weight:400;color:var(--text-muted);font-size:0.78rem">(saved immediately as you add each one)</span></div>
+          <div style="display:flex;gap:0.6rem;margin-bottom:0.75rem">
+            <input type="text" class="form-control" id="diagnosisInput" placeholder="e.g. Malaria, Typhoid Fever, Hypertension..." style="flex:1" />
+            <button type="button" class="btn btn-secondary" id="addDiagnosisBtn"><i class="fa-solid fa-plus"></i> Add</button>
+          </div>
+          <div id="diagnosisList"></div>
+          <p id="diagnosisEmpty" style="color:var(--text-muted);font-size:0.82rem;margin:0">No diagnoses added yet.</p>
+        </div>
+
+        <!-- Prescriptions -->
+        <div class="form-section">
+          <div class="form-section-title">Prescriptions</div>
+          <div id="rxSentPanel"></div>
+          <div id="rxContainer"></div>
+          <button type="button" class="add-row-btn" id="addRxBtn"><i class="fa-solid fa-plus"></i> Add medication</button>
+          <div style="display:flex;justify-content:flex-end;margin-top:0.75rem">
+            <button type="button" class="btn btn-primary" id="sendPharmacyBtn">
+              <i class="fa-solid fa-truck-medical"></i> Send to Pharmacy
+            </button>
+          </div>
+        </div>
+
+        <!-- Laboratory -->
+        <div class="form-section">
+          <div class="form-section-title">Laboratory Tests</div>
+          <div id="labSentPanel"></div>
+          <div id="labPickerWrap">
+            <div class="form-group">
+              <label class="form-label">Select from catalogue</label>
+              <div class="lab-test-picker" id="labTestPicker">
+                <span style="color:var(--text-muted);font-size:0.82rem">Loading test catalogue...</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Or type a test name <span style="font-weight:400;color:var(--text-muted);font-size:0.78rem">(use this if it's not in the catalogue above)</span></label>
+              <div style="display:flex;gap:0.6rem">
+                <input type="text" class="form-control" id="customTestInput" placeholder="e.g. Stool Microscopy" style="flex:1" />
+                <button type="button" class="btn btn-secondary" id="addCustomTestBtn"><i class="fa-solid fa-plus"></i> Add</button>
+              </div>
+              <div id="customTestList" style="margin-top:0.6rem"></div>
+            </div>
+            <div class="form-grid form-grid-2" style="margin-top:0.9rem">
+              <div class="form-group">
+                <label class="form-label">Priority</label>
+                <select class="form-control" id="labPriority">
+                  <option value="routine">Routine</option>
+                  <option value="urgent">Urgent</option>
+                  <option value="stat">STAT / Emergency</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Notes for Laboratory</label>
+                <input type="text" class="form-control" id="labNotes" placeholder="Optional clinical notes for the lab tech" />
+              </div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;margin-top:0.75rem">
+              <button type="button" class="btn btn-primary" id="sendLabBtn">
+                <i class="fa-solid fa-flask"></i> Send to Laboratory
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Treatment Plan & Follow-up -->
+        <div class="form-section">
+          <div class="form-section-title">Treatment Plan &amp; Follow-up</div>
+          <div class="form-grid form-grid-2">
+            <div class="form-group" style="grid-column:1/-1">
+              <label class="form-label">Treatment Plan</label>
+              <textarea class="form-control" id="cTreatmentPlan" placeholder="Management plan, advice given to patient..."></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Follow-up Date</label>
+              <input type="date" class="form-control" id="cFollowUpDate" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Follow-up Notes</label>
+              <input type="text" class="form-control" id="cFollowUpNotes" placeholder="Reason for follow-up" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Outcome -->
+        <div class="form-section">
+          <div class="form-section-title">Consultation Outcome</div>
+          <p style="font-size:0.82rem;color:var(--text-muted);margin-top:-0.4rem;margin-bottom:0.9rem">
+            Chosen automatically from what you've added below, or set manually if none apply.
+          </p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:0.7rem">
+            <label class="outcome-option" id="outcomeCompletedBox">
+              <input type="radio" name="outcome" value="completed" checked />
+              <i class="fa-solid fa-circle-check" style="color:var(--success)"></i>
+              <span class="outcome-option-label">Completed</span>
+            </label>
+            <label class="outcome-option" id="outcomeObservationBox">
+              <input type="radio" name="outcome" value="observation" />
+              <i class="fa-solid fa-eye" style="color:var(--info)"></i>
+              <span class="outcome-option-label">Observation</span>
+            </label>
+            <label class="outcome-option" id="outcomeReferredBox">
+              <input type="radio" name="outcome" value="referred" />
+              <i class="fa-solid fa-paper-plane" style="color:var(--danger)"></i>
+              <span class="outcome-option-label">Refer Patient</span>
+            </label>
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-muted);margin-top:0.6rem;margin-bottom:0">
+            <i class="fa-solid fa-circle-info"></i>
+            Choosing <strong>Refer Patient</strong> skips the lab/pharmacy check below and takes you straight to Referrals.
+          </p>
+        </div>
+
+        <!-- Close gate -->
+        <div class="gate-hint" id="closeGateHint" style="display:none">
+          <i class="fa-solid fa-hourglass-half"></i>
+          <span id="closeGateText"></span>
+        </div>
+
+        <div class="alert alert-danger" id="formError" style="display:none">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          <span id="formErrorMsg"></span>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:0.75rem">
+          <a href="consultations.html" class="btn btn-secondary">Cancel</a>
+          <a href="#" id="issueCertLink" target="_blank" class="btn btn-secondary">
+            <i class="fa-solid fa-file-medical"></i> Issue Certificate
+          </a>
+          <button type="button" class="btn btn-secondary" id="minimizeBtn">
+            <i class="fa-solid fa-down-left-and-up-right-to-center"></i> Minimize &amp; See Next Patient
+          </button>
+          <button type="submit" class="btn btn-primary" id="submitBtn">
+            <span class="spinner-sm" id="submitSpinner" style="display:none;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+            <i class="fa-solid fa-circle-check" id="submitIcon"></i>
+            <span id="submitText">Save &amp; Close Consultation</span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+  </main>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script>
+  requireAuth('doctor');
+
+  const urlParams = new URLSearchParams(window.location.search);
+  let patientId       = urlParams.get('patient_id');
+  let healthFileId     = urlParams.get('health_file_id');
+  const urlConsultationId = urlParams.get('consultation_id');
+
+  let consultationId = urlConsultationId ? parseInt(urlConsultationId) : null;
+  let diagnoses  = [];   // { id, text, pending }
+  let rxRowCount = 0;
+  let selectedLabTests = new Set();
+  let customLabTests   = [];
+  let labTestCatalogue  = [];
+
+  // Sent-state tracking — this is what the Save & Close gate checks against.
+  let labRequestId     = null;
+  let labRequestStatus = null;   // 'pending' | 'in_progress' | 'completed' | 'cancelled'
+  let rxSent           = [];     // [{ id, drug_name, status }]
+
+  if (!patientId && !consultationId) {
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('errorState').style.display = 'block';
+    document.getElementById('errorMessage').textContent =
+      'Missing patient reference. Open a consultation from the Queue or a patient\'s file.';
+  } else {
+    init();
+  }
+
+  async function init() {
+    try {
+      if (consultationId) {
+        // Resuming a minimized consultation — hydrate everything from the
+        // saved record before touching the patient/vitals calls.
+        await hydrateFromConsultation(consultationId);
+      } else {
+        await loadPatient();
+        const vitals = await loadNurseAssessment();
+        await findOrCreateConsultation(vitals);
+      }
+
+      document.getElementById('viewFileLink').href = `patients.html?patient_id=${patientId}`;
+      await loadLabCatalogue();
+      addRxRow();
+      await Promise.all([loadSentPrescriptions(), loadSentLabRequest()]);
+      loadMedicalAlerts();
+
+      updateCloseGate();
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('pageContent').style.display = 'block';
+
+    } catch (err) {
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('errorState').style.display = 'block';
+      document.getElementById('errorMessage').textContent = err.message;
+    }
+  }
+
+  /* ── Patient header ── */
+  async function loadPatient() {
+    const res = await api.get(`/patients/${patientId}`);
+    const p = res.data;
+    document.getElementById('patientAvatar').textContent = `${(p.first_name?.[0]||'')}${(p.last_name?.[0]||'')}`;
+    document.getElementById('patientName').textContent = p.full_name || `${p.first_name||''} ${p.last_name||''}`.trim();
+    document.getElementById('patientNumber').textContent = p.patient_number || p.patient_id || `#${p.id}`;
+    document.getElementById('patientType').textContent = capitalize(p.patient_type || '');
+    document.getElementById('patientAgeGender').textContent =
+      `${p.age != null ? 'Age ' + p.age : 'Age —'} · ${capitalize(p.gender || '—')}`;
+    if (p.blood_group) {
+      document.getElementById('patientBloodGroup').innerHTML = `<span class="badge badge-danger">${p.blood_group}</span>`;
+    }
+  }
+
+  async function loadMedicalAlerts() {
+    const banner = document.getElementById('alertsBanner');
+    try {
+      const res = await api.get(`/medical-records/patients/${patientId}`);
+      const rec = res.data;
+      const alerts = [];
+      if (rec.known_allergies) {
+        alerts.push(`<div class="alert alert-danger"><i class="fa-solid fa-triangle-exclamation"></i><span><strong>Allergies:</strong> ${rec.known_allergies}</span></div>`);
+      }
+      if (rec.chronic_conditions) {
+        alerts.push(`<div class="alert alert-warning"><i class="fa-solid fa-notes-medical"></i><span><strong>Chronic Conditions:</strong> ${rec.chronic_conditions}</span></div>`);
+      }
+      banner.innerHTML = alerts.join('') || '';
+    } catch (err) { banner.innerHTML = ''; }
+  }
+
+  /* ── Nurse's Assessment (read-only) — returns the vitals record so the
+     caller can seed the initial chief_complaint when creating the draft. */
+  async function loadNurseAssessment() {
+    const body = document.getElementById('nurseAssessmentBody');
+    if (!healthFileId) {
+      body.innerHTML = `<p style="color:var(--text-muted);font-size:0.85rem;margin:0">No health file reference — vitals and triage notes are unavailable for this consultation.</p>`;
+      return null;
+    }
+    let record = null;
+    try {
+      const res = await api.get(`/vitals?health_file_id=${healthFileId}`);
+      record = Array.isArray(res.data) ? res.data[0] : (res.data.vitals?.[0] || res.data.items?.[0] || res.data);
+    } catch (e1) {
+      try {
+        const res2 = await api.get(`/health-files/${healthFileId}`);
+        record = res2.data?.vitals || res2.data?.vital_signs || res2.data;
+      } catch (e2) {
+        body.innerHTML = `<p style="color:var(--text-muted);font-size:0.85rem;margin:0">Vitals could not be loaded (${e2.message}). Proceed with your own assessment.</p>`;
+        return null;
+      }
+    }
+    renderNurseAssessment(record);
+    return record;
+  }
+
+  function renderNurseAssessment(v) {
+    const body = document.getElementById('nurseAssessmentBody');
+    if (!v) {
+      body.innerHTML = `<p style="color:var(--text-muted);font-size:0.85rem;margin:0">No vitals recorded yet for this visit.</p>`;
+      return;
+    }
+    const urgencyLabels = {
+      emergency: ['Emergency', 'urgency-emergency'], high: ['High', 'urgency-high'],
+      normal: ['Normal', 'urgency-normal'], low: ['Low', 'urgency-low'],
+    };
+    if (v.urgency_level && urgencyLabels[v.urgency_level]) {
+      const [label, cls] = urgencyLabels[v.urgency_level];
+      document.getElementById('urgencyPillWrap').innerHTML =
+        `<span class="urgency-pill ${cls}"><i class="fa-solid fa-triangle-exclamation"></i> ${label} priority</span>`;
+    }
+    const vitalItems = [
+      ['Temp', v.temperature, '°C'], ['BP', (v.bp_systolic && v.bp_diastolic) ? `${v.bp_systolic}/${v.bp_diastolic}` : null, 'mmHg'],
+      ['Pulse', v.pulse_rate, 'bpm'], ['Resp', v.respiratory_rate, '/min'], ['SpO₂', v.spo2, '%'],
+      ['Weight', v.weight, 'kg'], ['BMI', v.bmi, ''], ['Sugar', v.blood_sugar, 'mmol/L'],
+    ];
+    const nursingFlags = (v.nursing_flags || []).map(f =>
+      `<span class="badge badge-danger" style="margin-right:4px;margin-bottom:4px">${String(f).replace(/_/g,' ')}</span>`).join('');
+
+    body.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:0.6rem;margin-bottom:1rem">
+        ${vitalItems.map(([label, val, unit]) => `
+          <div class="vital-mini readonly-box">
+            <div class="vital-mini-value">${val ?? '—'}</div>
+            <div class="vital-mini-label">${label}${val && unit ? ' ' + unit : ''}</div>
+          </div>`).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div>
+          <div style="font-size:0.78rem;font-weight:600;color:var(--text-muted);margin-bottom:0.3rem">CHIEF COMPLAINT</div>
+          <p style="font-size:0.875rem;margin:0 0 0.75rem">${v.chief_complaint || '—'}</p>
+          <div style="font-size:0.78rem;font-weight:600;color:var(--text-muted);margin-bottom:0.3rem">SYMPTOMS</div>
+          <p style="font-size:0.875rem;margin:0">${v.symptoms || '—'}</p>
+        </div>
+        <div>
+          <div style="font-size:0.78rem;font-weight:600;color:var(--text-muted);margin-bottom:0.3rem">NURSING NOTES</div>
+          <p style="font-size:0.875rem;margin:0 0 0.75rem">${v.nursing_notes || 'None'}</p>
+          ${nursingFlags ? `<div style="font-size:0.78rem;font-weight:600;color:var(--text-muted);margin-bottom:0.3rem">FLAGGED</div><div>${nursingFlags}</div>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  /* ── Consultation lifecycle ──
+     Opened as soon as the doctor lands on this page (not deferred to final
+     submit) so it can be minimized and resumed later, and so Lab/Pharmacy
+     have a real consultation_id to attach to from the start. */
+  async function findOrCreateConsultation(vitals) {
+    // Check for an already-open draft on this same health file first, so
+    // reopening the same patient from the Queue doesn't spawn duplicates.
+    try {
+      const res = await api.get(`/consultations?patient_id=${patientId}&status=open&my_consultations=true&per_page=20`);
+      const list = res.data.consultations || res.data.items || res.data || [];
+      const existing = healthFileId
+        ? list.find(c => String(c.health_file_id) === String(healthFileId))
+        : list[0];
+      if (existing) {
+        consultationId = existing.id;
+        updateUrl();
+        hydrateFieldsFromConsultation(existing);
+        diagnoses = (existing.diagnoses || []).map(d => ({ id: d.id, text: d.description || d, pending: false }));
+        renderDiagnoses();
+        return;
+      }
+    } catch (e) { /* fall through to create a fresh draft */ }
+
+    const complaint = document.getElementById('cComplaint').value.trim() || vitals?.chief_complaint || 'Consultation in progress';
+    const res = await api.post('/consultations', {
+      patient_id: parseInt(patientId),
+      health_file_id: healthFileId ? parseInt(healthFileId) : null,
+      chief_complaint: complaint,
+    });
+    consultationId = res.data.id;
+    if (vitals?.chief_complaint) document.getElementById('cComplaint').value = vitals.chief_complaint;
+    updateUrl();
+  }
+
+  async function hydrateFromConsultation(id) {
+    const res = await api.get(`/consultations/${id}`);
+    const c = res.data;
+    patientId = patientId || c.patient_id;
+    healthFileId = healthFileId || c.health_file_id;
+    updateUrl();
+
+    await loadPatient();
+    hydrateFieldsFromConsultation(c);
+    diagnoses = (c.diagnoses || []).map(d => ({ id: d.id, text: d.description || d, pending: false }));
+    renderDiagnoses();
+
+    if (healthFileId) await loadNurseAssessment();
+    else document.getElementById('nurseAssessmentBody').innerHTML =
+      `<p style="color:var(--text-muted);font-size:0.85rem;margin:0">No health file reference on this consultation.</p>`;
+  }
+
+  function hydrateFieldsFromConsultation(c) {
+    document.getElementById('cComplaint').value       = c.chief_complaint || '';
+    document.getElementById('cHpi').value              = c.history_of_present_illness || '';
+    document.getElementById('cExamFindings').value     = c.examination_notes || '';
+    document.getElementById('cClinicalNotes').value    = c.clinical_notes || '';
+    document.getElementById('cProvisional').value      = c.provisional_diagnosis || '';
+    document.getElementById('cTreatmentPlan').value    = c.treatment_plan || '';
+    document.getElementById('cFollowUpDate').value     = c.follow_up_date || '';
+    document.getElementById('cFollowUpNotes').value    = c.follow_up_notes || '';
+  }
+
+  function updateUrl() {
+    const params = new URLSearchParams();
+    if (consultationId) params.set('consultation_id', consultationId);
+    if (patientId)      params.set('patient_id', patientId);
+    if (healthFileId)   params.set('health_file_id', healthFileId);
+    window.history.replaceState({}, '', `consultation.html?${params.toString()}`);
+    document.getElementById('consultIdTag').textContent = `Consultation #${consultationId}`;
+    document.getElementById('consultIdTag').style.display = 'inline-block';
+    document.getElementById('breadcrumbState').textContent = `#${consultationId}`;
+    document.getElementById('issueCertLink').href =
+      `certificates.html?open=new&patient_id=${patientId}${consultationId ? '&consultation_id=' + consultationId : ''}`;
+  }
+
+  /* Persists the free-text fields so Minimize / Send actions don't lose
+     anything the doctor has typed so far. */
+  async function saveDraftFields() {
+    if (!consultationId) return;
+    try {
+      await api.put(`/consultations/${consultationId}`, {
+        chief_complaint:             document.getElementById('cComplaint').value.trim() || null,
+        history_of_present_illness:  document.getElementById('cHpi').value.trim() || null,
+        examination_notes:           document.getElementById('cExamFindings').value.trim() || null,
+        clinical_notes:              document.getElementById('cClinicalNotes').value.trim() || null,
+        provisional_diagnosis:       document.getElementById('cProvisional').value.trim() || null,
+        treatment_plan:              document.getElementById('cTreatmentPlan').value.trim() || null,
+        follow_up_date:               document.getElementById('cFollowUpDate').value || null,
+        follow_up_notes:              document.getElementById('cFollowUpNotes').value.trim() || null,
+      });
+    } catch (e) { /* draft save failures shouldn't block the doctor's flow */ }
+  }
+
+  /* ── Diagnoses — saved immediately, not batched at the end, so they
+     survive a minimize/resume cycle. ── */
+  document.getElementById('addDiagnosisBtn').addEventListener('click', addDiagnosisFromInput);
+  document.getElementById('diagnosisInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); addDiagnosisFromInput(); }
+  });
+  async function addDiagnosisFromInput() {
+    const input = document.getElementById('diagnosisInput');
+    const val = input.value.trim();
+    if (!val) return;
+    input.value = '';
+    const entry = { id: null, text: val, pending: true };
+    diagnoses.push(entry);
+    renderDiagnoses();
+    try {
+      const res = await api.post(`/consultations/${consultationId}/diagnoses`, { description: val });
+      entry.id = res.data.id;
+      entry.pending = false;
+    } catch (err) {
+      showToast('Could not save diagnosis: ' + err.message, 'error');
+      diagnoses = diagnoses.filter(d => d !== entry);
+    }
+    renderDiagnoses();
+  }
+  async function removeDiagnosis(i) {
+    const entry = diagnoses[i];
+    if (entry.id) {
+      try { await api.delete(`/consultations/diagnoses/${entry.id}`); }
+      catch (err) { showToast(err.message, 'error'); return; }
+    }
+    diagnoses.splice(i, 1);
+    renderDiagnoses();
+  }
+  function renderDiagnoses() {
+    const list = document.getElementById('diagnosisList');
+    document.getElementById('diagnosisEmpty').style.display = diagnoses.length ? 'none' : 'block';
+    list.innerHTML = diagnoses.map((d, i) => `
+      <span class="tag-chip ${d.pending ? 'pending' : ''}">${d.text} <button type="button" onclick="removeDiagnosis(${i})"><i class="fa-solid fa-xmark"></i></button></span>
+    `).join('');
+  }
+
+  /* ── Prescriptions ── */
+  document.getElementById('addRxBtn').addEventListener('click', () => addRxRow());
+  function addRxRow() {
+    const id = `rx${rxRowCount++}`;
+    const container = document.getElementById('rxContainer');
+    const row = document.createElement('div');
+    row.className = 'rx-row';
+    row.id = id;
+    row.innerHTML = `
+      <div class="form-group"><label class="form-label">Drug Name</label><input type="text" class="form-control" data-field="drug_name" placeholder="e.g. Amoxicillin" /></div>
+      <div class="form-group"><label class="form-label">Dosage</label><input type="text" class="form-control" data-field="dosage" placeholder="e.g. 500mg" /></div>
+      <div class="form-group"><label class="form-label">Frequency</label><input type="text" class="form-control" data-field="frequency" placeholder="e.g. 3x daily" /></div>
+      <div class="form-group"><label class="form-label">Duration</label><input type="text" class="form-control" data-field="duration" placeholder="e.g. 5 days" /></div>
+      <div class="form-group"><label class="form-label">Quantity</label><input type="number" min="0" class="form-control" data-field="quantity" placeholder="e.g. 15" /></div>
+      <div class="form-group"><label class="form-label">Instructions</label><input type="text" class="form-control" data-field="instructions" placeholder="e.g. After meals" /></div>
+      <button type="button" class="row-remove-btn" onclick="removeRxRow('${id}')" title="Remove"><i class="fa-solid fa-trash"></i></button>
+    `;
+    container.appendChild(row);
+  }
+  function removeRxRow(id) { const row = document.getElementById(id); if (row) row.remove(); }
+  function collectPrescriptions() {
+    return Array.from(document.querySelectorAll('.rx-row')).map(row => {
+      const entry = {};
+      row.querySelectorAll('[data-field]').forEach(inp => {
+        const val = inp.value.trim();
+        entry[inp.dataset.field] = inp.dataset.field === 'quantity' ? (val ? parseInt(val) : null) : (val || null);
+      });
+      return entry;
+    }).filter(e => e.drug_name);
+  }
+
+  /* Send to Pharmacy — posts each filled row immediately, routes the health
+     file, and locks the sent items into a status panel. Doctor can still
+     add more rows afterward and send again for a follow-up prescription. */
+  document.getElementById('sendPharmacyBtn').addEventListener('click', async () => {
+    const prescriptions = collectPrescriptions();
+    if (!prescriptions.length) { showToast('Add at least one medication first.', 'error'); return; }
+
+    const btn = document.getElementById('sendPharmacyBtn');
+    btn.disabled = true;
+    await saveDraftFields();
+
+    try {
+      for (const rx of prescriptions) {
+        const res = await api.post('/prescriptions', { consultation_id: consultationId, patient_id: parseInt(patientId), ...rx });
+        rxSent.push({ id: res.data.id, drug_name: rx.drug_name, status: res.data.status || 'pending' });
+      }
+      if (healthFileId) await api.put(`/health-files/${healthFileId}`, { status: 'with_pharmacy' });
+
+      document.querySelectorAll('.rx-row').forEach(r => r.remove());
+      renderRxSentPanel();
+      updateCloseGate();
+      showToast('Sent to Pharmacy.', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  async function loadSentPrescriptions() {
+    if (!consultationId) return;
+    try {
+      const res = await api.get(`/prescriptions?consultation_id=${consultationId}&per_page=50`);
+      const list = res.data.prescriptions || res.data.items || res.data || [];
+      rxSent = list.map(p => ({ id: p.id, drug_name: p.drug_name, status: p.status || 'pending' }));
+      renderRxSentPanel();
+    } catch (e) { /* no prescriptions sent yet is a normal state, not an error */ }
+  }
+
+  async function refreshPharmacyStatus() {
+    for (const rx of rxSent) {
+      try {
+        const res = await api.get(`/prescriptions/${rx.id}`);
+        rx.status = res.data.status || rx.status;
+      } catch (e) { /* keep last known status */ }
+    }
+    renderRxSentPanel();
+    updateCloseGate();
+    showToast('Pharmacy status refreshed.', 'success');
+  }
+
+  function renderRxSentPanel() {
+    const panel = document.getElementById('rxSentPanel');
+    if (!rxSent.length) { panel.innerHTML = ''; return; }
+    panel.innerHTML = `
+      <div class="sent-panel">
+        <div class="sent-panel-title"><i class="fa-solid fa-truck-medical"></i> Sent to Pharmacy
+          <button type="button" class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="refreshPharmacyStatus()">
+            <i class="fa-solid fa-rotate-right"></i> Refresh
+          </button>
+        </div>
+        <div style="margin-top:0.6rem;display:flex;flex-wrap:wrap;gap:0.5rem">
+          ${rxSent.map(rx => `
+            <span class="tag-chip" style="background:#fff;border:1px solid var(--border-light);color:var(--text-dark)">
+              ${rx.drug_name} <span class="status-chip ${rx.status}">${capitalize(rx.status)}</span>
+            </span>`).join('')}
+        </div>
+      </div>`;
+  }
+
+  /* ── Laboratory ──
+     NOTE: request payload shape hasn't been confirmed against
+     LaboratoryService.raise_lab_request. `tests` carries catalogue IDs and
+     `custom_tests` carries manually typed names — but since custom_tests may
+     not be a recognized field, the same list is always mirrored into `notes`
+     as plain text so the request is still readable by the lab tech even if
+     the backend silently ignores custom_tests. */
+  async function loadLabCatalogue() {
+    const picker = document.getElementById('labTestPicker');
+    try {
+      const res = await api.get('/laboratory/tests');
+      labTestCatalogue = res.data.tests || res.data.items || res.data || [];
+      if (!labTestCatalogue.length) {
+        picker.innerHTML = `<span style="color:var(--text-muted);font-size:0.82rem">Catalogue is empty right now — type the test name below instead.</span>`;
+        return;
+      }
+      picker.innerHTML = labTestCatalogue.map(t => `
+        <span class="lab-test-option" data-id="${t.id}" onclick="toggleLabTest(${t.id})">${t.name || t.test_name}</span>
+      `).join('');
+    } catch (err) {
+      picker.innerHTML = `<span style="color:var(--text-muted);font-size:0.82rem">Catalogue could not be loaded — type the test name below instead.</span>`;
+    }
+  }
+  function toggleLabTest(id) {
+    const el = document.querySelector(`.lab-test-option[data-id="${id}"]`);
+    if (selectedLabTests.has(id)) { selectedLabTests.delete(id); el.classList.remove('selected'); }
+    else { selectedLabTests.add(id); el.classList.add('selected'); }
+  }
+
+  document.getElementById('addCustomTestBtn').addEventListener('click', addCustomTest);
+  document.getElementById('customTestInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); addCustomTest(); }
+  });
+  function addCustomTest() {
+    const input = document.getElementById('customTestInput');
+    const val = input.value.trim();
+    if (!val) return;
+    customLabTests.push(val);
+    input.value = '';
+    renderCustomTests();
+  }
+  function removeCustomTest(i) { customLabTests.splice(i, 1); renderCustomTests(); }
+  function renderCustomTests() {
+    document.getElementById('customTestList').innerHTML = customLabTests.map((t, i) => `
+      <span class="custom-test-chip">${t} <button type="button" onclick="removeCustomTest(${i})"><i class="fa-solid fa-xmark"></i></button></span>
+    `).join('');
+  }
+
+  document.getElementById('sendLabBtn').addEventListener('click', async () => {
+    if (!selectedLabTests.size && !customLabTests.length) {
+      showToast('Select or type at least one test first.', 'error'); return;
+    }
+    const btn = document.getElementById('sendLabBtn');
+    btn.disabled = true;
+    await saveDraftFields();
+
+    const catalogueNames = Array.from(selectedLabTests)
+      .map(id => labTestCatalogue.find(t => t.id === id))
+      .filter(Boolean).map(t => t.name || t.test_name);
+    const allTestNames = [...catalogueNames, ...customLabTests];
+    const notesField = document.getElementById('labNotes').value.trim();
+    const combinedNotes = `Requested tests: ${allTestNames.join(', ')}.${notesField ? ' ' + notesField : ''}`;
+
+    try {
+      const res = await api.post('/laboratory/requests', {
+        consultation_id: consultationId,
+        patient_id:      parseInt(patientId),
+        tests:            Array.from(selectedLabTests),
+        custom_tests:     customLabTests.length ? customLabTests : undefined,
+        priority:         document.getElementById('labPriority').value,
+        notes:            combinedNotes,
+      });
+      labRequestId = res.data.id;
+      labRequestStatus = res.data.status || 'pending';
+      if (healthFileId) await api.put(`/health-files/${healthFileId}`, { status: 'with_lab' });
+
+      renderLabSentPanel(allTestNames);
+      updateCloseGate();
+      showToast('Sent to Laboratory.', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  async function loadSentLabRequest() {
+    if (!consultationId) return;
+    try {
+      const res = await api.get(`/laboratory/requests?patient_id=${patientId}&per_page=50`);
+      const list = res.data.requests || res.data.items || res.data || [];
+      const match = list.find(r => String(r.consultation_id) === String(consultationId));
+      if (match) {
+        labRequestId = match.id;
+        labRequestStatus = match.status || 'pending';
+        const names = (match.tests || []).map(t => t.name || t.test_name || t);
+        renderLabSentPanel(names.length ? names : ['Tests requested']);
+      }
+    } catch (e) { /* no lab request yet is a normal state, not an error */ }
+  }
+
+  async function refreshLabStatus() {
+    if (!labRequestId) return;
+    try {
+      const res = await api.get(`/laboratory/requests/${labRequestId}`);
+      labRequestStatus = res.data.status || labRequestStatus;
+      const names = (res.data.tests || []).map(t => t.name || t.test_name || t);
+      renderLabSentPanel(names.length ? names : undefined);
+      updateCloseGate();
+      showToast('Lab status refreshed.', 'success');
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+
+  function renderLabSentPanel(testNames) {
+    document.getElementById('labPickerWrap').style.display = 'none';
+    const panel = document.getElementById('labSentPanel');
+    panel.innerHTML = `
+      <div class="sent-panel">
+        <div class="sent-panel-title"><i class="fa-solid fa-flask"></i> Sent to Laboratory
+          <span class="status-chip ${labRequestStatus}" style="margin-left:0.5rem">${capitalize(labRequestStatus || 'pending')}</span>
+          <button type="button" class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="refreshLabStatus()">
+            <i class="fa-solid fa-rotate-right"></i> Refresh
+          </button>
+        </div>
+        ${testNames ? `<div style="margin-top:0.5rem;font-size:0.82rem;color:var(--text-dark)">${testNames.join(', ')}</div>` : ''}
+      </div>`;
+  }
+
+  /* ── Outcome selector visuals ── */
+  const outcomeBoxIds = { completed: 'outcomeCompletedBox', observation: 'outcomeObservationBox', referred: 'outcomeReferredBox' };
+  document.querySelectorAll('input[name="outcome"]').forEach(input => {
+    input.addEventListener('change', () => {
+      document.querySelectorAll('.outcome-option').forEach(el => el.classList.remove('selected'));
+      document.getElementById(outcomeBoxIds[input.value]).classList.add('selected');
+      document.getElementById('submitText').textContent =
+        input.value === 'referred' ? 'Save & Continue to Referral' : 'Save & Close Consultation';
+      updateCloseGate();
+    });
+  });
+  document.getElementById('outcomeCompletedBox').classList.add('selected');
+
+  /* ── Save & Close gate ──
+     Blocks closing until any sent lab request is completed and any sent
+     prescription is dispensed — unless the outcome is a referral, since
+     the patient is leaving the clinic's workflow entirely in that case. */
+  function updateCloseGate() {
+    const outcome = document.querySelector('input[name="outcome"]:checked')?.value;
+    if (outcome === 'referred') {
+      document.getElementById('submitBtn').disabled = false;
+      document.getElementById('closeGateHint').style.display = 'none';
+      return;
+    }
+    const labOk = !labRequestId || labRequestStatus === 'completed';
+    const rxOk  = !rxSent.length || rxSent.every(rx => rx.status === 'dispensed');
+    const ready = labOk && rxOk;
+
+    document.getElementById('submitBtn').disabled = !ready;
+    const hint = document.getElementById('closeGateHint');
+    if (ready) { hint.style.display = 'none'; return; }
+    const pending = [];
+    if (!labOk) pending.push('laboratory results');
+    if (!rxOk)  pending.push('pharmacy dispensing');
+    document.getElementById('closeGateText').textContent =
+      `Waiting on ${pending.join(' and ')} before this consultation can be closed. You can minimize this consultation and see another patient in the meantime.`;
+    hint.style.display = 'flex';
+  }
+
+  /* ── Minimize — saves the draft and sends the doctor back to the Queue.
+     The consultation itself stays open in the backend; Queue surfaces it
+     under Active Consultations so it can be resumed later. ── */
+  document.getElementById('minimizeBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('minimizeBtn');
+    btn.disabled = true;
+    await saveDraftFields();
+    showToast('Consultation minimized — resume it anytime from the Queue.', 'success');
+    window.location.href = 'queue.html';
+  });
+
+  /* ── Save & Close ── */
+  document.getElementById('consultationForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errBox = document.getElementById('formError');
+    errBox.style.display = 'none';
+
+    const complaint = document.getElementById('cComplaint').value.trim();
+    if (!complaint) {
+      document.getElementById('formErrorMsg').textContent = 'Presenting complaint is required.';
+      errBox.style.display = 'flex';
+      return;
+    }
+
+    const outcome = document.querySelector('input[name="outcome"]:checked').value;
+    setLoading(true);
+
+    try {
+      await saveDraftFields();
+
+      if (outcome === 'referred') {
+        window.location.href = `referrals.html?consultation_id=${consultationId}&patient_id=${patientId}`;
+        return;
+      }
+
+      await api.patch(`/consultations/${consultationId}/close`);
+      if (healthFileId) await api.put(`/health-files/${healthFileId}`, { status: outcome });
+
+      showToast('Consultation saved and closed.', 'success');
+      window.location.href = 'consultations.html';
+
+    } catch (err) {
+      document.getElementById('formErrorMsg').textContent = err.message;
+      errBox.style.display = 'flex';
+      setLoading(false);
+    }
+  });
+
+  function setLoading(state) {
+    document.getElementById('submitBtn').disabled = state;
+    document.getElementById('submitSpinner').style.display = state ? 'inline-block' : 'none';
+    document.getElementById('submitIcon').style.display = state ? 'none' : 'inline-block';
+  }
+</script>
+</body>
+</html>

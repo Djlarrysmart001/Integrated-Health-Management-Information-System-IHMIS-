@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — Pharmacist Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link active">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Pharmacy</div>
+      <div class="nav-item">
+        <a href="prescriptions.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-prescription-bottle-medical"></i></span>
+          <span class="nav-label">Prescriptions</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="inventory.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-boxes-stacked"></i></span>
+          <span class="nav-label">Drug Inventory</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">PH</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">Pharmacist</div>
+        <div class="sidebar-user-role" id="sidebarRole">Pharmacist</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="navbar-page-title">Dashboard</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> Pharmacist <span>/</span> Dashboard</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <button class="navbar-icon-btn"><i class="fa-solid fa-bell"></i></button>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">PH</div>
+        <span class="navbar-user-name" id="navbarName">Pharmacist</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">Pharmacist</div>
+      <div class="dropdown-header-role" id="dropdownRole">Pharmacist</div>
+    </div>
+    <a href="#" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <div class="page-header">
+      <h2>Pharmacist Dashboard</h2>
+      <p id="dashGreeting">Welcome back!</p>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon orange"><i class="fa-solid fa-prescription-bottle-medical"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statPending">—</div>
+          <div class="stat-label">Pending Prescriptions</div>
+          <div class="stat-change down">
+            <i class="fa-solid fa-clock"></i> Awaiting dispensing
+          </div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="fa-solid fa-pills"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statDispensed">—</div>
+          <div class="stat-label">Dispensed Today</div>
+          <div class="stat-change up">
+            <i class="fa-solid fa-arrow-up"></i> Items dispensed
+          </div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statLowStock">—</div>
+          <div class="stat-label">Low Stock Drugs</div>
+          <div class="stat-change down" id="statExpired">
+            <i class="fa-solid fa-skull-crossbones"></i> — expired
+          </div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="fa-solid fa-capsules"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statTotalDrugs">—</div>
+          <div class="stat-label">Total Active Drugs</div>
+          <div class="stat-change down" id="statExpiringSoon">
+            <i class="fa-solid fa-calendar-xmark"></i> — expiring soon
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard Grid -->
+    <div class="dashboard-grid">
+
+      <!-- Prescription Queue -->
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-list-check" style="color:var(--primary);margin-right:0.4rem"></i>Prescription Queue</h3>
+          <a href="prescriptions.html" class="btn-link">View all</a>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div id="prescriptionQueue" style="padding:0 1.5rem"></div>
+        </div>
+        <div class="card-footer">
+          <a href="prescriptions.html" class="btn-link">Manage prescriptions</a>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div style="display:flex;flex-direction:column;gap:1.25rem">
+
+        <!-- Inventory Alerts -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--warning);margin-right:0.4rem"></i>Inventory Alerts</h3>
+            <a href="inventory.html" class="btn-link">View inventory</a>
+          </div>
+          <div class="card-body" id="inventoryAlerts" style="padding:0.75rem 1.5rem">
+            <p style="color:var(--text-light);font-size:0.85rem">Loading alerts...</p>
+          </div>
+        </div>
+
+        <!-- Expiring Soon -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-calendar-xmark" style="color:var(--danger);margin-right:0.4rem"></i>Expiring Soon</h3>
+          </div>
+          <div class="card-body" style="padding:0 1.5rem">
+            <div id="expiringSoonList"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script>
+  const user = requireAuth('pharmacist');
+
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('dashGreeting').textContent =
+    `${greeting}, ${user?.full_name || user?.username || 'Pharmacist'}! Here's your pharmacy overview.`;
+
+  const prescStatusConfig = {
+    pending:              { color: 'badge-warning', label: 'Pending' },
+    partially_dispensed:  { color: 'badge-info',    label: 'Partial' },
+    dispensed:            { color: 'badge-success',  label: 'Dispensed' },
+    cancelled:            { color: 'badge-danger',   label: 'Cancelled' },
+  };
+
+  async function loadPharmacistDashboard() {
+    try {
+      const res = await api.get('/dashboard');
+      const d   = res.data;
+
+      /* Stat cards */
+      setText('statPending',     formatNumber(d.prescription_queue?.total_pending   ?? 0));
+      setText('statDispensed',   formatNumber(d.dispensing_today                    ?? 0));
+      setText('statLowStock',    formatNumber(d.inventory_alerts?.low_stock_count   ?? 0));
+      setText('statExpired',     `${d.inventory_alerts?.expired_count ?? 0} expired`);
+      setText('statTotalDrugs',  formatNumber(d.inventory_alerts?.total_drugs       ?? 0));
+      setText('statExpiringSoon',`${d.inventory_alerts?.expiring_soon_count ?? 0} expiring soon`);
+
+      /* Prescription queue */
+      const queue    = d.prescription_queue?.next_10 || [];
+      const queueDiv = document.getElementById('prescriptionQueue');
+
+      if (queue.length === 0) {
+        queueDiv.innerHTML = `
+          <div class="empty-state" style="padding:1.5rem 0">
+            <i class="fa-solid fa-prescription-bottle-medical"></i>
+            <h4>Queue is clear</h4>
+            <p>No pending prescriptions</p>
+          </div>`;
+      } else {
+        queueDiv.innerHTML = queue.map(p => {
+          const s    = prescStatusConfig[p.status] || { color: 'badge-muted', label: p.status };
+          const name = p.patient?.full_name || p.patient_name || 'Patient';
+          const items = p.items?.length || p.item_count || '—';
+          return `
+            <div class="activity-item">
+              <div style="width:36px;height:36px;background:var(--primary-light);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:var(--primary);flex-shrink:0">
+                ${name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase()}
+              </div>
+              <div class="activity-content">
+                <div class="activity-title">${name}</div>
+                <div class="activity-desc">${items} item${items!==1?'s':''} &bull; ${timeAgo(p.created_at)}</div>
+              </div>
+              <span class="badge ${s.color}">${s.label}</span>
+            </div>`;
+        }).join('');
+      }
+
+      /* Inventory alerts */
+      const alerts   = d.inventory_alerts || {};
+      const alertDiv = document.getElementById('inventoryAlerts');
+      const alertItems = [];
+
+      if ((alerts.low_stock_count||0) > 0) {
+        alertItems.push(`
+          <div class="alert alert-warning" style="margin-bottom:0.5rem">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span><strong>${alerts.low_stock_count}</strong> drug(s) below minimum stock level</span>
+          </div>`);
+      }
+      if ((alerts.expired_count||0) > 0) {
+        alertItems.push(`
+          <div class="alert alert-danger" style="margin-bottom:0.5rem">
+            <i class="fa-solid fa-skull-crossbones"></i>
+            <span><strong>${alerts.expired_count}</strong> expired batch(es) — remove immediately</span>
+          </div>`);
+      }
+      if ((alerts.expiring_soon_count||0) > 0) {
+        alertItems.push(`
+          <div class="alert alert-info" style="margin-bottom:0.5rem">
+            <i class="fa-solid fa-calendar-xmark"></i>
+            <span><strong>${alerts.expiring_soon_count}</strong> batch(es) expiring within 30 days</span>
+          </div>`);
+      }
+      alertDiv.innerHTML = alertItems.length
+        ? alertItems.join('')
+        : `<div class="alert alert-success"><i class="fa-solid fa-circle-check"></i><span>No inventory alerts — all stock levels are healthy</span></div>`;
+
+      /* Low stock drugs list */
+      const lowStockDrugs = alerts.low_stock_drugs || [];
+      const expiringSoon  = alerts.expiring_soon_drugs || [];
+      const expireDiv     = document.getElementById('expiringSoonList');
+
+      if (expiringSoon.length === 0) {
+        expireDiv.innerHTML = `
+          <div class="empty-state" style="padding:1rem 0">
+            <i class="fa-solid fa-calendar-check" style="color:var(--success)"></i>
+            <p>No drugs expiring soon</p>
+          </div>`;
+      } else {
+        expireDiv.innerHTML = expiringSoon.map(drug => {
+          const expiry  = new Date(drug.expiry_date);
+          const today   = new Date();
+          const daysLeft = Math.ceil((expiry - today)/(1000*60*60*24));
+          const urgency  = daysLeft <= 7 ? 'badge-danger' : daysLeft <= 14 ? 'badge-warning' : 'badge-info';
+          return `
+            <div class="activity-item">
+              <div style="width:36px;height:36px;background:#fef2f2;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.85rem;color:var(--danger);flex-shrink:0">
+                <i class="fa-solid fa-pills"></i>
+              </div>
+              <div class="activity-content">
+                <div class="activity-title">${drug.drug_name}</div>
+                <div class="activity-desc">${formatNumber(drug.quantity)} units remaining</div>
+              </div>
+              <div style="text-align:right">
+                <span class="badge ${urgency}">${daysLeft}d left</span>
+                <div style="font-size:0.72rem;color:var(--text-muted);margin-top:3px">${formatDate(drug.expiry_date)}</div>
+              </div>
+            </div>`;
+        }).join('');
+      }
+
+    } catch(err) {
+      console.warn('Pharmacist dashboard error:', err.message);
+      ['statPending','statDispensed','statLowStock','statTotalDrugs']
+        .forEach(id => setText(id, '—'));
+    }
+  }
+
+  loadPharmacistDashboard();
+</script>
+</body>
+</html>

@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — Reports</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+  <style>
+    .range-tabs { display:flex; gap:0.5rem; flex-wrap:wrap; }
+    .range-tab {
+      border:1.5px solid var(--border); background:var(--card-bg); color:var(--text-muted);
+      border-radius:20px; padding:0.45rem 1rem; font-size:0.82rem; font-weight:600;
+      cursor:pointer; transition:all 0.15s;
+    }
+    .range-tab.active { border-color:var(--primary); background:var(--primary-light); color:var(--primary); }
+
+    .bar-row { margin-bottom:0.9rem; }
+    .bar-row-top { display:flex; justify-content:space-between; margin-bottom:4px; }
+    .bar-row-label { font-size:0.85rem; font-weight:500; color:var(--text-dark); }
+    .bar-row-count { font-size:0.8rem; color:var(--text-muted); }
+    .bar-track { height:7px; background:var(--border-light); border-radius:4px; overflow:hidden; }
+    .bar-fill { height:100%; background:var(--primary); border-radius:4px; }
+
+    .mini-stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(100px,1fr)); gap:0.75rem; }
+    .mini-stat { text-align:center; background:var(--page-bg); border-radius:var(--border-radius-sm); padding:0.75rem 0.5rem; }
+    .mini-stat-value { font-size:1.3rem; font-weight:700; color:var(--text-dark); }
+    .mini-stat-label { font-size:0.72rem; color:var(--text-muted); margin-top:2px; }
+
+    @media print {
+      .sidebar, .navbar, .range-tabs, #printBtn { display:none !important; }
+      .main-content { margin:0 !important; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="patients.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+          <span class="nav-label">My Patients</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Clinical</div>
+      <div class="nav-item">
+        <a href="queue.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-layer-group"></i></span>
+          <span class="nav-label">Queue</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="consultations.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-stethoscope"></i></span>
+          <span class="nav-label">Consultations</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="laboratory.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-flask"></i></span>
+          <span class="nav-label">Laboratory</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="referrals.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-paper-plane"></i></span>
+          <span class="nav-label">Referrals</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="certificates.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-file-medical"></i></span>
+          <span class="nav-label">Certificates</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="reports.html" class="nav-link active">
+          <span class="nav-icon"><i class="fa-solid fa-chart-column"></i></span>
+          <span class="nav-label">Reports</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">DR</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">Doctor</div>
+        <div class="sidebar-user-role" id="sidebarRole">Doctor</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="navbar-page-title">Reports</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> Doctor <span>/</span> Reports</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <button class="navbar-icon-btn"><i class="fa-solid fa-bell"></i></button>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">DR</div>
+        <span class="navbar-user-name" id="navbarName">Doctor</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">Doctor</div>
+      <div class="dropdown-header-role" id="dropdownRole">Doctor</div>
+    </div>
+    <a href="#" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+      <div>
+        <h2>Reports</h2>
+        <p>Your clinical activity — patients seen, diagnoses, prescriptions, labs, and referrals</p>
+      </div>
+      <div style="display:flex;gap:0.6rem;align-items:center">
+        <div class="range-tabs" id="rangeTabs">
+          <button class="range-tab" data-range="today">Today</button>
+          <button class="range-tab" data-range="week">This Week</button>
+          <button class="range-tab active" data-range="month">This Month</button>
+          <button class="range-tab" data-range="all">All Time</button>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="printBtn"><i class="fa-solid fa-print"></i></button>
+      </div>
+    </div>
+
+    <div id="loadingState" class="empty-state">
+      <div class="spinner-sm" style="margin:0 auto 0.5rem"></div>
+      <p>Loading report...</p>
+    </div>
+
+    <div id="reportContent" style="display:none">
+
+      <!-- Stat Cards -->
+      <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:1.25rem 0">
+        <div class="stat-card">
+          <div class="stat-icon blue"><i class="fa-solid fa-users"></i></div>
+          <div class="stat-info">
+            <div class="stat-value" id="statPatientsSeen">—</div>
+            <div class="stat-label">Patients Seen</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div>
+          <div class="stat-info">
+            <div class="stat-value" id="statConsultClosed">—</div>
+            <div class="stat-label">Consultations Closed</div>
+          </div>
+        </div>
+        <div class="stat-icon purple" style="display:none"></div>
+        <div class="stat-card">
+          <div class="stat-icon purple"><i class="fa-solid fa-pills"></i></div>
+          <div class="stat-info">
+            <div class="stat-value" id="statRxIssued">—</div>
+            <div class="stat-label">Prescriptions Issued</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon orange"><i class="fa-solid fa-flask"></i></div>
+          <div class="stat-info">
+            <div class="stat-value" id="statLabRequests">—</div>
+            <div class="stat-label">Lab Requests</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#fef2f2;color:var(--danger)"><i class="fa-solid fa-paper-plane"></i></div>
+          <div class="stat-info">
+            <div class="stat-value" id="statReferrals">—</div>
+            <div class="stat-label">Referrals Issued</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+
+        <!-- Left column -->
+        <div style="display:flex;flex-direction:column;gap:1.25rem">
+
+          <!-- Diagnoses by Condition -->
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-heart-pulse" style="color:var(--primary);margin-right:0.4rem"></i>Diagnoses by Condition</h3>
+            </div>
+            <div class="card-body" id="diagnosesReport"></div>
+          </div>
+
+          <!-- Prescriptions Issued -->
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-pills" style="color:var(--primary);margin-right:0.4rem"></i>Most Prescribed Medications</h3>
+            </div>
+            <div class="card-body" id="prescriptionsReport"></div>
+          </div>
+
+        </div>
+
+        <!-- Right column -->
+        <div style="display:flex;flex-direction:column;gap:1.25rem">
+
+          <!-- Laboratory Requests -->
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-flask" style="color:var(--primary);margin-right:0.4rem"></i>Laboratory Requests</h3>
+            </div>
+            <div class="card-body">
+              <div class="mini-stat-grid" id="labStatusReport"></div>
+            </div>
+          </div>
+
+          <!-- Referral Statistics -->
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fa-solid fa-paper-plane" style="color:var(--primary);margin-right:0.4rem"></i>Referral Statistics</h3>
+            </div>
+            <div class="card-body">
+              <div class="mini-stat-grid" id="referralStatusReport"></div>
+              <div id="referralUrgencyReport" style="margin-top:1rem"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script>
+  const currentUser = requireAuth('doctor');
+  let currentRange = 'month';
+
+  function inRange(dateStr) {
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    const now = new Date();
+    if (currentRange === 'all')   return true;
+    if (currentRange === 'today') return d.toDateString() === now.toDateString();
+    if (currentRange === 'week') {
+      const weekAgo = new Date(now); weekAgo.setDate(now.getDate() - 7);
+      return d >= weekAgo;
+    }
+    if (currentRange === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    return true;
+  }
+
+  function extractList(resData, candidates) {
+    if (!resData) return [];
+    if (Array.isArray(resData)) return resData;
+    for (const key of candidates) { if (Array.isArray(resData[key])) return resData[key]; }
+    for (const key in resData) { if (Array.isArray(resData[key])) return resData[key]; }
+    return [];
+  }
+
+  document.querySelectorAll('.range-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.range-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentRange = tab.dataset.range;
+      loadReport();
+    });
+  });
+  document.getElementById('printBtn').addEventListener('click', () => window.print());
+
+  /* ── Load Report ──
+     Prescriptions and lab requests don't expose a doctor filter on the
+     backend, so this scopes them to "this doctor's activity" by first
+     pulling this doctor's own consultations (my_consultations=true) and
+     then keeping only prescriptions/lab requests whose consultation_id
+     matches one of those. Referrals do carry referred_by directly, so
+     those are filtered on that field instead. This is a single-page fetch
+     (per_page=100) rather than full pagination — fine for a report at this
+     scale, but worth revisiting if a doctor's volume grows well past that. */
+  async function loadReport() {
+    document.getElementById('loadingState').style.display = 'block';
+    document.getElementById('reportContent').style.display = 'none';
+
+    try {
+      const [consultRes, rxRes, labRes, refRes] = await Promise.all([
+        api.get('/consultations?my_consultations=true&per_page=100'),
+        api.get('/prescriptions?per_page=100'),
+        api.get('/laboratory/requests?per_page=100'),
+        api.get('/referrals?per_page=100'),
+      ]);
+
+      const allConsults = extractList(consultRes.data, ['consultations', 'items']);
+      const myConsults = allConsults.filter(c => inRange(c.visit_date || c.created_at));
+      const myConsultIds = new Set(myConsults.map(c => c.id));
+
+      const allRx = extractList(rxRes.data, ['prescriptions', 'items']);
+      const myRx = allRx.filter(rx => myConsultIds.has(rx.consultation_id));
+
+      const allLab = extractList(labRes.data, ['requests', 'items', 'lab_requests']);
+      const myLab = allLab.filter(r => myConsultIds.has(r.consultation_id));
+
+      const allRef = extractList(refRes.data, ['referrals']);
+      const myRef = allRef.filter(r => r.referred_by === currentUser?.id && inRange(r.created_at));
+
+      renderStats(myConsults, myRx, myLab, myRef);
+      renderDiagnoses(myConsults);
+      renderPrescriptions(myRx);
+      renderLabStatus(myLab);
+      renderReferralStats(myRef);
+
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('reportContent').style.display = 'block';
+
+    } catch (err) {
+      document.getElementById('loadingState').innerHTML =
+        `<i class="fa-solid fa-circle-exclamation" style="color:var(--danger)"></i><h4>Failed to load report</h4><p>${err.message}</p>`;
+    }
+  }
+
+  function renderStats(consults, rx, lab, ref) {
+    const uniquePatients = new Set(consults.map(c => c.patient_id || c.patient?.id)).size;
+    setText('statPatientsSeen', formatNumber(uniquePatients));
+    setText('statConsultClosed', formatNumber(consults.filter(c => c.status === 'closed').length));
+    setText('statRxIssued', formatNumber(rx.length));
+    setText('statLabRequests', formatNumber(lab.length));
+    setText('statReferrals', formatNumber(ref.length));
+  }
+
+  function renderBarList(container, counts, emptyLabel) {
+    const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    if (!entries.length) {
+      container.innerHTML = `<div class="empty-state" style="padding:1rem 0"><p>${emptyLabel}</p></div>`;
+      return;
+    }
+    const max = Math.max(...entries.map(e => e[1]));
+    container.innerHTML = entries.map(([label, count]) => `
+      <div class="bar-row">
+        <div class="bar-row-top">
+          <span class="bar-row-label">${label}</span>
+          <span class="bar-row-count">${count}</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.round(count/max*100)}%"></div></div>
+      </div>`).join('');
+  }
+
+  function renderDiagnoses(consults) {
+    const counts = {};
+    consults.forEach(c => (c.diagnoses || []).forEach(d => {
+      const label = d.description || d;
+      counts[label] = (counts[label] || 0) + 1;
+    }));
+    renderBarList(document.getElementById('diagnosesReport'), counts, 'No diagnoses recorded in this period.');
+  }
+
+  function renderPrescriptions(rx) {
+    const counts = {};
+    rx.forEach(r => { if (r.drug_name) counts[r.drug_name] = (counts[r.drug_name] || 0) + 1; });
+    renderBarList(document.getElementById('prescriptionsReport'), counts, 'No prescriptions issued in this period.');
+  }
+
+  function renderLabStatus(lab) {
+    const statuses = ['pending', 'in_progress', 'completed', 'cancelled'];
+    const counts = {};
+    statuses.forEach(s => counts[s] = 0);
+    lab.forEach(r => { counts[r.status] = (counts[r.status] || 0) + 1; });
+    document.getElementById('labStatusReport').innerHTML = statuses.map(s => `
+      <div class="mini-stat">
+        <div class="mini-stat-value">${counts[s]}</div>
+        <div class="mini-stat-label">${capitalize(s.replace('_',' '))}</div>
+      </div>`).join('');
+  }
+
+  function renderReferralStats(ref) {
+    const statuses = ['issued', 'accepted', 'completed', 'cancelled'];
+    const statusCounts = {};
+    statuses.forEach(s => statusCounts[s] = 0);
+    ref.forEach(r => { statusCounts[r.status] = (statusCounts[r.status] || 0) + 1; });
+    document.getElementById('referralStatusReport').innerHTML = statuses.map(s => `
+      <div class="mini-stat">
+        <div class="mini-stat-value">${statusCounts[s]}</div>
+        <div class="mini-stat-label">${capitalize(s)}</div>
+      </div>`).join('');
+
+    const urgencyCounts = {};
+    ref.forEach(r => { urgencyCounts[r.urgency || 'routine'] = (urgencyCounts[r.urgency || 'routine'] || 0) + 1; });
+    renderBarList(document.getElementById('referralUrgencyReport'), urgencyCounts, 'No referrals issued in this period.');
+  }
+
+  /* ── Init ── */
+  loadReport();
+</script>
+</body>
+</html>

@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — Medical Certificates</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+  <style>
+    .type-badge { font-size:0.72rem; font-weight:700; padding:0.25rem 0.6rem; border-radius:20px; }
+    .type-sick_leave      { background:#fff7ed; color:#e67e22; }
+    .type-fitness          { background:#f0fdf4; color:var(--success); }
+    .type-medical_report   { background:#eff6ff; color:var(--info); }
+    .type-other             { background:var(--page-bg); color:var(--text-muted); }
+
+    .patient-search-result {
+      border:1px solid var(--border-light); border-radius:var(--border-radius-sm);
+      padding:0.6rem 0.85rem; cursor:pointer; transition:all 0.15s;
+    }
+    .patient-search-result:hover { border-color:var(--primary); background:var(--primary-light); }
+    .selected-patient-chip {
+      display:flex; align-items:center; gap:0.75rem; background:var(--primary-light);
+      border:1px solid var(--primary); border-radius:var(--border-radius-sm); padding:0.7rem 0.9rem;
+    }
+    .selected-patient-chip button { margin-left:auto; }
+  </style>
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="patients.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+          <span class="nav-label">My Patients</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Clinical</div>
+      <div class="nav-item">
+        <a href="queue.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-layer-group"></i></span>
+          <span class="nav-label">Queue</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="consultations.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-stethoscope"></i></span>
+          <span class="nav-label">Consultations</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="laboratory.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-flask"></i></span>
+          <span class="nav-label">Laboratory</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="referrals.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-paper-plane"></i></span>
+          <span class="nav-label">Referrals</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="certificates.html" class="nav-link active">
+          <span class="nav-icon"><i class="fa-solid fa-file-medical"></i></span>
+          <span class="nav-label">Certificates</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="reports.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-chart-column"></i></span>
+          <span class="nav-label">Reports</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">DR</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">Doctor</div>
+        <div class="sidebar-user-role" id="sidebarRole">Doctor</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="navbar-page-title">Medical Certificates</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> Doctor <span>/</span> Certificates</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <button class="navbar-icon-btn"><i class="fa-solid fa-bell"></i></button>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">DR</div>
+        <span class="navbar-user-name" id="navbarName">Doctor</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">Doctor</div>
+      <div class="dropdown-header-role" id="dropdownRole">Doctor</div>
+    </div>
+    <a href="#" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+      <div>
+        <h2>Medical Certificates</h2>
+        <p>Issue and track sick leave, fitness, and medical report certificates</p>
+      </div>
+      <button class="btn btn-primary" id="newCertBtn">
+        <i class="fa-solid fa-file-circle-plus"></i> Issue Certificate
+      </button>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:1.25rem 0">
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="fa-solid fa-file-medical"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statTotal">—</div>
+          <div class="stat-label">Total</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statActive">—</div>
+          <div class="stat-label">Active</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#fef2f2;color:var(--danger)"><i class="fa-solid fa-ban"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statRevoked">—</div>
+          <div class="stat-label">Revoked</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon purple"><i class="fa-solid fa-calendar-month"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statMonth">—</div>
+          <div class="stat-label">This Month</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Certificates Table -->
+    <div class="card">
+      <div class="table-toolbar">
+        <div class="search-input-wrapper">
+          <i class="fa-solid fa-search"></i>
+          <input type="text" class="search-input" id="certSearch" placeholder="Search by patient or certificate #..." />
+        </div>
+        <div class="toolbar-actions">
+          <select class="form-control btn-sm" id="certTypeFilter" style="height:38px;min-width:150px">
+            <option value="">All Types</option>
+            <option value="sick_leave">Sick Leave</option>
+            <option value="fitness">Fitness</option>
+            <option value="medical_report">Medical Report</option>
+            <option value="other">Other</option>
+          </select>
+          <select class="form-control btn-sm" id="certStatusFilter" style="height:38px;min-width:120px">
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="revoked">Revoked</option>
+          </select>
+          <button class="btn btn-secondary btn-sm" id="refreshCertBtn">
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Certificate #</th>
+              <th>Patient</th>
+              <th>Type</th>
+              <th>Valid Period</th>
+              <th>Status</th>
+              <th>Issued</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="certTableBody">
+            <tr><td colspan="7">
+              <div class="empty-state">
+                <div class="spinner-sm" style="margin:0 auto 0.5rem"></div>
+                <p>Loading certificates...</p>
+              </div>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="certPagination"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── Issue Certificate Modal ── -->
+<div class="modal-overlay" id="newCertModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-file-circle-plus" style="color:var(--primary);margin-right:0.5rem"></i>Issue Medical Certificate</h3>
+      <button class="modal-close" id="closeNewCert"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-section">
+        <div class="form-section-title">Patient</div>
+        <div id="patientSelectArea">
+          <div class="form-group">
+            <input type="text" class="form-control" id="certPatientSearch" placeholder="Search by name, ID or phone..." />
+          </div>
+          <div id="certPatientResults"></div>
+        </div>
+        <div id="selectedPatientArea" style="display:none">
+          <div class="selected-patient-chip">
+            <div style="width:36px;height:36px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--primary)" id="selectedPatientAvatar"></div>
+            <div>
+              <div style="font-weight:600;color:var(--text-dark)" id="selectedPatientName"></div>
+              <div style="font-size:0.78rem;color:var(--text-muted)" id="selectedPatientMeta"></div>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="changePatientBtn">Change</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="linkConsultSection" style="display:none">
+        <div class="form-section-title">Link to a Consultation <span style="font-weight:400;color:var(--text-muted);font-size:0.78rem">(optional)</span></div>
+        <select class="form-control" id="linkConsultSelect">
+          <option value="">Not linked to a specific consultation</option>
+        </select>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">Certificate Details</div>
+        <div class="form-grid form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Certificate Type <span class="required">*</span></label>
+            <select class="form-control" id="cType">
+              <option value="sick_leave">Sick Leave</option>
+              <option value="fitness">Fitness</option>
+              <option value="medical_report">Medical Report</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div></div>
+          <div class="form-group">
+            <label class="form-label">Valid From <span class="required">*</span></label>
+            <input type="date" class="form-control" id="cValidFrom" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Valid To <span style="font-weight:400;color:var(--text-muted);font-size:0.78rem">(optional)</span></label>
+            <input type="date" class="form-control" id="cValidTo" />
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label class="form-label">Reason <span class="required">*</span></label>
+            <textarea class="form-control" id="cReason" placeholder="e.g. Patient presented with malaria, advised bed rest..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert alert-danger" id="newCertError" style="display:none">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span id="newCertErrorMsg"></span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="cancelNewCert">Cancel</button>
+      <button class="btn btn-primary" id="submitCertBtn">
+        <span class="spinner-sm" id="certSubmitSpinner" style="display:none;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+        <i class="fa-solid fa-file-circle-plus" id="certSubmitIcon"></i>
+        <span id="certSubmitText">Issue Certificate</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── View Certificate Modal ── -->
+<div class="modal-overlay" id="viewCertModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-file-medical" style="color:var(--primary);margin-right:0.5rem"></i>Certificate Details</h3>
+      <button class="modal-close" id="closeViewCert"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="certDetailBody">
+      <div class="empty-state"><div class="spinner-sm" style="margin:0 auto"></div></div>
+    </div>
+    <div class="modal-footer" id="certDetailFooter">
+      <button class="btn btn-secondary" id="closeViewCertBtn">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script>
+  const currentUser = requireAuth('doctor');
+
+  let currentPage   = 1;
+  let searchQuery   = '';
+  let typeFilter    = '';
+  let statusFilter  = '';
+  let selectedPatient = null;
+
+  const typeLabels = { sick_leave: 'Sick Leave', fitness: 'Fitness', medical_report: 'Medical Report', other: 'Other' };
+
+  /* ── Load Certificates ── */
+  async function loadCertificates() {
+    const tbody = document.getElementById('certTableBody');
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="spinner-sm" style="margin:0 auto 0.5rem"></div><p>Loading...</p></div></td></tr>`;
+
+    try {
+      let url = `/medical-certificates?page=${currentPage}&per_page=15`;
+      if (typeFilter)   url += `&certificate_type=${typeFilter}`;
+      if (statusFilter) url += `&status=${statusFilter}`;
+
+      const res = await api.get(url);
+      const data = res.data;
+      const certs = data.certificates || [];
+      const total = data.total ?? certs.length;
+      const pages = data.pages ?? 1;
+
+      setText('statTotal', formatNumber(total));
+      setText('statActive', formatNumber(certs.filter(c => c.status === 'active').length));
+      setText('statRevoked', formatNumber(certs.filter(c => c.status === 'revoked').length));
+      const now = new Date();
+      setText('statMonth', formatNumber(certs.filter(c => {
+        const d = new Date(c.issued_at);
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      }).length));
+
+      const filtered = searchQuery
+        ? certs.filter(c =>
+            (c.patient_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (c.certificate_number || '').toLowerCase().includes(searchQuery.toLowerCase()))
+        : certs;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fa-solid fa-file-medical"></i><h4>No certificates found</h4><p>Try adjusting your filters, or issue a new one above</p></div></td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(c => `
+        <tr style="cursor:pointer" onclick="viewCertificate(${c.id})">
+          <td><span style="font-family:monospace;font-size:0.82rem;color:var(--primary)">${c.certificate_number}</span></td>
+          <td style="font-weight:500">${c.patient_name || '—'}</td>
+          <td><span class="type-badge type-${c.certificate_type}">${typeLabels[c.certificate_type] || c.certificate_type}</span></td>
+          <td class="muted">${formatDate(c.valid_from)}${c.valid_to ? ' – ' + formatDate(c.valid_to) : ' – ongoing'}</td>
+          <td><span class="badge ${c.status === 'active' ? 'badge-success' : 'badge-danger'}">${capitalize(c.status)}</span></td>
+          <td class="muted">${formatDate(c.issued_at)}</td>
+          <td>
+            <div style="display:flex;gap:0.4rem">
+              <button class="btn btn-info btn-sm" onclick="event.stopPropagation();viewCertificate(${c.id})"><i class="fa-solid fa-eye"></i></button>
+              <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();printCertificate(${c.id})" title="Print"><i class="fa-solid fa-print"></i></button>
+            </div>
+          </td>
+        </tr>`).join('');
+
+      renderPagination(currentPage, pages);
+
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fa-solid fa-circle-exclamation" style="color:var(--danger)"></i><h4>Failed to load</h4><p>${err.message}</p></div></td></tr>`;
+    }
+  }
+
+  function renderPagination(current, total) {
+    const c = document.getElementById('certPagination');
+    if (total <= 1) { c.innerHTML = ''; return; }
+    let html = `<button class="page-btn" onclick="goPage(${current-1})" ${current===1?'disabled':''}><i class="fa-solid fa-chevron-left"></i></button>`;
+    for (let i = 1; i <= total; i++) {
+      if (i===1||i===total||(i>=current-1&&i<=current+1))
+        html += `<button class="page-btn ${i===current?'active':''}" onclick="goPage(${i})">${i}</button>`;
+      else if (i===current-2||i===current+2)
+        html += `<span style="padding:0 4px;color:var(--text-light)">…</span>`;
+    }
+    html += `<button class="page-btn" onclick="goPage(${current+1})" ${current===total?'disabled':''}><i class="fa-solid fa-chevron-right"></i></button>`;
+    c.innerHTML = html;
+  }
+  function goPage(p) { currentPage = p; loadCertificates(); }
+
+  /* ── Filters ── */
+  let searchTimer;
+  document.getElementById('certSearch').addEventListener('input', e => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { searchQuery = e.target.value.trim(); loadCertificates(); }, 400);
+  });
+  document.getElementById('certTypeFilter').addEventListener('change', e => { typeFilter = e.target.value; currentPage = 1; loadCertificates(); });
+  document.getElementById('certStatusFilter').addEventListener('change', e => { statusFilter = e.target.value; currentPage = 1; loadCertificates(); });
+  document.getElementById('refreshCertBtn').addEventListener('click', loadCertificates);
+
+  /* ── Issue Certificate: patient search ── */
+  function openNewCertModal(prefill) {
+    document.getElementById('newCertModal').classList.add('open');
+    document.getElementById('newCertError').style.display = 'none';
+    document.getElementById('cReason').value = '';
+    document.getElementById('cValidFrom').value = new Date().toISOString().slice(0,10);
+    document.getElementById('cValidTo').value = '';
+    document.getElementById('cType').value = 'sick_leave';
+    selectedPatient = null;
+    resetPatientSelect();
+
+    if (prefill?.patientId) {
+      selectPatientById(prefill.patientId, prefill.consultationId);
+    }
+  }
+  document.getElementById('newCertBtn').addEventListener('click', () => openNewCertModal());
+  document.getElementById('closeNewCert').addEventListener('click', () => document.getElementById('newCertModal').classList.remove('open'));
+  document.getElementById('cancelNewCert').addEventListener('click', () => document.getElementById('newCertModal').classList.remove('open'));
+
+  let patientSearchTimer;
+  document.getElementById('certPatientSearch').addEventListener('input', e => {
+    clearTimeout(patientSearchTimer);
+    const q = e.target.value.trim();
+    if (!q) { document.getElementById('certPatientResults').innerHTML = ''; return; }
+    patientSearchTimer = setTimeout(async () => {
+      try {
+        const res = await api.get(`/patients?search=${encodeURIComponent(q)}&per_page=8`);
+        const patients = res.data.patients || res.data.items || res.data || [];
+        document.getElementById('certPatientResults').innerHTML = patients.map(p => `
+          <div class="patient-search-result" style="margin-bottom:0.4rem" onclick="selectPatientObj(${JSON.stringify(p).replace(/"/g,'&quot;')})">
+            <div style="font-weight:500">${p.full_name}</div>
+            <div style="font-size:0.78rem;color:var(--text-muted)">${p.patient_number || p.patient_id || ''} · ${capitalize(p.gender||'')}</div>
+          </div>`).join('') || `<p style="font-size:0.82rem;color:var(--text-muted)">No patients found.</p>`;
+      } catch (err) { /* silent — search box, not critical */ }
+    }, 350);
+  });
+
+  function selectPatientObj(p) {
+    selectedPatient = p;
+    document.getElementById('patientSelectArea').style.display = 'none';
+    document.getElementById('selectedPatientArea').style.display = 'block';
+    document.getElementById('selectedPatientAvatar').textContent = (p.full_name || '?').split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
+    document.getElementById('selectedPatientName').textContent = p.full_name;
+    document.getElementById('selectedPatientMeta').textContent = `${p.patient_number || ''} · ${capitalize(p.gender||'')}`;
+    loadConsultationsForLink(p.id);
+  }
+  async function selectPatientById(id, preselectConsultationId) {
+    try {
+      const res = await api.get(`/patients/${id}`);
+      selectPatientObj(res.data);
+      if (preselectConsultationId) {
+        await loadConsultationsForLink(id);
+        document.getElementById('linkConsultSelect').value = preselectConsultationId;
+      }
+    } catch (err) { showToast('Could not load patient: ' + err.message, 'error'); }
+  }
+  function resetPatientSelect() {
+    document.getElementById('patientSelectArea').style.display = 'block';
+    document.getElementById('selectedPatientArea').style.display = 'none';
+    document.getElementById('certPatientSearch').value = '';
+    document.getElementById('certPatientResults').innerHTML = '';
+    document.getElementById('linkConsultSection').style.display = 'none';
+  }
+  document.getElementById('changePatientBtn').addEventListener('click', resetPatientSelect);
+
+  async function loadConsultationsForLink(patientId) {
+    const section = document.getElementById('linkConsultSection');
+    const select = document.getElementById('linkConsultSelect');
+    section.style.display = 'block';
+    select.innerHTML = `<option value="">Not linked to a specific consultation</option>`;
+    try {
+      const res = await api.get(`/consultations?patient_id=${patientId}&my_consultations=true&per_page=20`);
+      const list = res.data.consultations || res.data.items || res.data || [];
+      list.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = `#${c.id} — ${c.chief_complaint || 'Consultation'} (${formatDate(c.visit_date || c.created_at)})`;
+        select.appendChild(opt);
+      });
+    } catch (e) { /* linking is optional — fine if this list stays empty */ }
+  }
+
+  document.getElementById('submitCertBtn').addEventListener('click', async () => {
+    const errBox = document.getElementById('newCertError');
+    errBox.style.display = 'none';
+
+    if (!selectedPatient) { document.getElementById('newCertErrorMsg').textContent = 'Select a patient first.'; errBox.style.display = 'flex'; return; }
+    const reason = document.getElementById('cReason').value.trim();
+    if (!reason) { document.getElementById('newCertErrorMsg').textContent = 'Reason is required.'; errBox.style.display = 'flex'; return; }
+    const validFrom = document.getElementById('cValidFrom').value;
+    if (!validFrom) { document.getElementById('newCertErrorMsg').textContent = 'Valid From date is required.'; errBox.style.display = 'flex'; return; }
+
+    const btn = document.getElementById('submitCertBtn');
+    btn.disabled = true;
+    document.getElementById('certSubmitSpinner').style.display = 'inline-block';
+    document.getElementById('certSubmitIcon').style.display = 'none';
+    document.getElementById('certSubmitText').textContent = 'Issuing...';
+
+    try {
+      const res = await api.post('/medical-certificates', {
+        patient_id:       selectedPatient.id,
+        consultation_id:  document.getElementById('linkConsultSelect').value || null,
+        certificate_type: document.getElementById('cType').value,
+        reason:            reason,
+        valid_from:        validFrom,
+        valid_to:          document.getElementById('cValidTo').value || null,
+      });
+
+      showToast(`Certificate ${res.data.certificate_number} issued.`, 'success');
+      document.getElementById('newCertModal').classList.remove('open');
+      loadCertificates();
+      if (res.data?.id) printCertificate(res.data.id);
+
+    } catch (err) {
+      document.getElementById('newCertErrorMsg').textContent = err.message;
+      errBox.style.display = 'flex';
+    } finally {
+      btn.disabled = false;
+      document.getElementById('certSubmitSpinner').style.display = 'none';
+      document.getElementById('certSubmitIcon').style.display = 'inline-block';
+      document.getElementById('certSubmitText').textContent = 'Issue Certificate';
+    }
+  });
+
+  /* ── View + Revoke ── */
+  async function viewCertificate(id) {
+    document.getElementById('viewCertModal').classList.add('open');
+    document.getElementById('certDetailBody').innerHTML = '<div class="empty-state"><div class="spinner-sm" style="margin:0 auto"></div></div>';
+
+    try {
+      const res = await api.get(`/medical-certificates/${id}`);
+      const c = res.data;
+
+      document.getElementById('certDetailBody').innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+          <div>
+            <div style="font-size:1rem;font-weight:600;color:var(--text-dark)">${c.patient_name}</div>
+            <div style="font-size:0.8rem;color:var(--text-muted);font-family:monospace">${c.certificate_number}</div>
+          </div>
+          <div style="display:flex;gap:0.5rem">
+            <span class="type-badge type-${c.certificate_type}">${typeLabels[c.certificate_type] || c.certificate_type}</span>
+            <span class="badge ${c.status === 'active' ? 'badge-success' : 'badge-danger'}">${capitalize(c.status)}</span>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Valid Period</div>
+          <p style="font-size:0.9rem;margin:0">${formatDate(c.valid_from)}${c.valid_to ? ' – ' + formatDate(c.valid_to) : ' – ongoing'}</p>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Reason</div>
+          <p style="font-size:0.875rem;margin:0;white-space:pre-wrap">${c.reason}</p>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Issued By</div>
+          <p style="font-size:0.875rem;margin:0">Dr. ${c.issued_by_name || '—'} · ${formatDate(c.issued_at)}</p>
+        </div>
+        ${c.status === 'revoked' ? `
+        <div class="form-section">
+          <div class="form-section-title" style="color:var(--danger)">Revoked</div>
+          <p style="font-size:0.875rem;margin:0">By ${c.revoked_by_name || '—'} on ${formatDate(c.revoked_at)}</p>
+          <p style="font-size:0.875rem;margin:0.3rem 0 0;color:var(--text-muted)">${c.revoke_reason || ''}</p>
+        </div>` : ''}
+      `;
+
+      const footer = document.getElementById('certDetailFooter');
+      footer.innerHTML = `
+        <button class="btn btn-secondary" id="closeViewCertBtn2">Close</button>
+        <button class="btn btn-secondary" onclick="printCertificate(${c.id})"><i class="fa-solid fa-print"></i> Print</button>
+        ${c.status === 'active' ? `<button class="btn" style="background:var(--danger);color:#fff" onclick="revokeCertificate(${c.id})"><i class="fa-solid fa-ban"></i> Revoke</button>` : ''}
+      `;
+      document.getElementById('closeViewCertBtn2').addEventListener('click', () => document.getElementById('viewCertModal').classList.remove('open'));
+
+    } catch (err) {
+      document.getElementById('certDetailBody').innerHTML = `<div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i><span>${err.message}</span></div>`;
+    }
+  }
+
+  async function revokeCertificate(id) {
+    const reason = prompt('Reason for revoking this certificate:');
+    if (reason === null) return;
+    if (!reason.trim()) { showToast('A reason is required to revoke a certificate.', 'error'); return; }
+    try {
+      await api.patch(`/medical-certificates/${id}/revoke`, { reason: reason.trim() });
+      showToast('Certificate revoked.', 'success');
+      viewCertificate(id);
+      loadCertificates();
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+
+  function closeModal() { document.getElementById('viewCertModal').classList.remove('open'); }
+  document.getElementById('closeViewCert').addEventListener('click', closeModal);
+  document.getElementById('closeViewCertBtn').addEventListener('click', closeModal);
+  document.getElementById('viewCertModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+  document.getElementById('newCertModal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('open'); });
+
+  /* ── Printable certificate ── */
+  async function printCertificate(id) {
+    try {
+      const res = await api.get(`/medical-certificates/${id}`);
+      const c = res.data;
+      const doctorName = c.issued_by_name || currentUser?.full_name || 'Attending Doctor';
+
+      const typeWording = {
+        sick_leave: 'has been examined and is advised to be excused from duties/classes for the period stated below.',
+        fitness: 'has been examined and is certified medically fit to resume normal duties/activities.',
+        medical_report: 'presents the following medical findings for official record.',
+        other: 'presents the following medical certification.',
+      };
+
+      const win = window.open('', '_blank', 'width=800,height=900');
+      win.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>${typeLabels[c.certificate_type] || 'Medical Certificate'} — ${c.patient_name}</title>
+          <style>
+            body { font-family: Georgia, 'Times New Roman', serif; color:#1a1a1a; max-width:720px; margin:40px auto; line-height:1.6; }
+            .letterhead { text-align:center; border-bottom:3px solid #0f5132; padding-bottom:16px; margin-bottom:8px; }
+            .letterhead h1 { margin:0; font-size:1.4rem; color:#0f5132; }
+            .letterhead p { margin:4px 0 0; font-size:0.85rem; color:#555; }
+            .cert-title { text-align:center; font-size:1.15rem; font-weight:bold; text-transform:uppercase; letter-spacing:0.05em; margin:22px 0; }
+            .cert-number { text-align:center; font-family:monospace; font-size:0.85rem; color:#666; margin-bottom:28px; }
+            .field { margin-bottom:14px; }
+            .field-label { font-size:0.75rem; text-transform:uppercase; letter-spacing:0.04em; color:#888; margin-bottom:2px; }
+            .field-value { font-size:0.98rem; }
+            .status-revoked { text-align:center; color:#b91c1c; font-weight:bold; border:2px solid #b91c1c; padding:10px; margin:20px 0; text-transform:uppercase; }
+            .signature { margin-top:60px; }
+            .signature .line { border-top:1px solid #333; width:260px; margin-top:48px; padding-top:6px; font-size:0.85rem; }
+            @media print { body { margin:0 30px; } }
+          </style>
+        </head>
+        <body>
+          <div class="letterhead">
+            <h1>IHMIS — FedPoly Ilaro Health Centre</h1>
+            <p>Federal Polytechnic Ilaro, Ogun State, Nigeria</p>
+          </div>
+          <div class="cert-title">${typeLabels[c.certificate_type] || 'Medical Certificate'}</div>
+          <div class="cert-number">Certificate No. ${c.certificate_number}</div>
+
+          ${c.status === 'revoked' ? `<div class="status-revoked">This certificate has been revoked and is no longer valid</div>` : ''}
+
+          <p>This is to certify that <strong>${c.patient_name}</strong> ${typeWording[c.certificate_type] || typeWording.other}</p>
+
+          <div class="field">
+            <div class="field-label">Valid Period</div>
+            <div class="field-value">${formatDate(c.valid_from)}${c.valid_to ? ' – ' + formatDate(c.valid_to) : ' – ongoing'}</div>
+          </div>
+
+          <div class="field">
+            <div class="field-label">Reason / Clinical Notes</div>
+            <div class="field-value">${(c.reason||'').replace(/\n/g,'<br/>')}</div>
+          </div>
+
+          <div class="field">
+            <div class="field-label">Date Issued</div>
+            <div class="field-value">${formatDate(c.issued_at)}</div>
+          </div>
+
+          <div class="signature">
+            <div class="line">Dr. ${doctorName}<br/>IHMIS — FedPoly Ilaro Health Centre</div>
+          </div>
+
+          <script>window.onload = () => window.print();<\/script>
+        </body>
+        </html>
+      `);
+      win.document.close();
+
+    } catch (err) {
+      showToast('Could not open the certificate: ' + err.message, 'error');
+    }
+  }
+
+  /* ── Deep link from consultation.html: certificates.html?patient_id=&consultation_id=&open=new ── */
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('open') === 'new' && urlParams.get('patient_id')) {
+    openNewCertModal({ patientId: urlParams.get('patient_id'), consultationId: urlParams.get('consultation_id') });
+  }
+
+  /* ── Init ── */
+  loadCertificates();
+</script>
+</body>
+</html>

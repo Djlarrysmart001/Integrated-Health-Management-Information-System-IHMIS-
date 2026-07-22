@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — Doctor Queue</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+  <style>
+    .wait-badge { display:inline-flex; align-items:center; gap:0.3rem; font-weight:600; font-size:0.8rem; }
+    .wait-ok   { color: var(--text-muted); }
+    .wait-warn { color: var(--warning); }
+    .wait-late { color: var(--danger); }
+
+    .priority-badge { font-size:0.72rem; font-weight:700; padding:0.25rem 0.6rem; border-radius:20px; }
+    .priority-emergency { background:#fef2f2; color:var(--danger); }
+    .priority-high      { background:#fff7ed; color:#e67e22; }
+    .priority-normal     { background:#eff6ff; color:var(--info); }
+    .priority-low        { background:#f0fdf4; color:var(--success); }
+    .priority-unknown    { background:var(--page-bg); color:var(--text-muted); }
+
+    .called-tag {
+      font-size:0.68rem; font-weight:700; color:var(--primary);
+      background:var(--primary-light); border-radius:10px;
+      padding:0.1rem 0.5rem; margin-left:0.4rem;
+    }
+
+    .active-consult-card {
+      flex:1; min-width:220px; max-width:280px;
+      border:1px solid var(--border-light); border-radius:var(--border-radius-sm);
+      padding:0.85rem; background:var(--page-bg);
+    }
+    .active-consult-name { font-weight:600; font-size:0.9rem; color:var(--text-dark); }
+    .active-consult-meta { font-size:0.76rem; color:var(--text-muted); margin:2px 0 0.6rem; }
+  </style>
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="patients.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+          <span class="nav-label">My Patients</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Clinical</div>
+      <div class="nav-item">
+        <a href="queue.html" class="nav-link active">
+          <span class="nav-icon"><i class="fa-solid fa-layer-group"></i></span>
+          <span class="nav-label">Queue</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="consultations.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-stethoscope"></i></span>
+          <span class="nav-label">Consultations</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="laboratory.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-flask"></i></span>
+          <span class="nav-label">Laboratory</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="referrals.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-paper-plane"></i></span>
+          <span class="nav-label">Referrals</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="certificates.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-file-medical"></i></span>
+          <span class="nav-label">Certificates</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="reports.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-chart-column"></i></span>
+          <span class="nav-label">Reports</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">DR</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">Doctor</div>
+        <div class="sidebar-user-role" id="sidebarRole">Doctor</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="navbar-page-title">Queue</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> Doctor <span>/</span> Queue</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <button class="navbar-icon-btn"><i class="fa-solid fa-bell"></i></button>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">DR</div>
+        <span class="navbar-user-name" id="navbarName">Doctor</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">Doctor</div>
+      <div class="dropdown-header-role" id="dropdownRole">Doctor</div>
+    </div>
+    <a href="#" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+      <div>
+        <h2>Doctor's Queue</h2>
+        <p>Patients forwarded from Nursing, waiting to be seen</p>
+      </div>
+      <div style="display:flex;gap:0.6rem">
+        <button class="btn btn-primary" id="callNextBtn">
+          <i class="fa-solid fa-bullhorn"></i> Call Next Patient
+        </button>
+        <button class="btn btn-secondary" id="refreshBtn">
+          <i class="fa-solid fa-rotate-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:1.25rem 0">
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="fa-solid fa-layer-group"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statTotal">—</div>
+          <div class="stat-label">Waiting</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon orange"><i class="fa-solid fa-bullhorn"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statCalled">—</div>
+          <div class="stat-label">Called</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#fef2f2;color:var(--danger)"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statUrgent">—</div>
+          <div class="stat-label">Emergency / High Priority</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#fff7ed;color:#e67e22"><i class="fa-solid fa-hourglass-half"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statLongWait">—</div>
+          <div class="stat-label">Waiting 20+ mins</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active (minimized) Consultations -->
+    <div class="card" id="activeConsultCard" style="display:none;margin-bottom:1.25rem">
+      <div class="card-header">
+        <h3><i class="fa-solid fa-down-left-and-up-right-to-center" style="color:var(--primary);margin-right:0.4rem"></i>Active Consultations</h3>
+        <span style="font-size:0.78rem;color:var(--text-muted)">Minimized — pick up where you left off</span>
+      </div>
+      <div class="card-body" id="activeConsultList" style="display:flex;flex-wrap:wrap;gap:0.75rem"></div>
+    </div>
+
+    <div class="card">
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Queue #</th>
+              <th>Patient</th>
+              <th>Age / Gender</th>
+              <th>Vitals</th>
+              <th>Priority</th>
+              <th>Waiting</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="queueTableBody">
+            <tr><td colspan="7">
+              <div class="empty-state">
+                <div class="spinner-sm" style="margin:0 auto 0.5rem"></div>
+                <p>Loading queue...</p>
+              </div>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script>
+  requireAuth('doctor');
+
+  // The exact response shape for /health-files/queue/<status> isn't locked down
+  // yet, so instead of hardcoding one key name, this scans for whatever array
+  // is actually present and uses that — same approach as the Nurse's queue.html.
+  function extractQueueList(resData) {
+    if (!resData) return [];
+    if (Array.isArray(resData)) return resData;
+    const candidates = ['health_files', 'items', 'data', 'results', 'queue', 'records', 'patients'];
+    for (const key of candidates) {
+      if (Array.isArray(resData[key])) return resData[key];
+    }
+    for (const key in resData) {
+      if (Array.isArray(resData[key])) return resData[key];
+    }
+    return [];
+  }
+
+  const urgencyMeta = {
+    emergency: { label: 'Emergency', cls: 'priority-emergency' },
+    high:      { label: 'High',      cls: 'priority-high' },
+    normal:    { label: 'Normal',    cls: 'priority-normal' },
+    low:       { label: 'Low',       cls: 'priority-low' },
+  };
+  const urgencyRank = { emergency: 0, high: 1, normal: 2, low: 3 };
+
+  let queueFiles = [];
+  let activeConsultations = []; // this doctor's open (possibly minimized) consultations
+
+  async function loadActiveConsultations() {
+    try {
+      const res = await api.get('/consultations?status=open&my_consultations=true&per_page=50');
+      activeConsultations = res.data.consultations || res.data.items || res.data || [];
+    } catch (e) {
+      activeConsultations = [];
+    }
+    renderActiveConsultations();
+  }
+
+  function renderActiveConsultations() {
+    const card = document.getElementById('activeConsultCard');
+    const list = document.getElementById('activeConsultList');
+    if (!activeConsultations.length) { card.style.display = 'none'; return; }
+    card.style.display = 'block';
+    list.innerHTML = activeConsultations.map(c => {
+      const name = c.patient?.full_name || c.patient_name || 'Patient';
+      return `
+        <div class="active-consult-card">
+          <div class="active-consult-name">${name}</div>
+          <div class="active-consult-meta">${c.chief_complaint || c.complaint || 'In progress'} · #${c.id}</div>
+          <a href="consultation.html?consultation_id=${c.id}&patient_id=${c.patient_id}${c.health_file_id ? '&health_file_id=' + c.health_file_id : ''}"
+             class="btn btn-primary btn-sm" style="width:100%">
+            <i class="fa-solid fa-play"></i> Resume
+          </a>
+        </div>`;
+    }).join('');
+  }
+
+  async function loadQueue() {
+    const tbody = document.getElementById('queueTableBody');
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="spinner-sm" style="margin:0 auto 0.5rem"></div><p>Loading...</p></div></td></tr>`;
+
+    try {
+      const res = await api.get('/health-files/queue/with_doctor?per_page=50');
+      const files = extractQueueList(res.data);
+
+      if (files.length === 0) {
+        queueFiles = [];
+        tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fa-solid fa-clipboard-check"></i><h4>Queue is clear</h4><p>No patients waiting for consultation right now</p></div></td></tr>`;
+        updateStats([]);
+        return;
+      }
+
+      // Queue items carry patient_id/patient_name but not age, gender or
+      // urgency — fetch patient details and the nurse's triage/vitals record
+      // per file, same pattern used on the consultation page.
+      const [patientDetails, vitalsDetails] = await Promise.all([
+        Promise.all(files.map(f => api.get(`/patients/${f.patient_id}`).then(r => r.data).catch(() => null))),
+        Promise.all(files.map(f => api.get(`/vitals?health_file_id=${f.id}`)
+          .then(r => Array.isArray(r.data) ? r.data[0] : (r.data.vitals?.[0] || r.data.items?.[0] || r.data))
+          .catch(() => null))),
+      ]);
+      files.forEach((f, i) => { f._patient = patientDetails[i]; f._vitals = vitalsDetails[i]; });
+
+      // Emergency and high-priority patients surface first; ties broken by
+      // whoever has been waiting longest.
+      files.sort((a, b) => {
+        const ra = urgencyRank[a._vitals?.urgency_level] ?? 4;
+        const rb = urgencyRank[b._vitals?.urgency_level] ?? 4;
+        if (ra !== rb) return ra - rb;
+        return new Date(a.opened_at || 0) - new Date(b.opened_at || 0);
+      });
+
+      queueFiles = files;
+      renderQueue(files);
+      updateStats(files);
+
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fa-solid fa-circle-exclamation" style="color:var(--danger)"></i><h4>Failed to load</h4><p>${err.message}</p></div></td></tr>`;
+    }
+  }
+
+  function renderQueue(files) {
+    const tbody = document.getElementById('queueTableBody');
+    tbody.innerHTML = files.map(f => {
+      const name         = f._patient?.full_name || f.patient_name || 'Patient';
+      const patientId     = f.patient_id || f._patient?.id;
+      const patientNumber = f._patient?.patient_number || f.patient_number || '—';
+      const age            = f._patient?.age != null ? f._patient.age : '—';
+      const gender          = capitalize(f._patient?.gender || '—');
+
+      const urgency  = f._vitals?.urgency_level;
+      const um       = urgencyMeta[urgency] || { label: 'Not assessed', cls: 'priority-unknown' };
+      const priority  = `<span class="priority-badge ${um.cls}">${um.label}</span>`;
+
+      const vitals   = f.has_vitals
+        ? `<span class="badge badge-success">Recorded</span>`
+        : `<span class="badge badge-warning">Pending</span>`;
+
+      const opened     = f.opened_at ? new Date(f.opened_at) : null;
+      const waitMin    = opened ? Math.floor((Date.now() - opened.getTime()) / 60000) : null;
+      let waitClass = 'wait-ok', waitIcon = 'fa-clock';
+      if (waitMin != null) {
+        if (waitMin >= 45)      { waitClass = 'wait-late'; waitIcon = 'fa-triangle-exclamation'; }
+        else if (waitMin >= 20) { waitClass = 'wait-warn'; waitIcon = 'fa-triangle-exclamation'; }
+      }
+      const waitLabel = waitMin == null ? '—'
+        : waitMin < 60 ? `${waitMin}m`
+        : `${Math.floor(waitMin/60)}h ${waitMin%60}m`;
+
+      const calledTag = f.called_at ? `<span class="called-tag">CALLED</span>` : '';
+
+      const existingConsult = activeConsultations.find(c => String(c.health_file_id) === String(f.id));
+      const consultAction = existingConsult
+        ? `<a href="consultation.html?consultation_id=${existingConsult.id}&patient_id=${patientId}&health_file_id=${f.id}" class="btn btn-primary btn-sm">
+             <i class="fa-solid fa-play"></i> Resume
+           </a>`
+        : `<a href="consultation.html?patient_id=${patientId}&health_file_id=${f.id}" class="btn btn-primary btn-sm">
+             <i class="fa-solid fa-stethoscope"></i> Start Consultation
+           </a>`;
+
+      return `
+        <tr>
+          <td><strong>${f.queue_number ?? '—'}</strong></td>
+          <td>
+            <div style="font-weight:500;color:var(--text-dark)">${name}${calledTag}</div>
+            <div style="font-size:0.75rem;color:var(--primary);font-family:monospace">${patientNumber}</div>
+          </td>
+          <td class="muted">${age !== '—' ? age + ' yrs' : '—'} · ${gender}</td>
+          <td>${vitals}</td>
+          <td>${priority}</td>
+          <td><span class="wait-badge ${waitClass}"><i class="fa-solid ${waitIcon}"></i> ${waitLabel}</span></td>
+          <td>
+            <div style="display:flex;gap:0.4rem">
+              <a href="patients.html?patient_id=${patientId}" class="btn btn-secondary btn-sm" title="Open Patient File">
+                <i class="fa-solid fa-folder-open"></i>
+              </a>
+              ${consultAction}
+            </div>
+          </td>
+        </tr>`;
+    }).join('');
+  }
+
+  function updateStats(files) {
+    setText('statTotal', formatNumber(files.length));
+    setText('statCalled', formatNumber(files.filter(f => f.called_at).length));
+    setText('statUrgent', formatNumber(files.filter(f =>
+      ['emergency', 'high'].includes(f._vitals?.urgency_level)).length));
+    setText('statLongWait', formatNumber(files.filter(f => {
+      if (!f.opened_at) return false;
+      return Math.floor((Date.now() - new Date(f.opened_at).getTime()) / 60000) >= 20;
+    }).length));
+  }
+
+  /* ── Call Next Patient ──
+     health_files already carries opened_at / called_at / closed_at (confirmed
+     from the queue item shape used elsewhere in this project), so "calling"
+     a patient is read here as stamping called_at on the first not-yet-called
+     file, ordered by priority then arrival time. */
+  document.getElementById('callNextBtn').addEventListener('click', async () => {
+    const next = queueFiles.find(f => !f.called_at);
+    if (!next) {
+      showToast('No patients left to call — everyone in the queue has already been called.', 'info');
+      return;
+    }
+    const btn = document.getElementById('callNextBtn');
+    btn.disabled = true;
+    try {
+      await api.put(`/health-files/${next.id}`, { called_at: new Date().toISOString() });
+      const name = next._patient?.full_name || next.patient_name || 'Patient';
+      showToast(`${name} has been called (Queue #${next.queue_number ?? '—'}).`, 'success');
+      loadQueue();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  async function refreshAll() { await loadActiveConsultations(); await loadQueue(); }
+
+  document.getElementById('refreshBtn').addEventListener('click', refreshAll);
+  refreshAll();
+
+  // Keep the queue current without requiring a manual refresh
+  setInterval(refreshAll, 30000);
+</script>
+</body>
+</html>

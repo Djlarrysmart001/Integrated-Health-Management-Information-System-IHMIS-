@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — Prescriptions</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+  <style>
+    .rx-patient-card {
+      display:flex; align-items:center; gap:1.1rem;
+      padding:1.25rem; background:var(--page-bg);
+      border:1px solid var(--border-light); border-radius:var(--border-radius);
+      margin-bottom:1.25rem;
+    }
+    .rx-avatar {
+      width:52px; height:52px; border-radius:50%;
+      background:var(--primary-light); color:var(--primary);
+      display:flex; align-items:center; justify-content:center;
+      font-weight:700; font-size:1.15rem; flex-shrink:0;
+    }
+    .drug-chip {
+      display:inline-block; background:var(--page-bg); color:var(--text-dark);
+      border:1px solid var(--border-light); border-radius:20px;
+      padding:0.2rem 0.65rem; font-size:0.75rem; margin:0 0.3rem 0.3rem 0;
+    }
+    .drug-chip.more { color:var(--text-muted); border-style:dashed; }
+
+    .item-row {
+      display:grid; gap:0.6rem; align-items:end;
+      grid-template-columns: 1.3fr 0.8fr 0.8fr 0.7fr 0.5fr 1.1fr auto;
+      padding:0.9rem; background:var(--page-bg);
+      border:1px solid var(--border-light); border-radius:var(--border-radius-sm);
+      margin-bottom:0.75rem;
+    }
+    .item-row .form-group { margin-bottom:0; }
+    .item-row .drug-name-display {
+      font-weight:600; font-size:0.875rem; color:var(--text-dark);
+      padding:0.55rem 0; word-break:break-word;
+    }
+    .item-row-remove {
+      background:none; border:none; color:var(--danger); cursor:pointer;
+      font-size:1rem; padding:0.4rem;
+    }
+    @media (max-width: 900px) { .item-row { grid-template-columns:1fr 1fr; } }
+
+    .add-drug-btn {
+      border:1.5px dashed var(--border); background:transparent;
+      color:var(--primary); border-radius:var(--border-radius-sm);
+      padding:0.6rem; width:100%; font-size:0.85rem; font-weight:600;
+      cursor:pointer; margin-bottom:0.75rem;
+    }
+    .add-drug-btn:hover { background:var(--primary-light); border-color:var(--primary); }
+
+    .drug-picker-panel {
+      border:1px solid var(--border-light); border-radius:var(--border-radius-sm);
+      padding:0.75rem; margin-bottom:0.9rem; background:var(--card-bg);
+    }
+    .drug-picker-list {
+      display:flex; flex-wrap:wrap; gap:0.5rem; max-height:160px;
+      overflow-y:auto; margin-top:0.6rem;
+    }
+    .drug-picker-option {
+      border:1.5px solid var(--border); border-radius:20px;
+      padding:0.35rem 0.8rem; font-size:0.78rem; cursor:pointer;
+      background:var(--page-bg); transition:all 0.15s;
+    }
+    .drug-picker-option:hover { border-color:var(--primary); color:var(--primary); }
+    .drug-picker-option.disabled { opacity:0.4; cursor:not-allowed; }
+
+    .detail-item-row {
+      display:grid; grid-template-columns:1.4fr 0.9fr 0.9fr 0.8fr 0.6fr 1.2fr 0.9fr;
+      gap:0.6rem; padding:0.7rem 0; border-bottom:1px solid var(--border-light);
+      font-size:0.85rem; align-items:center;
+    }
+    .detail-item-row.header { font-weight:600; color:var(--text-muted); font-size:0.72rem; text-transform:uppercase; border-bottom:2px solid var(--border-light); }
+    @media (max-width: 900px) { .detail-item-row { grid-template-columns:1fr 1fr; } }
+
+    .refill-hint { font-size:0.75rem; color:var(--text-muted); margin-top:0.3rem; }
+  </style>
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="patients.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+          <span class="nav-label">My Patients</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Clinical</div>
+      <div class="nav-item">
+        <a href="queue.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-layer-group"></i></span>
+          <span class="nav-label">Queue</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="consultations.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-stethoscope"></i></span>
+          <span class="nav-label">Consultations</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="prescriptions.html" class="nav-link active">
+          <span class="nav-icon"><i class="fa-solid fa-pills"></i></span>
+          <span class="nav-label">Prescriptions</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">DR</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">Doctor</div>
+        <div class="sidebar-user-role" id="sidebarRole">Doctor</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="navbar-page-title">Prescriptions</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> Doctor <span>/</span> Prescriptions</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <button class="navbar-icon-btn"><i class="fa-solid fa-bell"></i></button>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">DR</div>
+        <span class="navbar-user-name" id="navbarName">Doctor</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">Doctor</div>
+      <div class="dropdown-header-role" id="dropdownRole">Doctor</div>
+    </div>
+    <a href="#" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <div class="page-header">
+      <h2>Prescriptions</h2>
+      <p>All prescriptions written across the clinic — view, cancel, or refill</p>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:1.25rem 0">
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="fa-solid fa-prescription-bottle-medical"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statTotal">—</div>
+          <div class="stat-label">Total</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon orange"><i class="fa-solid fa-hourglass-half"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statPending">—</div>
+          <div class="stat-label">Pending</div>
+          <div class="stat-change" id="statPendingSub" style="color:var(--text-muted)"></div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statDispensed">—</div>
+          <div class="stat-label">Dispensed</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon purple"><i class="fa-solid fa-ban"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statCancelled">—</div>
+          <div class="stat-label">Cancelled</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+      <div class="table-toolbar">
+        <div class="search-input-wrapper">
+          <i class="fa-solid fa-search"></i>
+          <input type="text" class="search-input" id="rxSearch"
+            placeholder="Search patient or drug name..." />
+        </div>
+        <div class="toolbar-actions">
+          <select class="form-control btn-sm" id="rxStatusFilter" style="height:38px;min-width:150px">
+            <option value="">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="partially_dispensed">Partially Dispensed</option>
+            <option value="dispensed">Dispensed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+          <button class="btn btn-secondary btn-sm" id="refreshRxBtn">
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Patient</th>
+              <th>Drug(s)</th>
+              <th>Prescribed By</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="rxTableBody">
+            <tr><td colspan="6">
+              <div class="empty-state">
+                <div class="spinner-sm" style="margin:0 auto 0.5rem"></div>
+                <p>Loading prescriptions...</p>
+              </div>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="rxPagination"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── View Prescription Modal ── -->
+<div class="modal-overlay" id="viewRxModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-prescription-bottle-medical" style="color:var(--primary);margin-right:0.5rem"></i>Prescription Details</h3>
+      <button class="modal-close" id="closeViewRx"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="rxDetailBody">
+      <div class="empty-state"><div class="spinner-sm" style="margin:0 auto"></div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="closeViewRxBtn">Close</button>
+      <button class="btn btn-danger" id="cancelRxBtn" style="display:none">
+        <i class="fa-solid fa-ban"></i> Cancel Prescription
+      </button>
+      <button class="btn btn-primary" id="refillRxBtn" disabled>
+        <i class="fa-solid fa-rotate"></i> <span id="refillRxBtnText">Checking eligibility...</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Write / Refill Prescription Modal ── -->
+<div class="modal-overlay" id="writeRxModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-pills" style="color:var(--primary);margin-right:0.5rem"></i>New Prescription</h3>
+      <button class="modal-close" id="closeWriteRx"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="rx-patient-card">
+        <div class="rx-avatar" id="writeRxAvatar">--</div>
+        <div>
+          <div style="font-weight:700;color:var(--text-dark)" id="writeRxPatientName">—</div>
+          <div style="font-size:0.8rem;color:var(--text-muted)" id="writeRxConsultInfo">—</div>
+        </div>
+      </div>
+
+      <div class="form-section-title">Drugs</div>
+      <div id="itemRowsContainer"></div>
+      <button type="button" class="add-drug-btn" id="toggleDrugPickerBtn">
+        <i class="fa-solid fa-pills"></i> Select Drug from Catalogue <i class="fa-solid fa-chevron-down" style="font-size:0.7rem;margin-left:0.3rem"></i>
+      </button>
+
+      <div class="drug-picker-panel" id="drugPickerPanel" style="display:none">
+        <input type="text" class="form-control" id="drugPickerSearch" placeholder="Search drug catalogue..." />
+        <div class="drug-picker-list" id="drugPickerList">
+          <span style="color:var(--text-muted);font-size:0.82rem">Loading drug catalogue...</span>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top:1rem">
+        <label class="form-label">Notes for Pharmacy</label>
+        <textarea class="form-control" id="rxNotes" placeholder="Optional notes..."></textarea>
+      </div>
+
+      <div class="alert alert-danger" id="writeRxError" style="display:none">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span id="writeRxErrorMsg"></span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="closeWriteRxBtn">Cancel</button>
+      <button class="btn btn-primary" id="submitRxBtn">
+        <span class="spinner-sm" id="submitRxSpinner" style="display:none;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+        <i class="fa-solid fa-paper-plane" id="submitRxIcon"></i>
+        <span id="submitRxText">Send to Pharmacy</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script>
+  requireAuth('doctor');
+
+  /* ──────────────────────────────────────────────────────────────
+     Data model recap (from PrescriptionService / Prescription model):
+       prescription = { id, consultation_id, patient_id, prescribed_by,
+                         status, notes, items:[...], created_at }
+       item         = { id, drug_id, drug_name, dosage, frequency,
+                         duration, quantity, instructions,
+                         is_dispensed, dispensed_at }
+     GET /prescriptions has no search param and no doctor-scoping —
+     we fetch a generous batch and do search/status/pagination client
+     side. Small clinic volume makes this practical.
+  ────────────────────────────────────────────────────────────── */
+
+  let allPrescriptions = [];
+  let filteredPrescriptions = [];
+  let currentPage = 1;
+  const PER_PAGE = 15;
+  let searchQuery = '';
+  let statusFilter = '';
+
+  let drugCatalogue = [];
+  let drugCatalogueLoaded = false;
+  let drugCatalogueFailed = false;
+
+  let currentDetail = null;     // prescription object shown in view modal
+  let writeContext = null;      // { consultationId, patientId, patientName }
+  let itemRowCount = 0;
+
+  const statusMeta = {
+    pending:              { label: 'Pending',            cls: 'badge-warning' },
+    partially_dispensed:  { label: 'Partial',             cls: 'badge-info' },
+    dispensed:            { label: 'Dispensed',            cls: 'badge-success' },
+    cancelled:            { label: 'Cancelled',            cls: 'badge-muted' },
+  };
+
+  function extractList(resData, keys) {
+    if (!resData) return [];
+    if (Array.isArray(resData)) return resData;
+    for (const k of keys) { if (Array.isArray(resData[k])) return resData[k]; }
+    for (const k in resData) { if (Array.isArray(resData[k])) return resData[k]; }
+    return [];
+  }
+
+  /* ── Load prescriptions + enrich with patient / prescriber names ── */
+  async function loadPrescriptions() {
+    const tbody = document.getElementById('rxTableBody');
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="spinner-sm" style="margin:0 auto 0.5rem"></div><p>Loading...</p></div></td></tr>`;
+
+    try {
+      const res  = await api.get('/prescriptions?page=1&per_page=200');
+      const list = extractList(res.data, ['prescriptions', 'items', 'data']);
+
+      const patientIds = [...new Set(list.map(p => p.patient_id).filter(Boolean))];
+      const doctorIds  = [...new Set(list.map(p => p.prescribed_by).filter(Boolean))];
+
+      const [patientPairs, doctorPairs] = await Promise.all([
+        Promise.all(patientIds.map(id =>
+          api.get(`/patients/${id}`).then(r => [id, r.data]).catch(() => [id, null]))),
+        // NOTE: /users/<id> is a best-effort guess — Doctor role may not
+        // have access to a user-lookup endpoint. Falls back gracefully.
+        Promise.all(doctorIds.map(id =>
+          api.get(`/users/${id}`).then(r => [id, r.data]).catch(() => [id, null]))),
+      ]);
+      const patientMap = Object.fromEntries(patientPairs);
+      const doctorMap  = Object.fromEntries(doctorPairs);
+
+      allPrescriptions = list.map(p => ({
+        ...p,
+        _patient: patientMap[p.patient_id] || null,
+        _doctor:  doctorMap[p.prescribed_by] || null,
+      }));
+
+      applyFilters();
+
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-circle-exclamation" style="color:var(--danger)"></i><h4>Failed to load</h4><p>${err.message}</p></div></td></tr>`;
+    }
+  }
+
+  function applyFilters() {
+    let list = allPrescriptions;
+    if (statusFilter) list = list.filter(p => p.status === statusFilter);
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(p => {
+        const name  = (p._patient?.full_name || '').toLowerCase();
+        const drugs = (p.items || []).map(i => (i.drug_name || '').toLowerCase()).join(' ');
+        return name.includes(q) || drugs.includes(q);
+      });
+    }
+    filteredPrescriptions = list;
+    currentPage = 1;
+    updateStats();
+    renderTable();
+  }
+
+  function updateStats() {
+    const total     = allPrescriptions.length;
+    const pending    = allPrescriptions.filter(p => p.status === 'pending').length;
+    const partial    = allPrescriptions.filter(p => p.status === 'partially_dispensed').length;
+    const dispensed  = allPrescriptions.filter(p => p.status === 'dispensed').length;
+    const cancelled  = allPrescriptions.filter(p => p.status === 'cancelled').length;
+
+    setText('statTotal', formatNumber(total));
+    setText('statPending', formatNumber(pending));
+    setText('statPendingSub', partial > 0 ? `+${partial} partially dispensed` : '');
+    setText('statDispensed', formatNumber(dispensed));
+    setText('statCancelled', formatNumber(cancelled));
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('rxTableBody');
+    if (filteredPrescriptions.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-prescription-bottle-medical"></i><h4>No prescriptions found</h4><p>Try adjusting your filters</p></div></td></tr>`;
+      document.getElementById('rxPagination').innerHTML = '';
+      return;
+    }
+
+    const totalPages = Math.max(1, Math.ceil(filteredPrescriptions.length / PER_PAGE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    const pageItems = filteredPrescriptions.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
+
+    tbody.innerHTML = pageItems.map(p => {
+      const name    = p._patient?.full_name || `Patient #${p.patient_id}`;
+      const patNum  = p._patient?.patient_id || p._patient?.patient_number || '';
+      const doctor  = p._doctor?.full_name || p._doctor?.username || `Doctor #${p.prescribed_by}`;
+      const items   = p.items || [];
+      const drugChips = items.slice(0, 2).map(i =>
+        `<span class="drug-chip">${i.drug_name || 'Unknown drug'}</span>`).join('');
+      const moreChip = items.length > 2 ? `<span class="drug-chip more">+${items.length - 2} more</span>` : '';
+      const sm = statusMeta[p.status] || { label: p.status, cls: 'badge-muted' };
+
+      return `
+        <tr style="cursor:pointer" onclick="viewPrescription(${p.id})">
+          <td>
+            <div style="font-weight:500">${name}</div>
+            <div style="font-size:0.75rem;color:var(--text-muted)">${patNum}</div>
+          </td>
+          <td>${drugChips}${moreChip}</td>
+          <td class="muted">${doctor}</td>
+          <td class="muted">${formatDate(p.created_at)}</td>
+          <td><span class="badge ${sm.cls}">${sm.label}</span></td>
+          <td>
+            <div style="display:flex;gap:0.4rem">
+              <button class="btn btn-info btn-sm" onclick="event.stopPropagation();viewPrescription(${p.id})">
+                <i class="fa-solid fa-eye"></i> View
+              </button>
+              ${p.status === 'pending' ? `
+                <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();cancelPrescription(${p.id})">
+                  <i class="fa-solid fa-ban"></i>
+                </button>` : ''}
+            </div>
+          </td>
+        </tr>`;
+    }).join('');
+
+    renderPagination(currentPage, totalPages);
+  }
+
+  function renderPagination(current, total) {
+    const c = document.getElementById('rxPagination');
+    if (total <= 1) { c.innerHTML = ''; return; }
+    let html = `<button class="page-btn" onclick="goPage(${current-1})" ${current===1?'disabled':''}><i class="fa-solid fa-chevron-left"></i></button>`;
+    for (let i = 1; i <= total; i++) {
+      if (i===1||i===total||(i>=current-1&&i<=current+1))
+        html += `<button class="page-btn ${i===current?'active':''}" onclick="goPage(${i})">${i}</button>`;
+      else if (i===current-2||i===current+2)
+        html += `<span style="padding:0 4px;color:var(--text-light)">…</span>`;
+    }
+    html += `<button class="page-btn" onclick="goPage(${current+1})" ${current===total?'disabled':''}><i class="fa-solid fa-chevron-right"></i></button>`;
+    c.innerHTML = html;
+  }
+  function goPage(p) { currentPage = p; renderTable(); }
+
+  /* ── Filters ── */
+  let searchTimer;
+  document.getElementById('rxSearch').addEventListener('input', e => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { searchQuery = e.target.value.trim(); applyFilters(); }, 350);
+  });
+  document.getElementById('rxStatusFilter').addEventListener('change', e => {
+    statusFilter = e.target.value; applyFilters();
+  });
+  document.getElementById('refreshRxBtn').addEventListener('click', loadPrescriptions);
+
+  /* ── View Prescription ── */
+  function viewPrescription(id) {
+    currentDetail = allPrescriptions.find(p => p.id === id);
+    if (!currentDetail) return;
+
+    document.getElementById('viewRxModal').classList.add('open');
+    document.getElementById('cancelRxBtn').style.display = currentDetail.status === 'pending' ? 'inline-flex' : 'none';
+
+    const refillBtn = document.getElementById('refillRxBtn');
+    refillBtn.disabled = true;
+    document.getElementById('refillRxBtnText').textContent = 'Checking eligibility...';
+
+    const p       = currentDetail;
+    const name    = p._patient?.full_name || `Patient #${p.patient_id}`;
+    const initials = name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
+    const doctor  = p._doctor?.full_name || p._doctor?.username || `Doctor #${p.prescribed_by}`;
+    const sm      = statusMeta[p.status] || { label: p.status, cls: 'badge-muted' };
+    const items   = p.items || [];
+
+    document.getElementById('rxDetailBody').innerHTML = `
+      <div class="rx-patient-card">
+        <div class="rx-avatar">${initials || '--'}</div>
+        <div style="flex:1">
+          <div style="font-weight:700;color:var(--text-dark)">${name}</div>
+          <div style="font-size:0.8rem;color:var(--text-muted)">
+            Prescribed by ${doctor} · ${formatDate(p.created_at)} · Consultation #${p.consultation_id}
+          </div>
+        </div>
+        <span class="badge ${sm.cls}" style="font-size:0.82rem">${sm.label}</span>
+      </div>
+
+      ${p.notes ? `
+      <div class="form-section">
+        <div class="form-section-title">Notes</div>
+        <p style="font-size:0.875rem;color:var(--text-dark);margin:0">${p.notes}</p>
+      </div>` : ''}
+
+      <div class="form-section">
+        <div class="form-section-title">Drugs</div>
+        <div class="detail-item-row header">
+          <span>Drug</span><span>Dosage</span><span>Frequency</span><span>Duration</span><span>Qty</span><span>Instructions</span><span>Status</span>
+        </div>
+        ${items.map(i => `
+          <div class="detail-item-row">
+            <span>${i.drug_name || '—'}</span>
+            <span>${i.dosage || '—'}</span>
+            <span>${i.frequency || '—'}</span>
+            <span>${i.duration || '—'}</span>
+            <span>${i.quantity ?? '—'}</span>
+            <span>${i.instructions || '—'}</span>
+            <span>${i.is_dispensed
+              ? `<span class="badge badge-success" style="font-size:0.7rem">Dispensed</span><div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">${i.dispensed_at ? formatDate(i.dispensed_at) : ''}</div>`
+              : `<span class="badge badge-warning" style="font-size:0.7rem">Pending</span>`}</span>
+          </div>`).join('')}
+      </div>
+    `;
+
+    // Resolve refill eligibility asynchronously (button starts disabled)
+    checkRefillEligibility(p.patient_id).then(ctx => {
+      if (currentDetail?.id !== p.id) return; // modal moved on, ignore
+      if (ctx) {
+        refillBtn.disabled = false;
+        document.getElementById('refillRxBtnText').textContent = 'Prescribe Again';
+        refillBtn.dataset.consultationId = ctx.consultationId;
+      } else {
+        refillBtn.disabled = true;
+        document.getElementById('refillRxBtnText').textContent = 'No open consultation';
+      }
+    });
+  }
+
+  /* Checks whether the patient currently has an open consultation.
+     NOTE: query params (patient_id, status) on GET /consultations are
+     unconfirmed — verify against ConsultationService's filter options. */
+  async function checkRefillEligibility(patientId) {
+    try {
+      const res = await api.get(`/consultations?patient_id=${patientId}&status=open&per_page=1`);
+      const list = extractList(res.data, ['consultations', 'items', 'data']);
+      if (list.length) return { consultationId: list[0].id };
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function closeViewModal() { document.getElementById('viewRxModal').classList.remove('open'); }
+  document.getElementById('closeViewRx').addEventListener('click', closeViewModal);
+  document.getElementById('closeViewRxBtn').addEventListener('click', closeViewModal);
+  document.getElementById('viewRxModal').addEventListener('click', function(e) { if (e.target === this) closeViewModal(); });
+
+  /* ── Cancel ── */
+  async function cancelPrescription(id) {
+    if (!confirm('Cancel this prescription? This cannot be undone, and Pharmacy will no longer be able to dispense it.')) return;
+    try {
+      await api.patch(`/prescriptions/${id}/cancel`);
+      showToast('Prescription cancelled.', 'success');
+      closeViewModal();
+      loadPrescriptions();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+  document.getElementById('cancelRxBtn').addEventListener('click', () => cancelPrescription(currentDetail.id));
+
+  /* ── Refill / Prescribe Again ── */
+  document.getElementById('refillRxBtn').addEventListener('click', () => {
+    const consultationId = document.getElementById('refillRxBtn').dataset.consultationId;
+    if (!consultationId || !currentDetail) return;
+    closeViewModal();
+    openWriteModal({
+      consultationId: parseInt(consultationId),
+      patientId:      currentDetail.patient_id,
+      patientName:    currentDetail._patient?.full_name || `Patient #${currentDetail.patient_id}`,
+      prefillItems:   currentDetail.items || [],
+    });
+  });
+
+  /* ── Write Prescription Modal ── */
+  function openWriteModal({ consultationId, patientId, patientName, prefillItems = [] }) {
+    writeContext = { consultationId, patientId, patientName };
+    document.getElementById('writeRxError').style.display = 'none';
+    document.getElementById('rxNotes').value = '';
+    document.getElementById('itemRowsContainer').innerHTML = '';
+    itemRowCount = 0;
+
+    const initials = patientName.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
+    document.getElementById('writeRxAvatar').textContent = initials || '--';
+    document.getElementById('writeRxPatientName').textContent = patientName;
+    document.getElementById('writeRxConsultInfo').textContent = `Consultation #${consultationId}`;
+
+    prefillItems.forEach(i => addItemRow({
+      drug_id: i.drug_id, drug_name: i.drug_name, dosage: i.dosage,
+      frequency: i.frequency, duration: i.duration, quantity: i.quantity, instructions: i.instructions,
+    }));
+
+    document.getElementById('drugPickerPanel').style.display = 'none';
+    loadDrugCatalogue();
+
+    document.getElementById('writeRxModal').classList.add('open');
+  }
+
+  function closeWriteModal() { document.getElementById('writeRxModal').classList.remove('open'); }
+  document.getElementById('closeWriteRx').addEventListener('click', closeWriteModal);
+  document.getElementById('closeWriteRxBtn').addEventListener('click', closeWriteModal);
+  document.getElementById('writeRxModal').addEventListener('click', function(e) { if (e.target === this) closeWriteModal(); });
+
+  function addItemRow({ drug_id, drug_name, dosage = '', frequency = '', duration = '', quantity = 1, instructions = '' }) {
+    const id = `item${itemRowCount++}`;
+    const row = document.createElement('div');
+    row.className = 'item-row';
+    row.id = id;
+    row.dataset.drugId = drug_id;
+    row.innerHTML = `
+      <div class="drug-name-display">${drug_name || 'Unknown drug'}</div>
+      <div class="form-group">
+        <label class="form-label">Dosage</label>
+        <input type="text" class="form-control" data-field="dosage" value="${dosage || ''}" placeholder="e.g. 500mg" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Frequency</label>
+        <input type="text" class="form-control" data-field="frequency" value="${frequency || ''}" placeholder="e.g. 3x daily" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Duration</label>
+        <input type="text" class="form-control" data-field="duration" value="${duration || ''}" placeholder="e.g. 5 days" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Qty</label>
+        <input type="number" min="1" class="form-control" data-field="quantity" value="${quantity || 1}" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Instructions</label>
+        <input type="text" class="form-control" data-field="instructions" value="${instructions || ''}" placeholder="e.g. After meals" />
+      </div>
+      <button type="button" class="item-row-remove" onclick="removeItemRow('${id}')" title="Remove"><i class="fa-solid fa-trash"></i></button>
+    `;
+    document.getElementById('itemRowsContainer').appendChild(row);
+  }
+  function removeItemRow(id) {
+    const row = document.getElementById(id);
+    if (row) row.remove();
+  }
+
+  /* ── Drug Picker ── */
+  document.getElementById('toggleDrugPickerBtn').addEventListener('click', () => {
+    const panel = document.getElementById('drugPickerPanel');
+    const opening = panel.style.display === 'none';
+    panel.style.display = opening ? 'block' : 'none';
+    if (opening) document.getElementById('drugPickerSearch').focus();
+  });
+
+  async function loadDrugCatalogue() {
+    if (drugCatalogueLoaded || drugCatalogueFailed) { renderDrugPicker(); return; }
+    try {
+      // Confirmed against app/api/v1/pharmacy/routes.py — same Drug
+      // table Pharmacy's own catalogue reads from, so this page and the
+      // Consultation page's picker can never drift out of sync.
+      const res = await api.get('/pharmacy/drugs?is_active=true&per_page=200');
+      drugCatalogue = extractList(res.data, ['drugs', 'items', 'data']);
+      drugCatalogueLoaded = true;
+    } catch (e) {
+      drugCatalogueFailed = true;
+    }
+    renderDrugPicker();
+  }
+
+  function renderDrugPicker(filterText = '') {
+    const list = document.getElementById('drugPickerList');
+    if (drugCatalogueFailed) {
+      list.innerHTML = `<span style="color:var(--danger);font-size:0.8rem">Could not load the drug catalogue. Refills using previously prescribed drugs still work.</span>`;
+      return;
+    }
+    if (!drugCatalogue.length) {
+      list.innerHTML = `<span style="color:var(--text-muted);font-size:0.82rem">The drug catalogue is empty. Ask Pharmacy/Admin to add drugs first.</span>`;
+      return;
+    }
+    const q = filterText.toLowerCase();
+    const existingIds = new Set(
+      Array.from(document.querySelectorAll('.item-row')).map(r => String(r.dataset.drugId))
+    );
+    const filtered = drugCatalogue.filter(d => (d.name || '').toLowerCase().includes(q));
+    if (!filtered.length) {
+      list.innerHTML = `<span style="color:var(--text-muted);font-size:0.82rem">Not in catalogue — ask Pharmacy/Admin to add it. New drugs can't be created from here, since they'd have no stock until Pharmacy receives them.</span>`;
+      return;
+    }
+    list.innerHTML = filtered.map(d => {
+      const already = existingIds.has(String(d.id));
+      const stockLabel = d.total_stock > 0 ? `${d.total_stock} in stock` : `out of stock`;
+      const stockColor = d.total_stock > 0 ? 'var(--text-muted)' : 'var(--danger)';
+      return `<span class="drug-picker-option ${already ? 'disabled' : ''}"
+                onclick="${already ? '' : `pickDrug(${d.id}, '${(d.name||'').replace(/'/g, "\\'")}')`}">
+                ${d.name}${already ? ' (added)' : ` <span style="color:${stockColor}">— ${stockLabel}</span>`}
+              </span>`;
+    }).join('');
+  }
+  document.getElementById('drugPickerSearch').addEventListener('input', e => renderDrugPicker(e.target.value));
+
+  function pickDrug(drugId, drugName) {
+    addItemRow({ drug_id: drugId, drug_name: drugName, quantity: 1 });
+    renderDrugPicker(document.getElementById('drugPickerSearch').value);
+  }
+
+  function collectItems() {
+    return Array.from(document.querySelectorAll('.item-row')).map(row => {
+      const entry = { drug_id: parseInt(row.dataset.drugId) };
+      row.querySelectorAll('[data-field]').forEach(inp => {
+        const val = inp.value.trim();
+        entry[inp.dataset.field] = inp.dataset.field === 'quantity'
+          ? (val ? parseInt(val) : null)
+          : (val || null);
+      });
+      return entry;
+    }).filter(e => e.drug_id);
+  }
+
+  /* ── Submit new / refilled prescription ── */
+  document.getElementById('submitRxBtn').addEventListener('click', async () => {
+    const errBox = document.getElementById('writeRxError');
+    errBox.style.display = 'none';
+
+    const items = collectItems();
+    if (!items.length) {
+      document.getElementById('writeRxErrorMsg').textContent = 'Add at least one drug before sending.';
+      errBox.style.display = 'flex';
+      return;
+    }
+
+    if (!confirm(`Send this prescription for ${writeContext.patientName} to Pharmacy? This cannot be undone once sent.`)) {
+      return;
+    }
+
+    setWriteLoading(true);
+    try {
+      await api.post('/prescriptions', {
+        consultation_id: writeContext.consultationId,
+        items,
+        notes: document.getElementById('rxNotes').value.trim() || null,
+      });
+      showToast('Prescription sent to Pharmacy.', 'success');
+      closeWriteModal();
+      loadPrescriptions();
+    } catch (err) {
+      document.getElementById('writeRxErrorMsg').textContent = err.message;
+      errBox.style.display = 'flex';
+    } finally {
+      setWriteLoading(false);
+    }
+  });
+
+  function setWriteLoading(state) {
+    document.getElementById('submitRxBtn').disabled = state;
+    document.getElementById('submitRxSpinner').style.display = state ? 'inline-block' : 'none';
+    document.getElementById('submitRxIcon').style.display = state ? 'none' : 'inline-block';
+    document.getElementById('submitRxText').textContent = state ? 'Sending...' : 'Send to Pharmacy';
+  }
+
+  /* ── Init ── */
+  loadPrescriptions();
+</script>
+</body>
+</html>

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — My Patients</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="patients.html" class="nav-link active">
+          <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+          <span class="nav-label">My Patients</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Clinical</div>
+      <div class="nav-item">
+        <a href="queue.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-layer-group"></i></span>
+          <span class="nav-label">Queue</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="consultations.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-stethoscope"></i></span>
+          <span class="nav-label">Consultations</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="laboratory.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-flask"></i></span>
+          <span class="nav-label">Laboratory</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="referrals.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-paper-plane"></i></span>
+          <span class="nav-label">Referrals</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="certificates.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-file-medical"></i></span>
+          <span class="nav-label">Certificates</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="reports.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-chart-column"></i></span>
+          <span class="nav-label">Reports</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">DR</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">Doctor</div>
+        <div class="sidebar-user-role" id="sidebarRole">Doctor</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="navbar-page-title">My Patients</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> Doctor <span>/</span> Patients</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <button class="navbar-icon-btn"><i class="fa-solid fa-bell"></i></button>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">DR</div>
+        <span class="navbar-user-name" id="navbarName">Doctor</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">Doctor</div>
+      <div class="dropdown-header-role" id="dropdownRole">Doctor</div>
+    </div>
+    <a href="#" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+      <div>
+        <h2>My Patients</h2>
+        <p>Patients you have consulted or are currently treating</p>
+      </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin:1.25rem 0">
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="fa-solid fa-users"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="totalPatients">—</div>
+          <div class="stat-label">Total Patients</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="fa-solid fa-venus-mars"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="maleCount">—</div>
+          <div class="stat-label">Male</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon purple"><i class="fa-solid fa-venus"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="femaleCount">—</div>
+          <div class="stat-label">Female</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon orange"><i class="fa-solid fa-user-plus"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="newThisMonth">—</div>
+          <div class="stat-label">New This Month</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Patients Table -->
+    <div class="card">
+      <div class="table-toolbar">
+        <div class="search-input-wrapper">
+          <i class="fa-solid fa-search"></i>
+          <input type="text" class="search-input" id="patientSearch"
+            placeholder="Search by name, ID or phone..." />
+        </div>
+        <div class="toolbar-actions">
+          <select class="form-control btn-sm" id="genderFilter" style="height:38px;min-width:130px">
+            <option value="">All Genders</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
+          <button class="btn btn-secondary btn-sm" id="refreshBtn">
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Patient</th>
+              <th>Gender</th>
+              <th>Age</th>
+              <th>Blood Group</th>
+              <th>Phone</th>
+              <th>Last Visit</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="patientTableBody">
+            <tr><td colspan="8">
+              <div class="empty-state">
+                <div class="spinner-sm" style="margin:0 auto 0.5rem"></div>
+                <p>Loading patients...</p>
+              </div>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="patientPagination"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── Patient Detail Modal ── -->
+<div class="modal-overlay" id="patientModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-user" style="color:var(--primary);margin-right:0.5rem"></i>Patient Profile</h3>
+      <button class="modal-close" id="closePatientModal"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="patientDetailBody">
+      <div class="empty-state"><div class="spinner-sm" style="margin:0 auto"></div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="closePatientBtn">Close</button>
+      <a href="consultations.html" class="btn btn-primary">
+        <i class="fa-solid fa-stethoscope"></i> View Consultations
+      </a>
+    </div>
+  </div>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script>
+  requireAuth('doctor');
+
+  let currentPage  = 1;
+  let searchQuery  = '';
+  let genderFilter = '';
+
+  /* ── Calculate Age ── */
+  function calcAge(dob) {
+    if (!dob) return '—';
+    const diff = Date.now() - new Date(dob).getTime();
+    return Math.floor(diff / (1000*60*60*24*365.25)) + ' yrs';
+  }
+
+  /* ── Load Patients ── */
+  async function loadPatients() {
+    const tbody = document.getElementById('patientTableBody');
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="spinner-sm" style="margin:0 auto 0.5rem"></div><p>Loading...</p></div></td></tr>`;
+
+    try {
+      let url = `/patients?page=${currentPage}&per_page=15`;
+      if (searchQuery)  url += `&search=${encodeURIComponent(searchQuery)}`;
+      if (genderFilter) url += `&gender=${genderFilter}`;
+
+      const res      = await api.get(url);
+      const data     = res.data;
+      const patients = data.patients || data.items || data || [];
+      const total    = data.total    || patients.length;
+      const pages    = data.pages    || 1;
+
+      /* Summary */
+      setText('totalPatients', formatNumber(total));
+      setText('maleCount',     formatNumber(patients.filter(p=>p.gender==='male').length));
+      setText('femaleCount',   formatNumber(patients.filter(p=>p.gender==='female').length));
+
+      const now = new Date();
+      setText('newThisMonth', formatNumber(patients.filter(p => {
+        const d = new Date(p.created_at);
+        return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+      }).length));
+
+      if (patients.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fa-solid fa-users-slash"></i><h4>No patients found</h4><p>Try adjusting your search</p></div></td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = patients.map(p => {
+        const name     = p.full_name || `${p.first_name||''} ${p.last_name||''}`.trim();
+        const initials = ((p.first_name?.[0]||'')+(p.last_name?.[0]||'')).toUpperCase() || '?';
+        return `
+          <tr style="cursor:pointer" onclick="viewPatient(${p.id})">
+            <td>
+              <div style="display:flex;align-items:center;gap:0.75rem">
+                <div style="width:36px;height:36px;background:var(--primary-light);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:var(--primary);flex-shrink:0">
+                  ${initials}
+                </div>
+                <div>
+                  <div style="font-weight:500;color:var(--text-dark)">${name}</div>
+                  <div style="font-size:0.75rem;color:var(--primary);font-family:monospace">${p.patient_id||`#${p.id}`}</div>
+                </div>
+              </div>
+            </td>
+            <td class="muted">${capitalize(p.gender||'—')}</td>
+            <td class="muted">${calcAge(p.date_of_birth)}</td>
+            <td>
+              ${p.blood_group
+                ? `<span class="badge badge-info">${p.blood_group}</span>`
+                : '<span class="muted">—</span>'}
+            </td>
+            <td class="muted">${p.phone_number||p.phone||'—'}</td>
+            <td class="muted">${p.last_visit ? formatDate(p.last_visit) : formatDate(p.created_at)}</td>
+            <td>
+              <span class="badge ${p.is_active?'badge-success':'badge-muted'}">
+                ${p.is_active?'Active':'Inactive'}
+              </span>
+            </td>
+            <td>
+              <button class="btn btn-info btn-sm" onclick="event.stopPropagation();viewPatient(${p.id})">
+                <i class="fa-solid fa-eye"></i> View
+              </button>
+            </td>
+          </tr>`;
+      }).join('');
+
+      renderPagination(currentPage, pages);
+
+    } catch(err) {
+      tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fa-solid fa-circle-exclamation" style="color:var(--danger)"></i><h4>Failed to load</h4><p>${err.message}</p></div></td></tr>`;
+    }
+  }
+
+  function renderPagination(current, total) {
+    const c = document.getElementById('patientPagination');
+    if (total <= 1) { c.innerHTML = ''; return; }
+    let html = `<button class="page-btn" onclick="goPage(${current-1})" ${current===1?'disabled':''}><i class="fa-solid fa-chevron-left"></i></button>`;
+    for (let i = 1; i <= total; i++) {
+      if (i===1||i===total||(i>=current-1&&i<=current+1))
+        html += `<button class="page-btn ${i===current?'active':''}" onclick="goPage(${i})">${i}</button>`;
+      else if (i===current-2||i===current+2)
+        html += `<span style="padding:0 4px;color:var(--text-light)">…</span>`;
+    }
+    html += `<button class="page-btn" onclick="goPage(${current+1})" ${current===total?'disabled':''}><i class="fa-solid fa-chevron-right"></i></button>`;
+    c.innerHTML = html;
+  }
+
+  function goPage(p) { currentPage = p; loadPatients(); }
+
+  /* ── Filters ── */
+  let searchTimer;
+  document.getElementById('patientSearch').addEventListener('input', e => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { searchQuery = e.target.value.trim(); currentPage=1; loadPatients(); }, 400);
+  });
+  document.getElementById('genderFilter').addEventListener('change', e => {
+    genderFilter = e.target.value; currentPage=1; loadPatients();
+  });
+  document.getElementById('refreshBtn').addEventListener('click', loadPatients);
+
+  /* ── View Patient ── */
+  async function viewPatient(id) {
+    document.getElementById('patientModal').classList.add('open');
+    document.getElementById('patientDetailBody').innerHTML =
+      '<div class="empty-state"><div class="spinner-sm" style="margin:0 auto"></div></div>';
+
+    try {
+      const res = await api.get(`/patients/${id}`);
+      const p   = res.data;
+      const name = p.full_name || `${p.first_name||''} ${p.last_name||''}`.trim();
+      const initials = ((p.first_name?.[0]||'')+(p.last_name?.[0]||'')).toUpperCase()||'?';
+
+      document.getElementById('patientDetailBody').innerHTML = `
+
+        <!-- Patient Header -->
+        <div style="display:flex;align-items:center;gap:1.25rem;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid var(--border-light)">
+          <div style="width:60px;height:60px;background:var(--primary-light);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.25rem;font-weight:700;color:var(--primary);flex-shrink:0">
+            ${initials}
+          </div>
+          <div style="flex:1">
+            <div style="font-size:1.1rem;font-weight:700;color:var(--text-dark)">${name}</div>
+            <div style="font-size:0.8rem;color:var(--primary);font-family:monospace;margin-bottom:4px">${p.patient_id||`#${p.id}`}</div>
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+              <span class="badge badge-info">${capitalize(p.gender||'Unknown')}</span>
+              ${p.blood_group ? `<span class="badge badge-danger">${p.blood_group}</span>` : ''}
+              <span class="badge ${p.is_active?'badge-success':'badge-muted'}">${p.is_active?'Active':'Inactive'}</span>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:1.5rem;font-weight:700;color:var(--text-dark)">${calcAge(p.date_of_birth)}</div>
+            <div style="font-size:0.75rem;color:var(--text-muted)">Age</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+          <!-- Personal Info -->
+          <div>
+            <div class="form-section-title" style="margin-bottom:0.75rem">Personal Information</div>
+            <table style="width:100%;font-size:0.875rem;border-collapse:collapse">
+              ${pRow('Date of Birth', p.date_of_birth ? formatDate(p.date_of_birth) : '—')}
+              ${pRow('Phone', p.phone_number||p.phone||'—')}
+              ${pRow('Email', p.email||'—')}
+              ${pRow('Address', p.address||'—')}
+              ${pRow('Registered', formatDate(p.created_at))}
+            </table>
+          </div>
+
+          <!-- Emergency Contact -->
+          <div>
+            <div class="form-section-title" style="margin-bottom:0.75rem">Emergency Contact</div>
+            <table style="width:100%;font-size:0.875rem;border-collapse:collapse">
+              ${pRow('Name', p.emergency_contact_name||'—')}
+              ${pRow('Relationship', p.emergency_contact_relationship||'—')}
+              ${pRow('Phone', p.emergency_contact_phone||'—')}
+            </table>
+
+            <div class="form-section-title" style="margin-top:1.25rem;margin-bottom:0.75rem">Medical Info</div>
+            <table style="width:100%;font-size:0.875rem;border-collapse:collapse">
+              ${pRow('Blood Group', p.blood_group||'Unknown')}
+              ${pRow('Allergies', p.allergies||'None recorded')}
+              ${pRow('Medical History', p.medical_history||'None recorded')}
+            </table>
+          </div>
+        </div>
+      `;
+
+    } catch(err) {
+      document.getElementById('patientDetailBody').innerHTML =
+        `<div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i><span>${err.message}</span></div>`;
+    }
+  }
+
+  function pRow(label, value) {
+    return `<tr style="border-bottom:1px solid var(--border-light)">
+      <td style="padding:0.5rem 0;color:var(--text-muted);width:40%">${label}</td>
+      <td style="padding:0.5rem 0;font-weight:500;color:var(--text-dark)">${value}</td>
+    </tr>`;
+  }
+
+  /* ── Close Modal ── */
+  document.getElementById('closePatientModal').addEventListener('click', () =>
+    document.getElementById('patientModal').classList.remove('open'));
+  document.getElementById('closePatientBtn').addEventListener('click', () =>
+    document.getElementById('patientModal').classList.remove('open'));
+  document.getElementById('patientModal').addEventListener('click', function(e) {
+    if (e.target===this) this.classList.remove('open');
+  });
+
+  /* ── Init ──
+     If arriving from the Queue (patients.html?patient_id=<id>), open that
+     patient's profile directly instead of leaving it to the general list. */
+  loadPatients();
+  const deepLinkPatientId = new URLSearchParams(window.location.search).get('patient_id');
+  if (deepLinkPatientId) viewPatient(parseInt(deepLinkPatientId));
+</script>
+</body>
+</html>

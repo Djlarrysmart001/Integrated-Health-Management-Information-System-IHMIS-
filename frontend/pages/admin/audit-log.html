@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — Audit Log</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="patients.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+          <span class="nav-label">Patients</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Management</div>
+      <div class="nav-item">
+        <a href="users.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-user-gear"></i></span>
+          <span class="nav-label">User Management</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="reports.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-chart-pie"></i></span>
+          <span class="nav-label">Reports</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="audit-log.html" class="nav-link active">
+          <span class="nav-icon"><i class="fa-solid fa-shield-halved"></i></span>
+          <span class="nav-label">Audit Log</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">AD</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">Admin</div>
+        <div class="sidebar-user-role" id="sidebarRole">Administrator</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="navbar-page-title">Audit Log</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> Admin <span>/</span> Audit Log</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <button class="navbar-icon-btn"><i class="fa-solid fa-bell"></i><span class="notif-dot"></span></button>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">AD</div>
+        <span class="navbar-user-name" id="navbarName">Admin</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">Admin</div>
+      <div class="dropdown-header-role" id="dropdownRole">Administrator</div>
+    </div>
+    <a href="#" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <a href="#" class="dropdown-item"><i class="fa-solid fa-gear"></i> Settings</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <!-- Page Header -->
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.25rem">
+      <div>
+        <h2>Audit Log</h2>
+        <p>Complete trail of all system actions and events</p>
+      </div>
+      <button class="btn btn-secondary btn-sm" id="exportBtn">
+        <i class="fa-solid fa-download"></i> Export CSV
+      </button>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:1.5rem">
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="fa-solid fa-list-check"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="totalLogs">—</div>
+          <div class="stat-label">Total Events</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="fa-solid fa-right-to-bracket"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="loginCount">—</div>
+          <div class="stat-label">Login Events</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon orange"><i class="fa-solid fa-pen-to-square"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="updateCount">—</div>
+          <div class="stat-label">Updates</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon purple"><i class="fa-solid fa-user-plus"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="createCount">—</div>
+          <div class="stat-label">Creates</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="errorCount">—</div>
+          <div class="stat-label">Errors / Warnings</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Audit Table -->
+    <div class="card">
+      <div class="table-toolbar">
+        <div class="search-input-wrapper">
+          <i class="fa-solid fa-search"></i>
+          <input type="text" class="search-input" id="auditSearch"
+            placeholder="Search by action or user..." />
+        </div>
+        <div class="toolbar-actions">
+          <select class="form-control btn-sm" id="actionFilter" style="height:38px;min-width:150px">
+            <option value="">All Actions</option>
+            <option value="LOGIN">Login</option>
+            <option value="LOGOUT">Logout</option>
+            <option value="CREATE">Create</option>
+            <option value="UPDATE">Update</option>
+            <option value="DELETE">Delete</option>
+            <option value="VIEW">View</option>
+          </select>
+          <input type="date" class="form-control btn-sm" id="dateFrom"
+            style="height:38px" title="From date" />
+          <input type="date" class="form-control btn-sm" id="dateTo"
+            style="height:38px" title="To date" />
+          <button class="btn btn-secondary btn-sm" id="refreshAuditBtn">
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width:50px">#</th>
+              <th>Action</th>
+              <th>User</th>
+              <th>Description</th>
+              <th>IP Address</th>
+              <th>Timestamp</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="auditTableBody">
+            <tr><td colspan="7">
+              <div class="empty-state">
+                <div class="spinner-sm" style="margin:0 auto 0.5rem"></div>
+                <p>Loading audit logs...</p>
+              </div>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="auditPagination"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── Log Detail Modal ── -->
+<div class="modal-overlay" id="logDetailModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-circle-info" style="color:var(--primary);margin-right:0.5rem"></i>Event Details</h3>
+      <button class="modal-close" id="closeLogModal"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="logDetailBody">
+      <p>Loading...</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="closeLogBtn">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script>
+  requireAuth('admin');
+
+  let currentPage  = 1;
+  let searchQuery  = '';
+  let actionFilter = '';
+  let dateFrom     = '';
+  let dateTo       = '';
+
+  /* ── Action config ── */
+  const actionConfig = {
+    LOGIN:   { color: 'badge-success', icon: 'fa-right-to-bracket' },
+    LOGOUT:  { color: 'badge-muted',   icon: 'fa-right-from-bracket' },
+    CREATE:  { color: 'badge-info',    icon: 'fa-plus' },
+    UPDATE:  { color: 'badge-warning', icon: 'fa-pen' },
+    DELETE:  { color: 'badge-danger',  icon: 'fa-trash' },
+    VIEW:    { color: 'badge-muted',   icon: 'fa-eye' },
+  };
+
+  /* ── Load Logs ── */
+  async function loadAuditLogs() {
+    const tbody = document.getElementById('auditTableBody');
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="spinner-sm" style="margin:0 auto 0.5rem"></div><p>Loading...</p></div></td></tr>`;
+
+    try {
+      let url = `/audit-logs?page=${currentPage}&per_page=20`;
+      if (searchQuery)  url += `&search=${encodeURIComponent(searchQuery)}`;
+      if (actionFilter) url += `&action=${encodeURIComponent(actionFilter)}`;
+      if (dateFrom)     url += `&date_from=${dateFrom}`;
+      if (dateTo)       url += `&date_to=${dateTo}`;
+
+      const res  = await api.get(url);
+      const data = res.data;
+      const logs  = data.logs || data.items || data || [];
+      const total = data.total || logs.length;
+      const pages = data.pages || 1;
+
+      /* Summary counts */
+      setText('totalLogs',   formatNumber(total));
+      setText('loginCount',  formatNumber(logs.filter(l => (l.action||l.event_type||'').toUpperCase().includes('LOGIN')).length));
+      setText('updateCount', formatNumber(logs.filter(l => (l.action||l.event_type||'').toUpperCase().includes('UPDATE')).length));
+      setText('createCount', formatNumber(logs.filter(l => (l.action||l.event_type||'').toUpperCase().includes('CREATE')).length));
+      setText('errorCount',  formatNumber(logs.filter(l => (l.action||l.event_type||'').toUpperCase().includes('ERROR')).length));
+
+      if (logs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fa-solid fa-shield-halved"></i><h4>No logs found</h4><p>Try adjusting your filters</p></div></td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = logs.map((log, idx) => {
+        const action    = (log.action || log.event_type || 'UNKNOWN').toUpperCase();
+        const cfg       = actionConfig[action] || { color: 'badge-muted', icon: 'fa-circle-dot' };
+        const username  = log.user?.username || log.username || log.performed_by || '—';
+        const desc      = log.description || log.details || log.message || '—';
+        const ip        = log.ip_address || log.ip || '—';
+        const timestamp = log.created_at || log.timestamp;
+        const rowNum    = (currentPage - 1) * 20 + idx + 1;
+
+        return `
+          <tr style="cursor:pointer" onclick="viewLogDetail(${JSON.stringify(log).replace(/"/g,'&quot;')})">
+            <td class="muted" style="font-size:0.78rem">${rowNum}</td>
+            <td>
+              <span class="badge ${cfg.color}">
+                <i class="fa-solid ${cfg.icon}" style="margin-right:3px;font-size:0.65rem"></i>
+                ${action}
+              </span>
+            </td>
+            <td>
+              <div style="font-weight:500;font-size:0.875rem">${username}</div>
+            </td>
+            <td>
+              <div style="font-size:0.85rem;color:var(--text-dark);max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                ${desc}
+              </div>
+            </td>
+            <td class="muted" style="font-family:monospace;font-size:0.78rem">${ip}</td>
+            <td class="muted" style="white-space:nowrap">${formatDateTime(timestamp)}</td>
+            <td>
+              <span class="badge badge-success" style="font-size:0.68rem">
+                <i class="fa-solid fa-circle" style="font-size:0.5rem;margin-right:3px"></i>OK
+              </span>
+            </td>
+          </tr>`;
+      }).join('');
+
+      renderPagination(currentPage, pages);
+
+    } catch(err) {
+      tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fa-solid fa-circle-exclamation" style="color:var(--danger)"></i><h4>Failed to load</h4><p>${err.message}</p></div></td></tr>`;
+    }
+  }
+
+  /* ── Pagination ── */
+  function renderPagination(current, total) {
+    const c = document.getElementById('auditPagination');
+    if (total <= 1) { c.innerHTML = ''; return; }
+    let html = `<button class="page-btn" onclick="goPage(${current-1})" ${current===1?'disabled':''}><i class="fa-solid fa-chevron-left"></i></button>`;
+    for (let i = 1; i <= total; i++) {
+      if (i===1||i===total||(i>=current-1&&i<=current+1))
+        html += `<button class="page-btn ${i===current?'active':''}" onclick="goPage(${i})">${i}</button>`;
+      else if (i===current-2||i===current+2)
+        html += `<span style="padding:0 4px;color:var(--text-light)">…</span>`;
+    }
+    html += `<button class="page-btn" onclick="goPage(${current+1})" ${current===total?'disabled':''}><i class="fa-solid fa-chevron-right"></i></button>`;
+    c.innerHTML = html;
+  }
+
+  function goPage(p) { currentPage = p; loadAuditLogs(); }
+
+  /* ── Log Detail Modal ── */
+  function viewLogDetail(log) {
+    document.getElementById('logDetailModal').classList.add('open');
+    const action  = (log.action || log.event_type || 'UNKNOWN').toUpperCase();
+    const cfg     = actionConfig[action] || { color: 'badge-muted', icon: 'fa-circle-dot' };
+
+    document.getElementById('logDetailBody').innerHTML = `
+      <div style="margin-bottom:1rem">
+        <span class="badge ${cfg.color}" style="font-size:0.85rem;padding:0.35rem 0.85rem">
+          <i class="fa-solid ${cfg.icon}" style="margin-right:5px"></i>${action}
+        </span>
+      </div>
+      <table style="width:100%;font-size:0.875rem;border-collapse:collapse">
+        ${dRow('Event ID',    log.id || '—')}
+        ${dRow('Action',      action)}
+        ${dRow('User',        log.user?.username || log.username || log.performed_by || '—')}
+        ${dRow('Description', log.description || log.details || log.message || '—')}
+        ${dRow('IP Address',  `<span style="font-family:monospace">${log.ip_address || log.ip || '—'}</span>`)}
+        ${dRow('User Agent',  log.user_agent || '—')}
+        ${dRow('Module',      log.module || log.resource || '—')}
+        ${dRow('Timestamp',   formatDateTime(log.created_at || log.timestamp))}
+      </table>
+      ${log.extra || log.metadata ? `
+        <div style="margin-top:1rem">
+          <div style="font-size:0.78rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem">Additional Data</div>
+          <pre style="background:var(--page-bg);padding:0.75rem;border-radius:6px;font-size:0.78rem;overflow:auto;max-height:150px">${JSON.stringify(log.extra || log.metadata, null, 2)}</pre>
+        </div>` : ''}
+    `;
+  }
+
+  function dRow(label, value) {
+    return `<tr style="border-bottom:1px solid var(--border-light)">
+      <td style="padding:0.6rem 0;color:var(--text-muted);width:35%;font-weight:500">${label}</td>
+      <td style="padding:0.6rem 0;color:var(--text-dark)">${value}</td>
+    </tr>`;
+  }
+
+  document.getElementById('closeLogModal').addEventListener('click', () =>
+    document.getElementById('logDetailModal').classList.remove('open'));
+  document.getElementById('closeLogBtn').addEventListener('click', () =>
+    document.getElementById('logDetailModal').classList.remove('open'));
+  document.getElementById('logDetailModal').addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('open');
+  });
+
+  /* ── Filters ── */
+  let searchTimer;
+  document.getElementById('auditSearch').addEventListener('input', e => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      searchQuery = e.target.value.trim(); currentPage = 1; loadAuditLogs();
+    }, 400);
+  });
+  document.getElementById('actionFilter').addEventListener('change', e => {
+    actionFilter = e.target.value; currentPage = 1; loadAuditLogs();
+  });
+  document.getElementById('dateFrom').addEventListener('change', e => {
+    dateFrom = e.target.value; currentPage = 1; loadAuditLogs();
+  });
+  document.getElementById('dateTo').addEventListener('change', e => {
+    dateTo = e.target.value; currentPage = 1; loadAuditLogs();
+  });
+  document.getElementById('refreshAuditBtn').addEventListener('click', loadAuditLogs);
+
+  /* ── Export CSV ── */
+  document.getElementById('exportBtn').addEventListener('click', async () => {
+    try {
+      const res  = await api.get('/audit-logs?per_page=1000');
+      const logs = res.data?.logs || res.data?.items || [];
+      if (logs.length === 0) { showToast('No logs to export.', 'warning'); return; }
+
+      const headers = ['ID','Action','User','Description','IP Address','Timestamp'];
+      const rows    = logs.map(l => [
+        l.id || '',
+        (l.action || l.event_type || '').toUpperCase(),
+        l.user?.username || l.username || l.performed_by || '',
+        (l.description || l.details || '').replace(/,/g, ';'),
+        l.ip_address || l.ip || '',
+        formatDateTime(l.created_at || l.timestamp),
+      ]);
+
+      const csv  = [headers, ...rows].map(r => r.join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `ihmis_audit_log_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Audit log exported successfully!', 'success');
+    } catch(err) { showToast('Export failed: ' + err.message, 'error'); }
+  });
+
+  /* ── Init ── */
+  loadAuditLogs();
+</script>
+</body>
+</html>

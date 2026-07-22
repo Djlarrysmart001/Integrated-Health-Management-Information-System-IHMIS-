@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — Lab Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link active">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Laboratory</div>
+      <div class="nav-item">
+        <a href="lab-requests.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-flask-vial"></i></span>
+          <span class="nav-label">Lab Requests</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">LT</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">Lab Tech</div>
+        <div class="sidebar-user-role" id="sidebarRole">Lab Technician</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="navbar-page-title">Dashboard</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> Lab <span>/</span> Dashboard</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <button class="navbar-icon-btn"><i class="fa-solid fa-bell"></i></button>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">LT</div>
+        <span class="navbar-user-name" id="navbarName">Lab Tech</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">Lab Tech</div>
+      <div class="dropdown-header-role" id="dropdownRole">Lab Technician</div>
+    </div>
+    <a href="#" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <div class="page-header">
+      <h2>Lab Technician Dashboard</h2>
+      <p id="dashGreeting">Welcome back!</p>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon orange"><i class="fa-solid fa-hourglass-half"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statPending">—</div>
+          <div class="stat-label">Pending Requests</div>
+          <div class="stat-change down" id="statUrgent">
+            <i class="fa-solid fa-circle-exclamation"></i> — urgent
+          </div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statCompleted">—</div>
+          <div class="stat-label">Completed Today</div>
+          <div class="stat-change up">
+            <i class="fa-solid fa-arrow-up"></i> Results entered
+          </div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="fa-solid fa-flask-vial"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statMonthTotal">—</div>
+          <div class="stat-label">This Month Total</div>
+          <div class="stat-change up" id="statMonthCompleted">
+            <i class="fa-solid fa-check"></i> — completed
+          </div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon purple"><i class="fa-solid fa-percent"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statRate">—</div>
+          <div class="stat-label">Completion Rate</div>
+          <div class="stat-change up">
+            <i class="fa-solid fa-chart-line"></i> This month
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard Grid -->
+    <div class="dashboard-grid">
+
+      <!-- Pending Queue -->
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-list-check" style="color:var(--primary);margin-right:0.4rem"></i>Pending Lab Queue</h3>
+          <a href="lab-requests.html" class="btn-link">View all</a>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div id="labQueueList" style="padding:0 1.5rem"></div>
+        </div>
+        <div class="card-footer">
+          <a href="lab-requests.html" class="btn-link">Manage all requests</a>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div style="display:flex;flex-direction:column;gap:1.25rem">
+
+        <!-- Monthly Stats -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-chart-bar" style="color:var(--primary);margin-right:0.4rem"></i>This Month Summary</h3>
+          </div>
+          <div class="card-body" id="monthSummary">
+            <p style="color:var(--text-light);font-size:0.85rem">Loading...</p>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-bolt" style="color:var(--primary);margin-right:0.4rem"></i>Quick Actions</h3>
+          </div>
+          <div class="card-body">
+            <div class="quick-actions">
+              <a href="lab-requests.html" class="quick-action-btn">
+                <i class="fa-solid fa-flask-vial"></i>
+                <span>All Requests</span>
+              </a>
+              <a href="lab-requests.html?filter=pending" class="quick-action-btn">
+                <i class="fa-solid fa-hourglass-half"></i>
+                <span>Pending Tests</span>
+              </a>
+              <a href="lab-requests.html?filter=urgent" class="quick-action-btn">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span>Urgent Tests</span>
+              </a>
+              <a href="lab-requests.html?filter=completed" class="quick-action-btn">
+                <i class="fa-solid fa-circle-check"></i>
+                <span>Completed</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script>
+  const user = requireAuth('lab_tech');
+
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('dashGreeting').textContent =
+    `${greeting}, ${user?.full_name || user?.username || 'Lab Tech'}! Here's your laboratory overview.`;
+
+  const priorityConfig = {
+    routine: { color: 'badge-muted',    label: 'Routine' },
+    urgent:  { color: 'badge-warning',  label: 'Urgent' },
+    stat:    { color: 'badge-danger',   label: 'STAT' },
+  };
+
+  const statusConfig = {
+    pending:          { color: 'badge-warning', label: 'Pending' },
+    sample_collected: { color: 'badge-info',    label: 'Sample Collected' },
+    in_progress:      { color: 'badge-info',    label: 'In Progress' },
+    completed:        { color: 'badge-success',  label: 'Completed' },
+    cancelled:        { color: 'badge-danger',   label: 'Cancelled' },
+  };
+
+  async function loadLabDashboard() {
+    try {
+      const res = await api.get('/dashboard');
+      const d   = res.data;
+
+      /* Stat cards */
+      setText('statPending',        formatNumber(d.pending_queue?.total        ?? 0));
+      setText('statUrgent',         `${d.pending_queue?.urgent ?? 0} urgent`);
+      setText('statCompleted',      formatNumber(d.today?.completed            ?? 0));
+      setText('statMonthTotal',     formatNumber(d.this_month?.total_requests  ?? 0));
+      setText('statMonthCompleted', `${d.this_month?.completed ?? 0} completed`);
+      setText('statRate',           d.this_month?.completion_rate ?? '0%');
+
+      /* Pending queue list */
+      const queue    = d.pending_queue?.next_10 || [];
+      const queueDiv = document.getElementById('labQueueList');
+
+      if (queue.length === 0) {
+        queueDiv.innerHTML = `
+          <div class="empty-state" style="padding:1.5rem 0">
+            <i class="fa-solid fa-flask-vial"></i>
+            <h4>Queue is clear</h4>
+            <p>No pending lab requests</p>
+          </div>`;
+      } else {
+        queueDiv.innerHTML = queue.map(req => {
+          const priority = priorityConfig[req.priority] || { color: 'badge-muted', label: req.priority||'—' };
+          const status   = statusConfig[req.status]    || { color: 'badge-muted', label: req.status||'—' };
+          const patient  = req.patient?.full_name || req.patient_name || 'Patient';
+          const test     = req.test_name || req.laboratory_test?.name || req.test_type || '—';
+
+          return `
+            <div class="activity-item">
+              <div style="width:38px;height:38px;background:var(--primary-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.9rem;color:var(--primary);flex-shrink:0">
+                <i class="fa-solid fa-flask"></i>
+              </div>
+              <div class="activity-content">
+                <div class="activity-title">${patient}</div>
+                <div class="activity-desc">${test}</div>
+              </div>
+              <div style="text-align:right;display:flex;flex-direction:column;gap:3px;align-items:flex-end">
+                <span class="badge ${priority.color}" style="font-size:0.65rem">${priority.label}</span>
+                <span class="badge ${status.color}"   style="font-size:0.65rem">${status.label}</span>
+              </div>
+            </div>`;
+        }).join('');
+      }
+
+      /* Monthly summary */
+      const m = d.this_month || {};
+      const summaryDiv = document.getElementById('monthSummary');
+      summaryDiv.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+          ${summaryBox('Total Requests', formatNumber(m.total_requests??0), 'fa-flask-vial', 'var(--info)')}
+          ${summaryBox('Completed',      formatNumber(m.completed??0),      'fa-circle-check','var(--success)')}
+          ${summaryBox('Completion Rate',m.completion_rate??'0%',           'fa-percent',      'var(--primary)')}
+          ${summaryBox('Pending Today',  formatNumber(d.pending_queue?.total??0), 'fa-hourglass-half','var(--warning)')}
+        </div>`;
+
+    } catch(err) {
+      console.warn('Lab dashboard error:', err.message);
+      ['statPending','statCompleted','statMonthTotal','statRate']
+        .forEach(id => setText(id, '—'));
+    }
+  }
+
+  function summaryBox(label, value, icon, color) {
+    return `
+      <div style="background:var(--page-bg);border-radius:8px;padding:0.875rem;text-align:center">
+        <i class="fa-solid ${icon}" style="color:${color};font-size:1.1rem;margin-bottom:0.4rem"></i>
+        <div style="font-size:1.25rem;font-weight:700;color:var(--text-dark)">${value}</div>
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">${label}</div>
+      </div>`;
+  }
+
+  loadLabDashboard();
+</script>
+</body>
+</html>
