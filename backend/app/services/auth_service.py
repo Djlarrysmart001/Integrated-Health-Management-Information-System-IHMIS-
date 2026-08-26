@@ -67,6 +67,52 @@ class AuthService:
         return {"success": True, "message": "User profile retrieved.", "data": user.to_dict()}
 
     @staticmethod
+    def update_current_user(user_id: int, data: dict) -> dict:
+        """
+        Self-service profile update — intentionally narrower than
+        UserService.update_user (which is Admin-only and also handles
+        username/role changes). This only ever touches the fields below,
+        on the caller's own record, so a non-admin user can never use it
+        to change their own username or grant themselves a role.
+        """
+        import json
+        user = User.query.get(user_id)
+        if not user:
+            return {"success": False, "message": "User not found.", "data": None}
+
+        if data.get("email") and data["email"] != user.email:
+            if User.query.filter_by(email=data["email"]).first():
+                return {"success": False, "message": f"Email '{data['email']}' is already registered.", "data": None}
+            user.email = data["email"].strip().lower()
+
+        if data.get("first_name"):
+            user.first_name = data["first_name"].strip()
+        if data.get("last_name"):
+            user.last_name = data["last_name"].strip()
+        if "phone" in data:
+            user.phone = data["phone"].strip() or None
+
+        if "notification_preferences" in data and isinstance(data["notification_preferences"], dict):
+            merged = user.get_notification_preferences()
+            for key in User.DEFAULT_NOTIFICATION_PREFERENCES:
+                if key in data["notification_preferences"]:
+                    merged[key] = bool(data["notification_preferences"][key])
+            user.notification_preferences = json.dumps(merged)
+
+        db.session.commit()
+
+        from app.services.audit_service import AuditService
+        AuditService.log(
+            action      = "UPDATE_OWN_PROFILE",
+            entity_type = "User",
+            entity_id   = user.id,
+            user_id     = user.id,
+            new_value   = {"first_name": user.first_name, "last_name": user.last_name, "email": user.email}
+        )
+
+        return {"success": True, "message": "Profile updated successfully.", "data": user.to_dict()}
+
+    @staticmethod
     def change_password(user_id: int, current_password: str, new_password: str) -> dict:
         user = User.query.get(user_id)
         if not user:

@@ -90,8 +90,9 @@ def update_referral_status(referral_id):
     if not data or not data.get("status"):
         return error_response("'status' field is required.", status_code=400)
 
+    updated_by = int(get_jwt_identity())
     result = ReferralService.update_referral_status(
-        referral_id, data["status"], notes=data.get("notes")
+        referral_id, data["status"], notes=data.get("notes"), updated_by=updated_by
     )
     if not result["success"]:
         return error_response(result["message"], status_code=400)

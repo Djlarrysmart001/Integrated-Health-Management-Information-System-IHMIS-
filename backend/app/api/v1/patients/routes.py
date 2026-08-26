@@ -9,16 +9,33 @@ from app.utils.constants import Roles
 
 patients_bp = Blueprint("patients", __name__)
 
-# All clinical roles can read patient records (needed for continuity of care)
-ALL_ROLES = (Roles.ADMIN, Roles.MEDICAL_HEALTH_OFFICER, Roles.DOCTOR,
-             Roles.NURSE, Roles.PHARMACIST, Roles.LAB_TECH)
+# Full clinical roster can read a SPECIFIC patient record by ID (needed for
+# continuity of care once a file has reached them).
+DETAIL_ROLES = (Roles.ADMIN, Roles.MEDICAL_HEALTH_OFFICER, Roles.DOCTOR,
+                Roles.NURSE, Roles.PHARMACIST, Roles.LAB_TECH)
+
+# Browsing/searching the FULL patient directory is scoped to roles whose job
+# involves finding a patient from scratch (front desk / registration / clinical
+# oversight). Nurse is deliberately excluded here: a Nurse only ever reaches a
+# patient after MHO forwards a health file into their queue (see
+# health_files/routes.py `queue/with_nurse`), never by browsing or searching
+# the full roster themselves.
+#
+# NOTE (RBAC scope, see gap analysis): this is a role-level control only.
+# It does not verify that a given patient_id was actually forwarded to the
+# requesting Nurse -- a Nurse who already knows/guesses a valid patient_id
+# can still reach GET /patients/<id> via DETAIL_ROLES above. Enforcing that
+# would require an object-level ownership check against the health file /
+# queue tables, which is out of scope for the current two-layer RBAC design.
+LIST_SEARCH_ROLES = (Roles.ADMIN, Roles.MEDICAL_HEALTH_OFFICER, Roles.DOCTOR,
+                     Roles.PHARMACIST, Roles.LAB_TECH)
 
 
 # ─────────────────────────────────────────────────────────────
 # GET /api/v1/patients
 # ─────────────────────────────────────────────────────────────
 @patients_bp.route("", methods=["GET"])
-@role_required(*ALL_ROLES)
+@role_required(*LIST_SEARCH_ROLES)
 def get_all_patients():
     page         = request.args.get("page", 1, type=int)
     per_page     = request.args.get("per_page", 20, type=int)
@@ -51,7 +68,7 @@ def get_statistics():
 # GET /api/v1/patients/search?id_number=MAT123
 # ─────────────────────────────────────────────────────────────
 @patients_bp.route("/search", methods=["GET"])
-@role_required(*ALL_ROLES)
+@role_required(*LIST_SEARCH_ROLES)
 def search_by_id():
     id_number = request.args.get("id_number", "").strip()
     if not id_number:
@@ -85,7 +102,7 @@ def check_duplicate():
 # GET /api/v1/patients/<id>
 # ─────────────────────────────────────────────────────────────
 @patients_bp.route("/<int:patient_id>", methods=["GET"])
-@role_required(*ALL_ROLES)
+@role_required(*DETAIL_ROLES)
 def get_patient(patient_id):
     result = PatientService.get_patient_by_id(patient_id)
     if not result["success"]:
@@ -170,7 +187,7 @@ def upload_photo(patient_id):
 # target directly, e.g. in the Patient File header.
 # ─────────────────────────────────────────────────────────────
 @patients_bp.route("/<int:patient_id>/photo", methods=["GET"])
-@role_required(*ALL_ROLES)
+@role_required(*DETAIL_ROLES)
 def get_photo(patient_id):
     from flask import Response
 

@@ -93,6 +93,12 @@
           <span class="nav-label">Reports</span>
         </a>
       </div>
+      <div class="nav-item">
+        <a href="notifications.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-bell"></i></span>
+          <span class="nav-label">Notifications</span>
+        </a>
+      </div>
     </nav>
     <div class="sidebar-footer">
       <div class="sidebar-user-avatar" id="sidebarAvatar">DR</div>
@@ -113,7 +119,7 @@
       </div>
     </div>
     <div class="navbar-right">
-      <button class="navbar-icon-btn"><i class="fa-solid fa-bell"></i></button>
+      <button class="navbar-icon-btn" id="notifBellBtn"><i class="fa-solid fa-bell"></i></button>
       <button class="navbar-user" id="userMenuBtn">
         <div class="navbar-user-avatar" id="navbarAvatar">DR</div>
         <span class="navbar-user-name" id="navbarName">Doctor</span>
@@ -128,7 +134,8 @@
       <div class="dropdown-header-name" id="dropdownName">Doctor</div>
       <div class="dropdown-header-role" id="dropdownRole">Doctor</div>
     </div>
-    <a href="#" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <a href="profile.html" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <a href="settings.html" class="dropdown-item"><i class="fa-solid fa-gear"></i> Settings</a>
     <div class="dropdown-divider"></div>
     <button class="dropdown-item danger" id="logoutBtn">
       <i class="fa-solid fa-right-from-bracket"></i> Sign Out
@@ -333,6 +340,8 @@
 <script src="../../assets/js/api.js"></script>
 <script src="../../assets/js/utils.js"></script>
 <script src="../../assets/js/sidebar.js"></script>
+<script src="../../assets/js/notifications-widget.js"></script>
+<script src="../../assets/js/notifications.js"></script>
 <script>
   const currentUser = requireAuth('doctor');
 
@@ -623,7 +632,23 @@
   document.getElementById('viewCertModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
   document.getElementById('newCertModal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('open'); });
 
-  /* ── Printable certificate ── */
+  /* -- Printable certificate --
+     NOTE: This deliberately avoids window.document.write() with a full raw
+     HTML string. A previous version used document.write() with a string
+     that contained literal closing body and closing html markup as plain
+     text (as part of the printable certificate's own markup). Live
+     Server's live-reload feature scans the raw served file for the first
+     matching closing-body marker it can find and injects its own script
+     tag directly before it -- and it was matching that literal text inside
+     the JS string instead of the page's real closing tag. That injected a
+     real script element pair into the middle of this file, which caused
+     the browser's HTML parser to close the outer script block early and
+     dump the rest of this file as visible page text. Building the popup
+     via DOM APIs (win.document.title, a style element, and
+     win.document.body.innerHTML) means this file never contains that
+     literal closing markup outside of the real page structure, so there
+     is nothing for that injector to latch onto.
+  -- */
   async function printCertificate(id) {
     try {
       const res = await api.get(`/medical-certificates/${id}`);
@@ -638,63 +663,61 @@
       };
 
       const win = window.open('', '_blank', 'width=800,height=900');
-      win.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>${typeLabels[c.certificate_type] || 'Medical Certificate'} — ${c.patient_name}</title>
-          <style>
-            body { font-family: Georgia, 'Times New Roman', serif; color:#1a1a1a; max-width:720px; margin:40px auto; line-height:1.6; }
-            .letterhead { text-align:center; border-bottom:3px solid #0f5132; padding-bottom:16px; margin-bottom:8px; }
-            .letterhead h1 { margin:0; font-size:1.4rem; color:#0f5132; }
-            .letterhead p { margin:4px 0 0; font-size:0.85rem; color:#555; }
-            .cert-title { text-align:center; font-size:1.15rem; font-weight:bold; text-transform:uppercase; letter-spacing:0.05em; margin:22px 0; }
-            .cert-number { text-align:center; font-family:monospace; font-size:0.85rem; color:#666; margin-bottom:28px; }
-            .field { margin-bottom:14px; }
-            .field-label { font-size:0.75rem; text-transform:uppercase; letter-spacing:0.04em; color:#888; margin-bottom:2px; }
-            .field-value { font-size:0.98rem; }
-            .status-revoked { text-align:center; color:#b91c1c; font-weight:bold; border:2px solid #b91c1c; padding:10px; margin:20px 0; text-transform:uppercase; }
-            .signature { margin-top:60px; }
-            .signature .line { border-top:1px solid #333; width:260px; margin-top:48px; padding-top:6px; font-size:0.85rem; }
-            @media print { body { margin:0 30px; } }
-          </style>
-        </head>
-        <body>
-          <div class="letterhead">
-            <h1>IHMIS — FedPoly Ilaro Health Centre</h1>
-            <p>Federal Polytechnic Ilaro, Ogun State, Nigeria</p>
-          </div>
-          <div class="cert-title">${typeLabels[c.certificate_type] || 'Medical Certificate'}</div>
-          <div class="cert-number">Certificate No. ${c.certificate_number}</div>
+      if (!win) { showToast('Please allow pop-ups to print certificates.', 'error'); return; }
 
-          ${c.status === 'revoked' ? `<div class="status-revoked">This certificate has been revoked and is no longer valid</div>` : ''}
+      win.document.title = `${typeLabels[c.certificate_type] || 'Medical Certificate'} — ${c.patient_name}`;
 
-          <p>This is to certify that <strong>${c.patient_name}</strong> ${typeWording[c.certificate_type] || typeWording.other}</p>
+      const style = win.document.createElement('style');
+      style.textContent = `
+        body { font-family: Georgia, 'Times New Roman', serif; color:#1a1a1a; max-width:720px; margin:40px auto; line-height:1.6; }
+        .letterhead { text-align:center; border-bottom:3px solid #0f5132; padding-bottom:16px; margin-bottom:8px; }
+        .letterhead h1 { margin:0; font-size:1.4rem; color:#0f5132; }
+        .letterhead p { margin:4px 0 0; font-size:0.85rem; color:#555; }
+        .cert-title { text-align:center; font-size:1.15rem; font-weight:bold; text-transform:uppercase; letter-spacing:0.05em; margin:22px 0; }
+        .cert-number { text-align:center; font-family:monospace; font-size:0.85rem; color:#666; margin-bottom:28px; }
+        .field { margin-bottom:14px; }
+        .field-label { font-size:0.75rem; text-transform:uppercase; letter-spacing:0.04em; color:#888; margin-bottom:2px; }
+        .field-value { font-size:0.98rem; }
+        .status-revoked { text-align:center; color:#b91c1c; font-weight:bold; border:2px solid #b91c1c; padding:10px; margin:20px 0; text-transform:uppercase; }
+        .signature { margin-top:60px; }
+        .signature .line { border-top:1px solid #333; width:260px; margin-top:48px; padding-top:6px; font-size:0.85rem; }
+        @media print { body { margin:0 30px; } }
+      `;
+      win.document.head.appendChild(style);
 
-          <div class="field">
-            <div class="field-label">Valid Period</div>
-            <div class="field-value">${formatDate(c.valid_from)}${c.valid_to ? ' – ' + formatDate(c.valid_to) : ' – ongoing'}</div>
-          </div>
+      win.document.body.innerHTML = `
+        <div class="letterhead">
+          <h1>IHMIS — FedPoly Ilaro Health Centre</h1>
+          <p>Federal Polytechnic Ilaro, Ogun State, Nigeria</p>
+        </div>
+        <div class="cert-title">${typeLabels[c.certificate_type] || 'Medical Certificate'}</div>
+        <div class="cert-number">Certificate No. ${c.certificate_number}</div>
 
-          <div class="field">
-            <div class="field-label">Reason / Clinical Notes</div>
-            <div class="field-value">${(c.reason||'').replace(/\n/g,'<br/>')}</div>
-          </div>
+        ${c.status === 'revoked' ? `<div class="status-revoked">This certificate has been revoked and is no longer valid</div>` : ''}
 
-          <div class="field">
-            <div class="field-label">Date Issued</div>
-            <div class="field-value">${formatDate(c.issued_at)}</div>
-          </div>
+        <p>This is to certify that <strong>${c.patient_name}</strong> ${typeWording[c.certificate_type] || typeWording.other}</p>
 
-          <div class="signature">
-            <div class="line">Dr. ${doctorName}<br/>IHMIS — FedPoly Ilaro Health Centre</div>
-          </div>
+        <div class="field">
+          <div class="field-label">Valid Period</div>
+          <div class="field-value">${formatDate(c.valid_from)}${c.valid_to ? ' – ' + formatDate(c.valid_to) : ' – ongoing'}</div>
+        </div>
 
-          <script>window.onload = () => window.print();<\/script>
-        </body>
-        </html>
-      `);
-      win.document.close();
+        <div class="field">
+          <div class="field-label">Reason / Clinical Notes</div>
+          <div class="field-value">${(c.reason||'').replace(/\n/g,'<br/>')}</div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Date Issued</div>
+          <div class="field-value">${formatDate(c.issued_at)}</div>
+        </div>
+
+        <div class="signature">
+          <div class="line">Dr. ${doctorName}<br/>IHMIS — FedPoly Ilaro Health Centre</div>
+        </div>
+      `;
+
+      win.print();
 
     } catch (err) {
       showToast('Could not open the certificate: ' + err.message, 'error');

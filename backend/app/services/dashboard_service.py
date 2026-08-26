@@ -12,6 +12,7 @@ from app.models.pharmacy import Drug, DrugInventory
 from app.models.notification import Notification
 from app.models.user import User
 from app.models.audit_log import AuditLog
+from app.services.pharmacy_service import PharmacyService
 
 
 class DashboardService:
@@ -65,9 +66,14 @@ class DashboardService:
         ).count()
 
         # ── Pharmacy alerts ────────────────────────────────────
-        low_stock_count = DrugInventory.query.filter(
-            DrugInventory.quantity_in_stock <= DrugInventory.minimum_stock_level
-        ).count()
+        # Uses the SAME aggregate-vs-primary-batch rule as the Pharmacist
+        # Dashboard and Drug Inventory page (see
+        # PharmacyService._drugs_with_low_stock). Do NOT count individual
+        # DrugInventory batches here -- a drug with plenty of total stock
+        # spread across batches would otherwise get flagged as "low stock"
+        # just because one small leftover batch dips below ITS OWN
+        # minimum_stock_level, even while the drug as a whole is fine.
+        low_stock_count = len(PharmacyService._drugs_with_low_stock())
         expired_count = DrugInventory.query.filter(
             DrugInventory.expiry_date != None,
             DrugInventory.expiry_date < today
@@ -317,7 +323,6 @@ class DashboardService:
 
         # ── Stock alerts ───────────────────────────────────────
         all_batches   = DrugInventory.query.all()
-        low_stock     = [b for b in all_batches if b.is_low_stock]
         expired       = [
             b for b in all_batches
             if b.expiry_date and b.expiry_date < today
@@ -331,7 +336,30 @@ class DashboardService:
         ]
 
         # ── Total drugs ────────────────────────────────────────
-        total_drugs = Drug.query.filter_by(is_active=True).count()
+        active_drugs = Drug.query.filter_by(is_active=True).all()
+        total_drugs  = len(active_drugs)
+
+        # FIX: low stock is now judged per DRUG, not per individual batch.
+        # A drug is flagged only when its total (aggregate) stock across
+        # all batches falls at or below the minimum_stock_level of its
+        # primary batch (the one holding the most stock). This matches
+        # the Drug Inventory page's logic exactly, so a drug with, say,
+        # 468 units on hand is never flagged here just because it also
+        # has a small, largely-irrelevant secondary batch — the previous
+        # per-batch check (`b.is_low_stock` over every DrugInventory row)
+        # is what caused this card to disagree with the Inventory page.
+        low_stock_entries = []
+        for drug in active_drugs:
+            batches = list(drug.inventory_batches)
+            if not batches:
+                continue
+            primary = max(batches, key=lambda b: b.quantity_in_stock)
+            if drug.total_stock <= primary.minimum_stock_level:
+                low_stock_entries.append({
+                    "drug_name":     drug.name,
+                    "stock":         drug.total_stock,
+                    "minimum_level": primary.minimum_stock_level,
+                })
 
         return {
             "success": True,
@@ -346,17 +374,10 @@ class DashboardService:
                 "dispensing_today": dispensed_today,
                 "inventory_alerts": {
                     "total_drugs":        total_drugs,
-                    "low_stock_count":    len(low_stock),
+                    "low_stock_count":    len(low_stock_entries),
                     "expired_count":      len(expired),
                     "expiring_soon_count": len(expiring_soon),
-                    "low_stock_drugs": [
-                        {
-                            "drug_name":     Drug.query.get(b.drug_id).name,
-                            "stock":         b.quantity_in_stock,
-                            "minimum_level": b.minimum_stock_level,
-                        }
-                        for b in low_stock[:5]
-                    ],
+                    "low_stock_drugs": low_stock_entries[:5],
                     "expiring_soon_drugs": [
                         {
                             "drug_name":   Drug.query.get(b.drug_id).name,

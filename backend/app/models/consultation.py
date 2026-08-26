@@ -46,6 +46,8 @@ class Consultation(db.Model):
         return {
             "id":                            self.id,
             "patient_id":                    self.patient_id,
+            "patient_name":                  self.patient.full_name if self.patient else None,
+            "patient_number":                self.patient.patient_number if self.patient else None,
             "health_file_id":                self.health_file_id,
             "doctor_id":                     self.doctor_id,
             "doctor_name":                   self.doctor.full_name if self.doctor else None,

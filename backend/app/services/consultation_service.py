@@ -24,11 +24,23 @@ class ConsultationService:
         query = query.order_by(Consultation.visit_date.desc())
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
 
+        # Same enrichment as get_consultation_by_id -- the list view needs
+        # diagnoses too (shown as badges per row), not just the detail
+        # modal. N+1 queries here (one per row's .diagnoses) is an
+        # accepted tradeoff at this scale; revisit with a joined query if
+        # the consultations list ever needs to page through hundreds of
+        # rows at once.
+        items = []
+        for c in pagination.items:
+            d = c.to_dict()
+            d["diagnoses"] = [dx.to_dict() for dx in c.diagnoses]
+            items.append(d)
+
         return {
             "success": True,
             "message": "Consultations retrieved successfully.",
             "data": {
-                "consultations": [c.to_dict() for c in pagination.items],
+                "consultations": items,
                 "total":         pagination.total,
                 "pages":         pagination.pages,
                 "current_page":  page,
@@ -128,7 +140,7 @@ class ConsultationService:
         return {"success": True, "message": "Consultation updated successfully.", "data": consultation.to_dict()}
 
     @staticmethod
-    def close_consultation(consultation_id: int):
+    def close_consultation(consultation_id: int, closed_by: int = None):
         consultation = Consultation.query.get(consultation_id)
         if not consultation:
             return {"success": False, "message": f"Consultation with ID {consultation_id} not found.", "data": None}
@@ -146,6 +158,7 @@ class ConsultationService:
             action      = "CLOSE_CONSULTATION",
             entity_type = "Consultation",
             entity_id   = consultation_id,
+            user_id     = closed_by,
             new_value   = {"status": "closed"}
         )
         # ───────────────────────────────────────────────────────

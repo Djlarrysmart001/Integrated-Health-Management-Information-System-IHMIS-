@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — Patients Seen</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+  <style>
+    /* Same range-tab pattern as doctor/reports.html, for a consistent feel */
+    .range-tabs { display:flex; gap:0.5rem; flex-wrap:wrap; }
+    .range-tab {
+      border:1.5px solid var(--border); background:var(--card-bg); color:var(--text-muted);
+      border-radius:20px; padding:0.45rem 1rem; font-size:0.82rem; font-weight:600;
+      cursor:pointer; transition:all 0.15s;
+    }
+    .range-tab.active { border-color:var(--primary); background:var(--primary-light); color:var(--primary); }
+
+    .urgency-pill-sm {
+      display:inline-flex; align-items:center; gap:0.3rem;
+      font-size:0.75rem; font-weight:600; padding:0.2rem 0.6rem; border-radius:12px;
+    }
+    .urgency-emergency { background:#fef2f2; color:#991b1b; }
+    .urgency-high      { background:#fffbeb; color:#92400e; }
+    .urgency-normal    { background:#eff6ff; color:#1e40af; }
+    .urgency-low       { background:#f0fdf4; color:#166534; }
+
+    .pagination-bar { display:flex; align-items:center; justify-content:space-between; padding:1rem 1.5rem; border-top:1px solid var(--border); }
+  </style>
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Patient Flow</div>
+      <div class="nav-item">
+        <a href="queue.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-layer-group"></i></span>
+          <span class="nav-label">Queue</span>
+          <span class="nav-badge" id="navQueueBadge" style="display:none">0</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="patients-admitted.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-bed-pulse"></i></span>
+          <span class="nav-label">Admitted Patients</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="patients-seen.html" class="nav-link active">
+          <span class="nav-icon"><i class="fa-solid fa-clock-rotate-left"></i></span>
+          <span class="nav-label">Patients Seen</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="notifications.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-bell"></i></span>
+          <span class="nav-label">Notifications</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">NR</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">Nurse</div>
+        <div class="sidebar-user-role" id="sidebarRole">Nurse</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="navbar-page-title">Patients Seen</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> Nurse <span>/</span> Patients Seen</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <button class="navbar-icon-btn" title="Notifications"><i class="fa-solid fa-bell"></i></button>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">NR</div>
+        <span class="navbar-user-name" id="navbarName">Nurse</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">Nurse</div>
+      <div class="dropdown-header-role" id="dropdownRole">Nurse</div>
+    </div>
+    <a href="profile.html" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <div class="page-header">
+      <h2>Patients Seen</h2>
+      <p>Your own vitals/triage history every patient you've attended to, filterable by period. You only ever see your own records here.</p>
+    </div>
+
+    <!-- Period filter -->
+    <div class="range-tabs" id="rangeTabs" style="margin-bottom:1.25rem">
+      <button class="range-tab active" data-range="today">Today</button>
+      <button class="range-tab" data-range="this_week">This Week</button>
+      <button class="range-tab" data-range="this_month">This Month</button>
+      <button class="range-tab" data-range="this_year">This Year</button>
+      <button class="range-tab" data-range="">All Time</button>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="stats-grid" style="margin-bottom:1.25rem">
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="fa-solid fa-heart-pulse"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statCount">—</div>
+          <div class="stat-label" id="statCountLabel">Patients Seen Today</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header" style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap">
+        <h3 style="margin:0">History</h3>
+        <div class="search-input-wrapper" style="margin-left:auto;max-width:320px;flex:1">
+          <i class="fa-solid fa-search"></i>
+          <input type="text" class="search-input" id="searchInput" placeholder="Search by patient name or number..." />
+        </div>
+        <button class="btn btn-secondary btn-sm" id="refreshBtn">
+          <i class="fa-solid fa-rotate-right"></i> Refresh
+        </button>
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Patient</th>
+              <th>Chief Complaint</th>
+              <th>Urgency</th>
+              <th>Time Recorded</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody">
+            <tr><td colspan="6">
+              <div class="empty-state">
+                <div class="spinner-sm" style="margin:0 auto 0.5rem"></div>
+                <p>Loading...</p>
+              </div>
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination-bar" id="paginationBar" style="display:none">
+        <span class="muted" id="paginationInfo" style="font-size:0.85rem"></span>
+        <div style="display:flex;gap:0.5rem">
+          <button class="btn btn-secondary btn-sm" id="prevPageBtn"><i class="fa-solid fa-chevron-left"></i> Prev</button>
+          <button class="btn btn-secondary btn-sm" id="nextPageBtn">Next <i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script src="../../assets/js/notifications-widget.js"></script>
+<script>
+  requireAuth('nurse');
+
+  const RANGE_LABELS = {
+    today:      'Patients Seen Today',
+    this_week:  'Patients Seen This Week',
+    this_month: 'Patients Seen This Month',
+    this_year:  'Patients Seen This Year',
+    '':         'Total Patients Seen',
+  };
+
+  const URGENCY_ICON = {
+    emergency: 'fa-truck-medical', high: 'fa-triangle-exclamation',
+    normal: 'fa-circle-info', low: 'fa-circle-check',
+  };
+
+  const STATUS_LABELS = {
+    with_mho:      { text: 'With MHO',        cls: 'badge-muted' },
+    with_nurse:    { text: 'Pending Forward', cls: 'badge-warning' },
+    with_doctor:   { text: 'With Doctor',     cls: 'badge-info' },
+    with_lab:      { text: 'With Lab',        cls: 'badge-info' },
+    with_pharmacy: { text: 'With Pharmacy',   cls: 'badge-info' },
+    closed:        { text: 'Completed',       cls: 'badge-success' },
+  };
+
+  let currentRange  = 'today';
+  let currentPage   = 1;
+  let currentPages  = 1;
+  let searchTimer   = null;
+
+  async function loadHistory(page = 1) {
+    currentPage = page;
+    const tbody = document.getElementById('historyBody');
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="spinner-sm" style="margin:0 auto 0.5rem"></div><p>Loading...</p></div></td></tr>`;
+    document.getElementById('paginationBar').style.display = 'none';
+
+    const search = document.getElementById('searchInput').value.trim();
+    const params = new URLSearchParams({ recorded_by: 'me', page, per_page: 20 });
+    if (currentRange) params.set('range', currentRange);
+    if (search) params.set('search', search);
+
+    try {
+      const res = await api.get(`/vitals?${params.toString()}`);
+      const items = res.data?.items || [];
+      const total = res.data?.total ?? items.length;
+      currentPages = res.data?.pages || 1;
+
+      setText('statCount', formatNumber(total));
+      setText('statCountLabel', RANGE_LABELS[currentRange] ?? 'Patients Seen');
+
+      if (items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-clock-rotate-left"></i><h4>Nothing here yet</h4><p>No patients seen in this period${search ? ' matching your search' : ''}.</p></div></td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = items.map(v => {
+        const name = v.patient_name || 'Patient';
+        const urgency = v.urgency_level || 'normal';
+        const status = STATUS_LABELS[v.health_file_status] || { text: v.health_file_status || '—', cls: 'badge-muted' };
+        return `
+          <tr>
+            <td>
+              <div style="font-weight:500;color:var(--text-dark)">${name}</div>
+              <div class="muted" style="font-size:0.78rem;font-family:monospace">${v.patient_number || ''}</div>
+            </td>
+            <td class="muted">${v.chief_complaint || '—'}</td>
+            <td><span class="urgency-pill-sm urgency-${urgency}"><i class="fa-solid ${URGENCY_ICON[urgency] || 'fa-circle-info'}"></i> ${capitalize(urgency)}</span></td>
+            <td class="muted">${v.recorded_at ? formatDateTime(v.recorded_at) : '—'}</td>
+            <td><span class="badge ${status.cls}">${status.text}</span></td>
+            <td>
+              <a href="patient-file.html?patient_id=${v.patient_id}" class="btn btn-secondary btn-sm" title="View Patient File">
+                <i class="fa-solid fa-folder-open"></i>
+              </a>
+            </td>
+          </tr>`;
+      }).join('');
+
+      if (currentPages > 1) {
+        document.getElementById('paginationBar').style.display = 'flex';
+        setText('paginationInfo', `Page ${currentPage} of ${currentPages} — ${formatNumber(total)} total`);
+        document.getElementById('prevPageBtn').disabled = currentPage <= 1;
+        document.getElementById('nextPageBtn').disabled = currentPage >= currentPages;
+      }
+
+    } catch (err) {
+      setText('statCount', '—');
+      tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-circle-exclamation" style="color:var(--danger)"></i><h4>Failed to load</h4><p>${err.message}</p></div></td></tr>`;
+    }
+  }
+
+  document.querySelectorAll('.range-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.range-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentRange = tab.dataset.range;
+      loadHistory(1);
+    });
+  });
+
+  document.getElementById('searchInput').addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => loadHistory(1), 400);
+  });
+
+  document.getElementById('refreshBtn').addEventListener('click', () => loadHistory(currentPage));
+  document.getElementById('prevPageBtn').addEventListener('click', () => { if (currentPage > 1) loadHistory(currentPage - 1); });
+  document.getElementById('nextPageBtn').addEventListener('click', () => { if (currentPage < currentPages) loadHistory(currentPage + 1); });
+
+  loadHistory();
+</script>
+</body>
+</html>

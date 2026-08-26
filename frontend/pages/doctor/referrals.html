@@ -95,6 +95,12 @@
           <span class="nav-label">Reports</span>
         </a>
       </div>
+      <div class="nav-item">
+        <a href="notifications.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-bell"></i></span>
+          <span class="nav-label">Notifications</span>
+        </a>
+      </div>
     </nav>
     <div class="sidebar-footer">
       <div class="sidebar-user-avatar" id="sidebarAvatar">DR</div>
@@ -115,7 +121,7 @@
       </div>
     </div>
     <div class="navbar-right">
-      <button class="navbar-icon-btn"><i class="fa-solid fa-bell"></i></button>
+      <button class="navbar-icon-btn" id="notifBellBtn"><i class="fa-solid fa-bell"></i></button>
       <button class="navbar-user" id="userMenuBtn">
         <div class="navbar-user-avatar" id="navbarAvatar">DR</div>
         <span class="navbar-user-name" id="navbarName">Doctor</span>
@@ -130,7 +136,8 @@
       <div class="dropdown-header-name" id="dropdownName">Doctor</div>
       <div class="dropdown-header-role" id="dropdownRole">Doctor</div>
     </div>
-    <a href="#" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <a href="profile.html" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <a href="settings.html" class="dropdown-item"><i class="fa-solid fa-gear"></i> Settings</a>
     <div class="dropdown-divider"></div>
     <button class="dropdown-item danger" id="logoutBtn">
       <i class="fa-solid fa-right-from-bracket"></i> Sign Out
@@ -309,6 +316,8 @@
 <script src="../../assets/js/api.js"></script>
 <script src="../../assets/js/utils.js"></script>
 <script src="../../assets/js/sidebar.js"></script>
+<script src="../../assets/js/notifications-widget.js"></script>
+<script src="../../assets/js/notifications.js"></script>
 <script>
   const currentUser = requireAuth('doctor');
 
@@ -632,10 +641,20 @@
   document.getElementById('viewReferralModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
 
   /* ── Printable referral letter ──
-     Opens a clean, letterhead-style window and triggers the browser print
-     dialog. This is a client-side render, not a backend-generated PDF —
-     if a formal PDF endpoint gets built later, swap this for a fetch +
-     download instead. */
+     Builds the popup via DOM APIs (win.document.title, a style element, and
+     win.document.body.innerHTML) rather than document.write() with a raw
+     HTML string. A previous version used document.write() with a string
+     that contained literal closing body and closing html markup as plain
+     text (part of the printable letter's own layout). Live Server's
+     live-reload feature scans the raw served file for the first matching
+     closing-body marker it can find and injects its own script tag
+     directly before it -- and it was matching that literal text inside the
+     JS string instead of the page's real closing tag, which corrupted the
+     page's HTML parsing on every reload. This is the same fix already
+     applied on the Certificates page's print function.
+     This is a client-side render, not a backend-generated PDF — if a
+     formal PDF endpoint gets built later, swap this for a fetch + download
+     instead. ── */
   async function printReferral(id) {
     try {
       const res = await api.get(`/referrals/${id}`);
@@ -644,71 +663,69 @@
       const doctorName = currentUser?.full_name || `${currentUser?.first_name||''} ${currentUser?.last_name||''}`.trim() || 'Attending Doctor';
 
       const win = window.open('', '_blank', 'width=800,height=900');
-      win.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Referral Letter — ${patient?.full_name || 'Patient'}</title>
-          <style>
-            body { font-family: Georgia, 'Times New Roman', serif; color:#1a1a1a; max-width:720px; margin:40px auto; line-height:1.6; }
-            .letterhead { text-align:center; border-bottom:3px solid #0f5132; padding-bottom:16px; margin-bottom:28px; }
-            .letterhead h1 { margin:0; font-size:1.4rem; color:#0f5132; }
-            .letterhead p { margin:4px 0 0; font-size:0.85rem; color:#555; }
-            .meta { display:flex; justify-content:space-between; font-size:0.9rem; margin-bottom:24px; }
-            .field { margin-bottom:14px; }
-            .field-label { font-size:0.75rem; text-transform:uppercase; letter-spacing:0.04em; color:#888; margin-bottom:2px; }
-            .field-value { font-size:0.98rem; }
-            .urgency { display:inline-block; padding:2px 10px; border-radius:12px; font-size:0.78rem; font-weight:bold; }
-            .signature { margin-top:60px; }
-            .signature .line { border-top:1px solid #333; width:260px; margin-top:48px; padding-top:6px; font-size:0.85rem; }
-            @media print { body { margin:0 30px; } }
-          </style>
-        </head>
-        <body>
-          <div class="letterhead">
-            <h1>IHMIS — FedPoly Ilaro Health Centre</h1>
-            <p>Federal Polytechnic Ilaro, Ogun State, Nigeria</p>
+      if (!win) { showToast('Please allow pop-ups to print referral letters.', 'error'); return; }
+
+      win.document.title = `Referral Letter — ${patient?.full_name || 'Patient'}`;
+
+      const style = win.document.createElement('style');
+      style.textContent = `
+        body { font-family: Georgia, 'Times New Roman', serif; color:#1a1a1a; max-width:720px; margin:40px auto; line-height:1.6; }
+        .letterhead { text-align:center; border-bottom:3px solid #0f5132; padding-bottom:16px; margin-bottom:28px; }
+        .letterhead h1 { margin:0; font-size:1.4rem; color:#0f5132; }
+        .letterhead p { margin:4px 0 0; font-size:0.85rem; color:#555; }
+        .meta { display:flex; justify-content:space-between; font-size:0.9rem; margin-bottom:24px; }
+        .field { margin-bottom:14px; }
+        .field-label { font-size:0.75rem; text-transform:uppercase; letter-spacing:0.04em; color:#888; margin-bottom:2px; }
+        .field-value { font-size:0.98rem; }
+        .urgency { display:inline-block; padding:2px 10px; border-radius:12px; font-size:0.78rem; font-weight:bold; }
+        .signature { margin-top:60px; }
+        .signature .line { border-top:1px solid #333; width:260px; margin-top:48px; padding-top:6px; font-size:0.85rem; }
+        @media print { body { margin:0 30px; } }
+      `;
+      win.document.head.appendChild(style);
+
+      win.document.body.innerHTML = `
+        <div class="letterhead">
+          <h1>IHMIS — FedPoly Ilaro Health Centre</h1>
+          <p>Federal Polytechnic Ilaro, Ogun State, Nigeria</p>
+        </div>
+
+        <div class="meta">
+          <div>Date: ${formatDate(r.created_at)}</div>
+          <div><span class="urgency">${(r.urgency||'routine').toUpperCase()} PRIORITY</span></div>
+        </div>
+
+        <p>To: <strong>${r.referred_to_facility}</strong></p>
+        <p>Re: Medical Referral for <strong>${patient?.full_name || 'Patient'}</strong>${patient?.patient_number ? ` (Patient No. ${patient.patient_number})` : ''}</p>
+
+        <div class="field">
+          <div class="field-label">Patient Details</div>
+          <div class="field-value">
+            ${patient?.full_name || '—'} · ${patient?.age != null ? patient.age + ' yrs' : ''} · ${capitalize(patient?.gender || '')}
+            ${patient?.blood_group ? ' · Blood Group ' + patient.blood_group : ''}
           </div>
+        </div>
 
-          <div class="meta">
-            <div>Date: ${formatDate(r.created_at)}</div>
-            <div><span class="urgency">${(r.urgency||'routine').toUpperCase()} PRIORITY</span></div>
-          </div>
+        ${r.reason ? `
+        <div class="field">
+          <div class="field-label">Reason for Referral</div>
+          <div class="field-value">${r.reason.replace(/\n/g, '<br/>')}</div>
+        </div>` : ''}
 
-          <p>To: <strong>${r.referred_to_facility}</strong></p>
-          <p>Re: Medical Referral for <strong>${patient?.full_name || 'Patient'}</strong>${patient?.patient_number ? ` (Patient No. ${patient.patient_number})` : ''}</p>
+        ${r.notes ? `
+        <div class="field">
+          <div class="field-label">Additional Notes</div>
+          <div class="field-value">${r.notes.replace(/\n/g, '<br/>')}</div>
+        </div>` : ''}
 
-          <div class="field">
-            <div class="field-label">Patient Details</div>
-            <div class="field-value">
-              ${patient?.full_name || '—'} · ${patient?.age != null ? patient.age + ' yrs' : ''} · ${capitalize(patient?.gender || '')}
-              ${patient?.blood_group ? ' · Blood Group ' + patient.blood_group : ''}
-            </div>
-          </div>
+        <p>Kindly attend to the above-named patient. Please do not hesitate to contact this facility for any further clinical information required.</p>
 
-          ${r.reason ? `
-          <div class="field">
-            <div class="field-label">Reason for Referral</div>
-            <div class="field-value">${r.reason.replace(/\n/g, '<br/>')}</div>
-          </div>` : ''}
+        <div class="signature">
+          <div class="line">Dr. ${doctorName}<br/>IHMIS — FedPoly Ilaro Health Centre</div>
+        </div>
+      `;
 
-          ${r.notes ? `
-          <div class="field">
-            <div class="field-label">Additional Notes</div>
-            <div class="field-value">${r.notes.replace(/\n/g, '<br/>')}</div>
-          </div>` : ''}
-
-          <p>Kindly attend to the above-named patient. Please do not hesitate to contact this facility for any further clinical information required.</p>
-
-          <div class="signature">
-            <div class="line">Dr. ${doctorName}<br/>IHMIS — FedPoly Ilaro Health Centre</div>
-          </div>
-
-          <script>window.onload = () => window.print();<\/script>
-        </body>
-        </html>
-      `);
-      win.document.close();
+      win.print();
 
     } catch (err) {
       showToast('Could not open the referral letter: ' + err.message, 'error');

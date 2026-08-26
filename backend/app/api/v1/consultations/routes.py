@@ -107,7 +107,8 @@ def update_consultation(consultation_id):
 @consultations_bp.route("/<int:consultation_id>/close", methods=["PATCH"])
 @role_required(Roles.DOCTOR)
 def close_consultation(consultation_id):
-    result = ConsultationService.close_consultation(consultation_id)
+    doctor_id = int(get_jwt_identity())
+    result = ConsultationService.close_consultation(consultation_id, doctor_id)
     if not result["success"]:
         return error_response(result["message"], status_code=400)
     return success_response(result["message"], data=result["data"])

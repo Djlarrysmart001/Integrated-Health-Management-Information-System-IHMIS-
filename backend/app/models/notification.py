@@ -30,6 +30,8 @@ class Notification(db.Model):
             "title":             self.title,
             "message":           self.message,
             "notification_type": self.notification_type,
+            "reference_id":      self.reference_id,
+            "reference_type":    self.reference_type,
             "is_read":           self.is_read,
             "created_at":        self.created_at.isoformat(),
         }

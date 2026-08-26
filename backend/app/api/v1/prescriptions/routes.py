@@ -85,7 +85,8 @@ def dispense_prescription(prescription_id):
 @prescriptions_bp.route("/<int:prescription_id>/cancel", methods=["PATCH"])
 @role_required(Roles.DOCTOR, Roles.ADMIN)
 def cancel_prescription(prescription_id):
-    result = PrescriptionService.cancel_prescription(prescription_id)
+    cancelled_by = int(get_jwt_identity())
+    result = PrescriptionService.cancel_prescription(prescription_id, cancelled_by)
     if not result["success"]:
         return error_response(result["message"], status_code=400)
     return success_response(result["message"], data=result["data"])

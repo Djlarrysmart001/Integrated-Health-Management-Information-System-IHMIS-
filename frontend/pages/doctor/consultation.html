@@ -65,6 +65,28 @@
       font-size:1rem; padding:0.4rem;
     }
 
+    /* ── Drug autocomplete ── */
+    .drug-auto-wrap { position:relative; }
+    .drug-suggestions {
+      position:absolute; top:100%; left:0; right:0; z-index:30;
+      background:var(--card-bg); border:1px solid var(--border-light);
+      border-radius:var(--border-radius-sm); box-shadow:var(--shadow);
+      max-height:190px; overflow-y:auto; display:none;
+    }
+    .drug-suggestion-item {
+      padding:0.55rem 0.8rem; font-size:0.82rem; cursor:pointer;
+      display:flex; justify-content:space-between; gap:0.5rem;
+    }
+    .drug-suggestion-item:hover { background:var(--primary-light); color:var(--primary); }
+    .drug-suggestion-item .stock-tag { font-size:0.72rem; color:var(--text-muted); white-space:nowrap; }
+    .drug-status-note { font-size:0.72rem; margin-top:3px; min-height:1em; }
+    .drug-status-note.matched { color:var(--success); }
+    .drug-status-note.new     { color:#e67e22; }
+    .new-drug-badge {
+      font-size:0.68rem; font-weight:700; background:#fff7ed; color:#e67e22;
+      border-radius:10px; padding:0.1rem 0.5rem; margin-left:0.4rem; white-space:nowrap;
+    }
+
     .add-row-btn {
       border:1.5px dashed var(--border); background:transparent;
       color:var(--primary); border-radius:var(--border-radius-sm);
@@ -107,11 +129,12 @@
     }
     .sent-panel-title { font-weight:600; font-size:0.88rem; color:#166534; display:flex; align-items:center; gap:0.5rem; }
     .status-chip { font-size:0.72rem; font-weight:700; padding:0.2rem 0.55rem; border-radius:20px; }
-    .status-chip.pending    { background:#fff7ed; color:#e67e22; }
-    .status-chip.in_progress{ background:#eff6ff; color:var(--info); }
-    .status-chip.completed  { background:#f0fdf4; color:var(--success); }
-    .status-chip.dispensed  { background:#f0fdf4; color:var(--success); }
-    .status-chip.cancelled  { background:#fef2f2; color:var(--danger); }
+    .status-chip.pending             { background:#fff7ed; color:#e67e22; }
+    .status-chip.partially_dispensed { background:#eff6ff; color:var(--info); }
+    .status-chip.in_progress         { background:#eff6ff; color:var(--info); }
+    .status-chip.completed           { background:#f0fdf4; color:var(--success); }
+    .status-chip.dispensed           { background:#f0fdf4; color:var(--success); }
+    .status-chip.cancelled           { background:#fef2f2; color:var(--danger); }
 
     .gate-hint {
       display:flex; align-items:center; gap:0.5rem; font-size:0.82rem;
@@ -183,18 +206,6 @@
           <span class="nav-label">Referrals</span>
         </a>
       </div>
-      <div class="nav-item">
-        <a href="certificates.html" class="nav-link">
-          <span class="nav-icon"><i class="fa-solid fa-file-medical"></i></span>
-          <span class="nav-label">Certificates</span>
-        </a>
-      </div>
-      <div class="nav-item">
-        <a href="reports.html" class="nav-link">
-          <span class="nav-icon"><i class="fa-solid fa-chart-column"></i></span>
-          <span class="nav-label">Reports</span>
-        </a>
-      </div>
     </nav>
     <div class="sidebar-footer">
       <div class="sidebar-user-avatar" id="sidebarAvatar">DR</div>
@@ -230,7 +241,8 @@
       <div class="dropdown-header-name" id="dropdownName">Doctor</div>
       <div class="dropdown-header-role" id="dropdownRole">Doctor</div>
     </div>
-    <a href="#" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <a href="profile.html" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <a href="settings.html" class="dropdown-item"><i class="fa-solid fa-gear"></i> Settings</a>
     <div class="dropdown-divider"></div>
     <button class="dropdown-item danger" id="logoutBtn">
       <i class="fa-solid fa-right-from-bracket"></i> Sign Out
@@ -342,8 +354,13 @@
         <div class="form-section">
           <div class="form-section-title">Prescriptions</div>
           <div id="rxSentPanel"></div>
+          <div id="rxInteractionWarnings"></div>
           <div id="rxContainer"></div>
           <button type="button" class="add-row-btn" id="addRxBtn"><i class="fa-solid fa-plus"></i> Add medication</button>
+          <div class="form-group" style="margin-top:0.9rem">
+            <label class="form-label">Notes for Pharmacy</label>
+            <input type="text" class="form-control" id="rxNotes" placeholder="Optional notes for the pharmacist" />
+          </div>
           <div style="display:flex;justify-content:flex-end;margin-top:0.75rem">
             <button type="button" class="btn btn-primary" id="sendPharmacyBtn">
               <i class="fa-solid fa-truck-medical"></i> Send to Pharmacy
@@ -363,12 +380,15 @@
               </div>
             </div>
             <div class="form-group">
-              <label class="form-label">Or type a test name <span style="font-weight:400;color:var(--text-muted);font-size:0.78rem">(use this if it's not in the catalogue above)</span></label>
+              <label class="form-label">Or type a test name <span style="font-weight:400;color:var(--text-muted);font-size:0.78rem">(use this if it's not in the catalogue above — see note below)</span></label>
               <div style="display:flex;gap:0.6rem">
                 <input type="text" class="form-control" id="customTestInput" placeholder="e.g. Stool Microscopy" style="flex:1" />
                 <button type="button" class="btn btn-secondary" id="addCustomTestBtn"><i class="fa-solid fa-plus"></i> Add</button>
               </div>
               <div id="customTestList" style="margin-top:0.6rem"></div>
+              <p style="font-size:0.72rem;color:var(--text-muted);margin-top:0.4rem">
+                <i class="fa-solid fa-circle-info"></i> A typed test not in the catalogue is still sent as a real request — it's flagged for Lab to finish setting up (normal range, unit, turnaround time).
+              </p>
             </div>
             <div class="form-grid form-grid-2" style="margin-top:0.9rem">
               <div class="form-group">
@@ -433,11 +453,37 @@
               <i class="fa-solid fa-paper-plane" style="color:var(--danger)"></i>
               <span class="outcome-option-label">Refer Patient</span>
             </label>
+            <label class="outcome-option" id="outcomeAdmittedBox">
+              <input type="radio" name="outcome" value="admitted" />
+              <i class="fa-solid fa-bed-pulse" style="color:var(--warning)"></i>
+              <span class="outcome-option-label">Admit Patient</span>
+            </label>
+            <label class="outcome-option" id="outcomeDischargedBox">
+              <input type="radio" name="outcome" value="discharged" />
+              <i class="fa-solid fa-house-medical-circle-check" style="color:var(--success)"></i>
+              <span class="outcome-option-label">Discharge (Post-Admission)</span>
+            </label>
           </div>
           <p style="font-size:0.78rem;color:var(--text-muted);margin-top:0.6rem;margin-bottom:0">
             <i class="fa-solid fa-circle-info"></i>
             Choosing <strong>Refer Patient</strong> skips the lab/pharmacy check below and takes you straight to Referrals.
+            <strong>Admit Patient</strong> sends this patient to the Nurse for ongoing inpatient monitoring instead of closing the visit.
+            <strong>Discharge</strong> is only for a patient the Nurse has forwarded back after an admission.
           </p>
+
+          <!-- Shown only when "Admit Patient" is selected -->
+          <div id="admitFieldsBox" style="display:none;margin-top:1rem;padding-top:1rem;border-top:1px dashed var(--border)">
+            <div style="display:grid;grid-template-columns:2fr 1fr;gap:0.9rem">
+              <div>
+                <label class="form-label">Admission Reason <span style="color:var(--danger)">*</span></label>
+                <input type="text" class="form-input" id="admitReason" placeholder="e.g. Observation for severe malaria with dehydration" />
+              </div>
+              <div>
+                <label class="form-label">Ward <span style="color:var(--danger)">*</span></label>
+                <input type="text" class="form-input" id="admitWard" placeholder="e.g. Female Ward" />
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Close gate -->
@@ -453,9 +499,6 @@
 
         <div style="display:flex;justify-content:flex-end;gap:0.75rem">
           <a href="consultations.html" class="btn btn-secondary">Cancel</a>
-          <a href="#" id="issueCertLink" target="_blank" class="btn btn-secondary">
-            <i class="fa-solid fa-file-medical"></i> Issue Certificate
-          </a>
           <button type="button" class="btn btn-secondary" id="minimizeBtn">
             <i class="fa-solid fa-down-left-and-up-right-to-center"></i> Minimize &amp; See Next Patient
           </button>
@@ -489,10 +532,19 @@
   let customLabTests   = [];
   let labTestCatalogue  = [];
 
+  // Drug catalogue for the Rx autocomplete
+  let drugCatalogue = [];
+  let drugCatalogueLoaded = false;
+
   // Sent-state tracking — this is what the Save & Close gate checks against.
   let labRequestId     = null;
   let labRequestStatus = null;   // 'pending' | 'in_progress' | 'completed' | 'cancelled'
-  let rxSent           = [];     // [{ id, drug_name, status }]
+  let rxSent           = [];     // [{ id, status, items: [...] }] — one entry per Prescription batch sent
+
+  // Drug interaction check (Clinical Decision Support) — debounced, and only
+  // re-fetched when the set of catalogue-matched drug IDs actually changes.
+  let interactionCheckTimer = null;
+  let lastInteractionKey    = '';
 
   if (!patientId && !consultationId) {
     document.getElementById('loadingState').style.display = 'none';
@@ -506,8 +558,6 @@
   async function init() {
     try {
       if (consultationId) {
-        // Resuming a minimized consultation — hydrate everything from the
-        // saved record before touching the patient/vitals calls.
         await hydrateFromConsultation(consultationId);
       } else {
         await loadPatient();
@@ -516,7 +566,7 @@
       }
 
       document.getElementById('viewFileLink').href = `patients.html?patient_id=${patientId}`;
-      await loadLabCatalogue();
+      await Promise.all([loadLabCatalogue(), loadDrugCatalogue()]);
       addRxRow();
       await Promise.all([loadSentPrescriptions(), loadSentLabRequest()]);
       loadMedicalAlerts();
@@ -563,8 +613,7 @@
     } catch (err) { banner.innerHTML = ''; }
   }
 
-  /* ── Nurse's Assessment (read-only) — returns the vitals record so the
-     caller can seed the initial chief_complaint when creating the draft. */
+  /* ── Nurse's Assessment (read-only) ── */
   async function loadNurseAssessment() {
     const body = document.getElementById('nurseAssessmentBody');
     if (!healthFileId) {
@@ -632,16 +681,55 @@
           ${nursingFlags ? `<div style="font-size:0.78rem;font-weight:600;color:var(--text-muted);margin-bottom:0.3rem">FLAGGED</div><div>${nursingFlags}</div>` : ''}
         </div>
       </div>
+      <div id="triageScoreBox" style="margin-top:1rem"></div>
+    `;
+
+    if (v.id) loadTriageScore(v.id);
+  }
+
+  /* ── Triage Assistant score (read-only, AI-generated) ──
+     Advisory only -- never affects the record, just surfaces what the
+     Nurse's "Score Vitals" step already computed via TriageAssistantService.
+     GET /ai/triage-score/<vitals_id> -- Doctor is in TRIAGE_VIEW_ROLES. */
+  async function loadTriageScore(vitalsId) {
+    const box = document.getElementById('triageScoreBox');
+    if (!box) return;
+    try {
+      const res = await api.get(`/ai/triage-score/${vitalsId}`);
+      renderTriageScore(res.data);
+    } catch (err) {
+      box.innerHTML = ''; // fail quietly -- this is advisory, never blocking
+    }
+  }
+
+  function renderTriageScore(rec) {
+    const box = document.getElementById('triageScoreBox');
+    if (!box) return;
+    if (!rec || !rec.payload) { box.innerHTML = ''; return; }
+
+    const score = rec.payload;
+    const bandStyles = {
+      Urgent: ['alert-danger', 'fa-triangle-exclamation'],
+      Watch:  ['alert-warning', 'fa-eye'],
+      Normal: ['alert-info', 'fa-circle-check'],
+    };
+    const [alertClass, icon] = bandStyles[score.band] || bandStyles.Normal;
+    const reasons = (score.reasons || []).map(r => `<li>${r}</li>`).join('');
+
+    box.innerHTML = `
+      <div class="alert ${alertClass}" style="align-items:flex-start;flex-direction:column;gap:0.4rem">
+        <div style="display:flex;align-items:center;gap:0.5rem;width:100%">
+          <i class="fa-solid ${icon}"></i>
+          <strong>AI Triage Score: ${score.band}</strong>
+          <span style="font-size:0.78rem;opacity:0.8">(${score.total_score} pts, adapted from NEWS2 — advisory only)</span>
+        </div>
+        ${reasons ? `<ul style="margin:0.2rem 0 0 1.5rem;padding:0;font-size:0.82rem">${reasons}</ul>` : ''}
+      </div>
     `;
   }
 
-  /* ── Consultation lifecycle ──
-     Opened as soon as the doctor lands on this page (not deferred to final
-     submit) so it can be minimized and resumed later, and so Lab/Pharmacy
-     have a real consultation_id to attach to from the start. */
+  /* ── Consultation lifecycle ── */
   async function findOrCreateConsultation(vitals) {
-    // Check for an already-open draft on this same health file first, so
-    // reopening the same patient from the Queue doesn't spawn duplicates.
     try {
       const res = await api.get(`/consultations?patient_id=${patientId}&status=open&my_consultations=true&per_page=20`);
       const list = res.data.consultations || res.data.items || res.data || [];
@@ -706,12 +794,8 @@
     document.getElementById('consultIdTag').textContent = `Consultation #${consultationId}`;
     document.getElementById('consultIdTag').style.display = 'inline-block';
     document.getElementById('breadcrumbState').textContent = `#${consultationId}`;
-    document.getElementById('issueCertLink').href =
-      `certificates.html?open=new&patient_id=${patientId}${consultationId ? '&consultation_id=' + consultationId : ''}`;
   }
 
-  /* Persists the free-text fields so Minimize / Send actions don't lose
-     anything the doctor has typed so far. */
   async function saveDraftFields() {
     if (!consultationId) return;
     try {
@@ -728,8 +812,7 @@
     } catch (e) { /* draft save failures shouldn't block the doctor's flow */ }
   }
 
-  /* ── Diagnoses — saved immediately, not batched at the end, so they
-     survive a minimize/resume cycle. ── */
+  /* ── Diagnoses ── */
   document.getElementById('addDiagnosisBtn').addEventListener('click', addDiagnosisFromInput);
   document.getElementById('diagnosisInput').addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); addDiagnosisFromInput(); }
@@ -769,16 +852,38 @@
     `).join('');
   }
 
-  /* ── Prescriptions ── */
+  /* ── Drug catalogue (for the Rx autocomplete) ── */
+  async function loadDrugCatalogue() {
+    if (drugCatalogueLoaded) return;
+    try {
+      const res = await api.get('/pharmacy/drugs?is_active=true&per_page=200');
+      drugCatalogue = res.data.drugs || res.data.items || res.data || [];
+      drugCatalogueLoaded = true;
+    } catch (e) { drugCatalogue = []; }
+  }
+
+  /* ── Prescriptions ──
+     Drug field is now an autocomplete: pick from the catalogue, or type a
+     name that isn't there — either way the row is still sendable. Typing a
+     name with no exact catalogue match clears drug_id, and the backend
+     (PharmacyService.find_or_create_by_name) creates it as a new,
+     immediately-usable drug flagged for Pharmacy to finish setting up. */
   document.getElementById('addRxBtn').addEventListener('click', () => addRxRow());
+
   function addRxRow() {
     const id = `rx${rxRowCount++}`;
     const container = document.getElementById('rxContainer');
     const row = document.createElement('div');
     row.className = 'rx-row';
     row.id = id;
+    row.dataset.drugId = '';
     row.innerHTML = `
-      <div class="form-group"><label class="form-label">Drug Name</label><input type="text" class="form-control" data-field="drug_name" placeholder="e.g. Amoxicillin" /></div>
+      <div class="form-group drug-auto-wrap">
+        <label class="form-label">Drug Name</label>
+        <input type="text" class="form-control" data-field="drug_name" placeholder="Type or select a drug..." autocomplete="off" />
+        <div class="drug-suggestions"></div>
+        <div class="drug-status-note"></div>
+      </div>
       <div class="form-group"><label class="form-label">Dosage</label><input type="text" class="form-control" data-field="dosage" placeholder="e.g. 500mg" /></div>
       <div class="form-group"><label class="form-label">Frequency</label><input type="text" class="form-control" data-field="frequency" placeholder="e.g. 3x daily" /></div>
       <div class="form-group"><label class="form-label">Duration</label><input type="text" class="form-control" data-field="duration" placeholder="e.g. 5 days" /></div>
@@ -788,10 +893,135 @@
     `;
     container.appendChild(row);
   }
-  function removeRxRow(id) { const row = document.getElementById(id); if (row) row.remove(); }
-  function collectPrescriptions() {
+  function removeRxRow(id) {
+    const row = document.getElementById(id);
+    if (row) row.remove();
+    checkDrugInteractionsDebounced();
+  }
+
+  // Event delegation — rows are added/removed dynamically, so listeners
+  // live on the container rather than on each row individually.
+  document.getElementById('rxContainer').addEventListener('input', e => {
+    if (e.target.dataset.field !== 'drug_name') return;
+    handleDrugNameInput(e.target);
+  });
+  document.getElementById('rxContainer').addEventListener('focusout', e => {
+    if (e.target.dataset.field !== 'drug_name') return;
+    setTimeout(() => {
+      const row = e.target.closest('.rx-row');
+      if (row) row.querySelector('.drug-suggestions').style.display = 'none';
+    }, 150); // delay so a suggestion click registers before the list hides
+  });
+
+  function handleDrugNameInput(input) {
+    const row = input.closest('.rx-row');
+    const query = input.value.trim().toLowerCase();
+    const list = row.querySelector('.drug-suggestions');
+    const note = row.querySelector('.drug-status-note');
+    row.dataset.drugId = ''; // any manual typing invalidates a prior selection until re-matched below
+
+    if (!query) { list.style.display = 'none'; note.textContent = ''; note.className = 'drug-status-note'; return; }
+
+    const matches = drugCatalogue.filter(d => (d.name || '').toLowerCase().includes(query)).slice(0, 8);
+    const exact   = drugCatalogue.find(d => (d.name || '').toLowerCase() === query);
+
+    if (matches.length) {
+      list.innerHTML = matches.map(d => `
+        <div class="drug-suggestion-item" onmousedown="selectDrugSuggestion('${row.id}', ${d.id}, '${(d.name||'').replace(/'/g,"\\'")}')">
+          <span>${d.name}</span>
+          <span class="stock-tag">${d.total_stock > 0 ? d.total_stock + ' in stock' : 'out of stock'}</span>
+        </div>`).join('');
+      list.style.display = 'block';
+    } else {
+      list.style.display = 'none';
+    }
+
+    if (exact) {
+      row.dataset.drugId = exact.id;
+      note.textContent = `✓ In catalogue — ${exact.total_stock > 0 ? exact.total_stock + ' in stock' : 'currently out of stock'}`;
+      note.className = 'drug-status-note matched';
+    } else {
+      note.textContent = '⚠ Not in catalogue — will still be sent, flagged for Pharmacy to add manually.';
+      note.className = 'drug-status-note new';
+    }
+    checkDrugInteractionsDebounced();
+  }
+
+  function selectDrugSuggestion(rowId, drugId, drugName) {
+    const row = document.getElementById(rowId);
+    row.querySelector('[data-field="drug_name"]').value = drugName;
+    row.dataset.drugId = drugId;
+    row.querySelector('.drug-suggestions').style.display = 'none';
+    const drug = drugCatalogue.find(d => d.id === drugId);
+    const note = row.querySelector('.drug-status-note');
+    note.textContent = `✓ In catalogue — ${drug && drug.total_stock > 0 ? drug.total_stock + ' in stock' : 'currently out of stock'}`;
+    note.className = 'drug-status-note matched';
+    checkDrugInteractionsDebounced();
+  }
+
+  /* ── Clinical Decision Support (drug interaction warnings) ──
+     Auto-triggered as the Doctor adds 2+ catalogue-matched drugs to the
+     prescription. Advisory only -- POST /ai/drug-interactions/check is a
+     live, stateless lookup (see ClinicalDecisionSupportService); it never
+     writes to the prescription itself. Debounced + de-duped on the actual
+     set of drug IDs so rapid typing doesn't spam the endpoint. */
+  function collectRxDrugIds() {
+    return Array.from(document.querySelectorAll('.rx-row'))
+      .map(row => row.dataset.drugId)
+      .filter(Boolean)
+      .map(id => parseInt(id));
+  }
+
+  function checkDrugInteractionsDebounced() {
+    clearTimeout(interactionCheckTimer);
+    interactionCheckTimer = setTimeout(checkDrugInteractions, 350);
+  }
+
+  async function checkDrugInteractions() {
+    const drugIds = collectRxDrugIds();
+    const key = [...new Set(drugIds)].sort((a, b) => a - b).join(',');
+
+    if (key === lastInteractionKey) return; // nothing actually changed
+    lastInteractionKey = key;
+
+    if (drugIds.length < 2) { renderInteractionWarnings([]); return; }
+
+    try {
+      const res = await api.post('/ai/drug-interactions/check', {
+        drug_ids: drugIds,
+        consultation_id: consultationId || null,
+      });
+      renderInteractionWarnings(res.data.interactions || []);
+    } catch (err) {
+      // advisory only -- a failed check should never block prescribing
+      renderInteractionWarnings([]);
+    }
+  }
+
+  function renderInteractionWarnings(interactions) {
+    const box = document.getElementById('rxInteractionWarnings');
+    if (!box) return;
+    if (!interactions.length) { box.innerHTML = ''; return; }
+
+    const severityClass = { major: 'alert-danger', moderate: 'alert-warning', minor: 'alert-info' };
+
+    box.innerHTML = interactions.map(i => `
+      <div class="alert ${severityClass[i.severity] || 'alert-warning'}" style="margin-bottom:0.6rem">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span>
+          <strong>${i.drug_a_name} + ${i.drug_b_name}</strong>
+          <span style="text-transform:capitalize"> — ${i.severity} interaction.</span>
+          ${i.description}
+          ${i.recommendation ? `<div style="margin-top:4px"><strong>AI recommendation:</strong> ${i.recommendation}</div>` : ''}
+        </span>
+      </div>
+    `).join('');
+  }
+
+  function collectRxItems() {
     return Array.from(document.querySelectorAll('.rx-row')).map(row => {
       const entry = {};
+      if (row.dataset.drugId) entry.drug_id = parseInt(row.dataset.drugId);
       row.querySelectorAll('[data-field]').forEach(inp => {
         const val = inp.value.trim();
         entry[inp.dataset.field] = inp.dataset.field === 'quantity' ? (val ? parseInt(val) : null) : (val || null);
@@ -800,25 +1030,43 @@
     }).filter(e => e.drug_name);
   }
 
-  /* Send to Pharmacy — posts each filled row immediately, routes the health
-     file, and locks the sent items into a status panel. Doctor can still
-     add more rows afterward and send again for a follow-up prescription. */
+  /* Send to Pharmacy — now posts ONE Prescription with an items[] array,
+     matching PrescriptionService.write_prescription's real shape, instead
+     of one separate Prescription per drug row. */
   document.getElementById('sendPharmacyBtn').addEventListener('click', async () => {
-    const prescriptions = collectPrescriptions();
-    if (!prescriptions.length) { showToast('Add at least one medication first.', 'error'); return; }
+    const items = collectRxItems();
+    if (!items.length) { showToast('Add at least one medication first.', 'error'); return; }
+
+    const newCount = items.filter(i => !i.drug_id).length;
+    const confirmMsg = newCount > 0
+      ? `Send ${items.length} drug(s) to Pharmacy? ${newCount} of them aren't in the catalogue yet and will be sent anyway, flagged for Pharmacy to add manually. Continue?`
+      : `Send ${items.length} drug(s) to Pharmacy? This cannot be undone.`;
+    if (!confirm(confirmMsg)) return;
 
     const btn = document.getElementById('sendPharmacyBtn');
     btn.disabled = true;
     await saveDraftFields();
 
     try {
-      for (const rx of prescriptions) {
-        const res = await api.post('/prescriptions', { consultation_id: consultationId, patient_id: parseInt(patientId), ...rx });
-        rxSent.push({ id: res.data.id, drug_name: rx.drug_name, status: res.data.status || 'pending' });
-      }
-      if (healthFileId) await api.put(`/health-files/${healthFileId}`, { status: 'with_pharmacy' });
+      const res = await api.post('/prescriptions', {
+        consultation_id: consultationId,
+        items,
+        notes: document.getElementById('rxNotes').value.trim() || null,
+      });
+      rxSent.push({ id: res.data.id, status: res.data.status || 'pending', items: res.data.items || [] });
+
+      // NOTE: no health-files call needed here — PrescriptionService
+      // .write_prescription already calls HealthFileService
+      // .forward_to_pharmacy internally. Calling a generic PUT here was
+      // both redundant and pointed at a route that doesn't exist
+      // (health_files only has named PATCH transitions), which is why
+      // this used to throw "Unexpected token '<'" right after the
+      // prescription had already saved successfully.
 
       document.querySelectorAll('.rx-row').forEach(r => r.remove());
+      document.getElementById('rxNotes').value = '';
+      lastInteractionKey = '';
+      renderInteractionWarnings([]);
       renderRxSentPanel();
       updateCloseGate();
       showToast('Sent to Pharmacy.', 'success');
@@ -834,7 +1082,7 @@
     try {
       const res = await api.get(`/prescriptions?consultation_id=${consultationId}&per_page=50`);
       const list = res.data.prescriptions || res.data.items || res.data || [];
-      rxSent = list.map(p => ({ id: p.id, drug_name: p.drug_name, status: p.status || 'pending' }));
+      rxSent = list.map(p => ({ id: p.id, status: p.status || 'pending', items: p.items || [] }));
       renderRxSentPanel();
     } catch (e) { /* no prescriptions sent yet is a normal state, not an error */ }
   }
@@ -844,6 +1092,7 @@
       try {
         const res = await api.get(`/prescriptions/${rx.id}`);
         rx.status = res.data.status || rx.status;
+        rx.items  = res.data.items || rx.items;
       } catch (e) { /* keep last known status */ }
     }
     renderRxSentPanel();
@@ -854,29 +1103,31 @@
   function renderRxSentPanel() {
     const panel = document.getElementById('rxSentPanel');
     if (!rxSent.length) { panel.innerHTML = ''; return; }
-    panel.innerHTML = `
+    panel.innerHTML = rxSent.map(batch => `
       <div class="sent-panel">
-        <div class="sent-panel-title"><i class="fa-solid fa-truck-medical"></i> Sent to Pharmacy
+        <div class="sent-panel-title"><i class="fa-solid fa-truck-medical"></i> Prescription #${batch.id}
+          <span class="status-chip ${batch.status}" style="margin-left:0.5rem">${capitalize(batch.status)}</span>
           <button type="button" class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="refreshPharmacyStatus()">
             <i class="fa-solid fa-rotate-right"></i> Refresh
           </button>
         </div>
         <div style="margin-top:0.6rem;display:flex;flex-wrap:wrap;gap:0.5rem">
-          ${rxSent.map(rx => `
+          ${batch.items.map(i => `
             <span class="tag-chip" style="background:#fff;border:1px solid var(--border-light);color:var(--text-dark)">
-              ${rx.drug_name} <span class="status-chip ${rx.status}">${capitalize(rx.status)}</span>
+              ${i.drug_name || 'Drug'}${i.drug_is_pending_setup ? '<span class="new-drug-badge">NEW — needs Pharmacy setup</span>' : ''}
+              <span class="status-chip ${i.is_dispensed ? 'dispensed' : 'pending'}" style="margin-left:0.3rem">${i.is_dispensed ? 'Dispensed' : 'Pending'}</span>
             </span>`).join('')}
         </div>
-      </div>`;
+      </div>`).join('');
   }
 
   /* ── Laboratory ──
-     NOTE: request payload shape hasn't been confirmed against
-     LaboratoryService.raise_lab_request. `tests` carries catalogue IDs and
-     `custom_tests` carries manually typed names — but since custom_tests may
-     not be a recognized field, the same list is always mirrored into `notes`
-     as plain text so the request is still readable by the lab tech even if
-     the backend silently ignores custom_tests. */
+     Payload confirmed against LaboratoryService.raise_lab_request:
+     { consultation_id, test_ids: [...], test_names: [...], priority, notes }
+     — test_names is the new fallback for typed tests not in the
+     catalogue, mirroring the drug_name fallback for prescriptions. Each
+     one is matched to an existing test by name, or auto-created flagged
+     is_pending_setup for Lab to finish setting up. */
   async function loadLabCatalogue() {
     const picker = document.getElementById('labTestPicker');
     try {
@@ -922,33 +1173,42 @@
     if (!selectedLabTests.size && !customLabTests.length) {
       showToast('Select or type at least one test first.', 'error'); return;
     }
+
+    const newCount   = customLabTests.length;
+    const totalCount = selectedLabTests.size + customLabTests.length;
+    const confirmMsg = newCount > 0
+      ? `Send ${totalCount} test(s) to the Laboratory? ${newCount} of them aren't in the catalogue yet and will be sent anyway, flagged for Lab to set up. Continue?`
+      : `Send ${totalCount} test(s) to the Laboratory? This cannot be undone.`;
+    if (!confirm(confirmMsg)) return;
+
     const btn = document.getElementById('sendLabBtn');
     btn.disabled = true;
     await saveDraftFields();
 
-    const catalogueNames = Array.from(selectedLabTests)
-      .map(id => labTestCatalogue.find(t => t.id === id))
-      .filter(Boolean).map(t => t.name || t.test_name);
-    const allTestNames = [...catalogueNames, ...customLabTests];
-    const notesField = document.getElementById('labNotes').value.trim();
-    const combinedNotes = `Requested tests: ${allTestNames.join(', ')}.${notesField ? ' ' + notesField : ''}`;
-
     try {
       const res = await api.post('/laboratory/requests', {
         consultation_id: consultationId,
-        patient_id:      parseInt(patientId),
-        tests:            Array.from(selectedLabTests),
-        custom_tests:     customLabTests.length ? customLabTests : undefined,
+        test_ids:         Array.from(selectedLabTests),
+        test_names:        customLabTests.length ? customLabTests : undefined,
         priority:         document.getElementById('labPriority').value,
-        notes:            combinedNotes,
+        notes:            document.getElementById('labNotes').value.trim() || null,
       });
       labRequestId = res.data.id;
       labRequestStatus = res.data.status || 'pending';
-      if (healthFileId) await api.put(`/health-files/${healthFileId}`, { status: 'with_lab' });
 
-      renderLabSentPanel(allTestNames);
+      // NOTE: no health-files call needed here — LaboratoryService
+      // .raise_lab_request already calls HealthFileService.forward_to_lab
+      // internally. Same redundant/broken call removed as in
+      // sendPharmacyBtn above.
+
+      renderLabSentPanel(res.data.tests || []);
       updateCloseGate();
       showToast('Sent to Laboratory.', 'success');
+
+      selectedLabTests.clear();
+      customLabTests = [];
+      renderCustomTests();
+      document.getElementById('labNotes').value = '';
     } catch (err) {
       showToast(err.message, 'error');
     } finally {
@@ -965,8 +1225,7 @@
       if (match) {
         labRequestId = match.id;
         labRequestStatus = match.status || 'pending';
-        const names = (match.tests || []).map(t => t.name || t.test_name || t);
-        renderLabSentPanel(names.length ? names : ['Tests requested']);
+        renderLabSentPanel(match.tests || []);
       }
     } catch (e) { /* no lab request yet is a normal state, not an error */ }
   }
@@ -976,14 +1235,13 @@
     try {
       const res = await api.get(`/laboratory/requests/${labRequestId}`);
       labRequestStatus = res.data.status || labRequestStatus;
-      const names = (res.data.tests || []).map(t => t.name || t.test_name || t);
-      renderLabSentPanel(names.length ? names : undefined);
+      renderLabSentPanel(res.data.tests || []);
       updateCloseGate();
       showToast('Lab status refreshed.', 'success');
     } catch (err) { showToast(err.message, 'error'); }
   }
 
-  function renderLabSentPanel(testNames) {
+  function renderLabSentPanel(tests) {
     document.getElementById('labPickerWrap').style.display = 'none';
     const panel = document.getElementById('labSentPanel');
     panel.innerHTML = `
@@ -994,36 +1252,55 @@
             <i class="fa-solid fa-rotate-right"></i> Refresh
           </button>
         </div>
-        ${testNames ? `<div style="margin-top:0.5rem;font-size:0.82rem;color:var(--text-dark)">${testNames.join(', ')}</div>` : ''}
+        <div style="margin-top:0.6rem;display:flex;flex-wrap:wrap;gap:0.5rem">
+          ${(tests || []).map(t => {
+            const name = t.name || t.test_name || 'Test';
+            return `<span class="tag-chip" style="background:#fff;border:1px solid var(--border-light);color:var(--text-dark)">
+              ${name}${t.is_pending_setup ? '<span class="new-drug-badge">NEW — needs Lab setup</span>' : ''}
+            </span>`;
+          }).join('')}
+        </div>
       </div>`;
   }
 
   /* ── Outcome selector visuals ── */
-  const outcomeBoxIds = { completed: 'outcomeCompletedBox', observation: 'outcomeObservationBox', referred: 'outcomeReferredBox' };
+  const outcomeBoxIds = {
+    completed: 'outcomeCompletedBox', observation: 'outcomeObservationBox',
+    referred: 'outcomeReferredBox', admitted: 'outcomeAdmittedBox',
+    discharged: 'outcomeDischargedBox',
+  };
+  const SUBMIT_LABELS = {
+    referred:   'Save & Continue to Referral',
+    admitted:   'Save & Admit Patient',
+    discharged: 'Save & Discharge Patient',
+  };
   document.querySelectorAll('input[name="outcome"]').forEach(input => {
     input.addEventListener('change', () => {
       document.querySelectorAll('.outcome-option').forEach(el => el.classList.remove('selected'));
       document.getElementById(outcomeBoxIds[input.value]).classList.add('selected');
       document.getElementById('submitText').textContent =
-        input.value === 'referred' ? 'Save & Continue to Referral' : 'Save & Close Consultation';
+        SUBMIT_LABELS[input.value] || 'Save & Close Consultation';
+      document.getElementById('admitFieldsBox').style.display = input.value === 'admitted' ? 'block' : 'none';
       updateCloseGate();
     });
   });
   document.getElementById('outcomeCompletedBox').classList.add('selected');
 
   /* ── Save & Close gate ──
-     Blocks closing until any sent lab request is completed and any sent
-     prescription is dispensed — unless the outcome is a referral, since
-     the patient is leaving the clinic's workflow entirely in that case. */
+     Cancelled prescriptions no longer block closing — only ones still
+     awaiting dispensing do. Referral, admission, and discharge all skip
+     this gate: a referral/discharge ends the visit regardless of pending
+     lab/pharmacy work, and admission explicitly hands ongoing monitoring
+     to the Nurse rather than waiting on it here. */
   function updateCloseGate() {
     const outcome = document.querySelector('input[name="outcome"]:checked')?.value;
-    if (outcome === 'referred') {
+    if (outcome === 'referred' || outcome === 'admitted' || outcome === 'discharged') {
       document.getElementById('submitBtn').disabled = false;
       document.getElementById('closeGateHint').style.display = 'none';
       return;
     }
-    const labOk = !labRequestId || labRequestStatus === 'completed';
-    const rxOk  = !rxSent.length || rxSent.every(rx => rx.status === 'dispensed');
+    const labOk = !labRequestId || labRequestStatus === 'completed' || labRequestStatus === 'cancelled';
+    const rxOk  = !rxSent.length || rxSent.every(rx => rx.status === 'dispensed' || rx.status === 'cancelled');
     const ready = labOk && rxOk;
 
     document.getElementById('submitBtn').disabled = !ready;
@@ -1037,9 +1314,7 @@
     hint.style.display = 'flex';
   }
 
-  /* ── Minimize — saves the draft and sends the doctor back to the Queue.
-     The consultation itself stays open in the backend; Queue surfaces it
-     under Active Consultations so it can be resumed later. ── */
+  /* ── Minimize ── */
   document.getElementById('minimizeBtn').addEventListener('click', async () => {
     const btn = document.getElementById('minimizeBtn');
     btn.disabled = true;
@@ -1062,6 +1337,18 @@
     }
 
     const outcome = document.querySelector('input[name="outcome"]:checked').value;
+
+    let admitReason = '', admitWard = '';
+    if (outcome === 'admitted') {
+      admitReason = document.getElementById('admitReason').value.trim();
+      admitWard   = document.getElementById('admitWard').value.trim();
+      if (!admitReason || !admitWard) {
+        document.getElementById('formErrorMsg').textContent = 'Admission Reason and Ward are both required to admit a patient.';
+        errBox.style.display = 'flex';
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -1073,7 +1360,42 @@
       }
 
       await api.patch(`/consultations/${consultationId}/close`);
-      if (healthFileId) await api.put(`/health-files/${healthFileId}`, { status: outcome });
+
+      if (outcome === 'admitted') {
+        // Unlike completed/observation, admission DOES move the health
+        // file -- to "admitted", not "closed" -- handing the patient to
+        // the Nurse for ongoing monitoring instead of ending the visit.
+        // This also creates the real Admission record (ward, reason) --
+        // see AdmissionService.admit_patient on the backend.
+        await api.patch(`/health-files/${healthFileId}/admit`, {
+          ward: admitWard, admission_reason: admitReason,
+        });
+        showToast('Patient admitted. The Nurse now has this patient for ongoing monitoring.', 'success');
+        window.location.href = 'consultations.html';
+        return;
+      }
+
+      if (outcome === 'discharged') {
+        // Only valid from "with_doctor" -- i.e. after the Nurse has
+        // forwarded an admitted patient back for this final review.
+        // Reuses this consultation's clinical notes as the Admission's
+        // discharge summary -- no separate field to fill in.
+        await api.patch(`/health-files/${healthFileId}/discharge`, {
+          discharge_summary: document.getElementById('cClinicalNotes').value.trim() || null,
+        });
+        showToast('Patient discharged.', 'success');
+        window.location.href = 'consultations.html';
+        return;
+      }
+
+      // NOTE: deliberately NOT touching the health file's status here
+      // for completed/observation. There's no Doctor-facing close
+      // endpoint on health_files (only Pharmacist's /close and MHO's
+      // /mho-close exist) — a consultation closed with no prescription/
+      // lab request sent stays at with_doctor by design, and an MHO
+      // retrieves/closes it manually at end of day. A generic PUT here
+      // was both wrong (no such route) and premature (would have
+      // overridden a routing decision that isn't the Doctor's to make).
 
       showToast('Consultation saved and closed.', 'success');
       window.location.href = 'consultations.html';

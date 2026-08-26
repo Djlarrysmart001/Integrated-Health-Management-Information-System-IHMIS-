@@ -78,15 +78,42 @@ class PrescriptionService:
         if not items:
             return {"success": False, "message": "At least one drug item is required.", "data": None}
 
-        validated_items = []
+        # ── Import here (not at module top) to avoid a circular import
+        # with pharmacy_service, which itself imports from prescription
+        # models. ──────────────────────────────────────────────────────
+        from app.services.pharmacy_service import PharmacyService
+
+        validated_items       = []
+        newly_created_drugs   = []  # names of drugs auto-created this call, for the response message
+
         for i, item in enumerate(items):
-            if not item.get("drug_id"):
-                return {"success": False, "message": f"Item {i+1}: 'drug_id' is required.", "data": None}
-            drug = Drug.query.get(item["drug_id"])
-            if not drug:
-                return {"success": False, "message": f"Drug with ID {item['drug_id']} not found.", "data": None}
-            if not drug.is_active:
-                return {"success": False, "message": f"Drug '{drug.name}' is not active.", "data": None}
+            drug = None
+
+            if item.get("drug_id"):
+                # Existing catalogue path — unchanged behaviour.
+                drug = Drug.query.get(item["drug_id"])
+                if not drug:
+                    return {"success": False, "message": f"Drug with ID {item['drug_id']} not found.", "data": None}
+                if not drug.is_active:
+                    return {"success": False, "message": f"Drug '{drug.name}' is not active.", "data": None}
+
+            elif item.get("drug_name"):
+                # Doctor typed a name that wasn't picked from the catalogue.
+                # Matches an existing drug by name if one exists, otherwise
+                # creates it immediately (active, but flagged
+                # is_pending_setup) so the prescription can still go
+                # through — Pharmacy fills in proper category/unit/stock
+                # afterward.
+                result = PharmacyService.find_or_create_by_name(item["drug_name"])
+                if not result["success"]:
+                    return {"success": False, "message": f"Item {i+1}: {result['message']}", "data": None}
+                drug = result["data"]
+                if result.get("created"):
+                    newly_created_drugs.append(drug.name)
+
+            else:
+                return {"success": False, "message": f"Item {i+1}: either 'drug_id' or 'drug_name' is required.", "data": None}
+
             validated_items.append((drug, item))
 
         prescription = Prescription(
@@ -121,19 +148,24 @@ class PrescriptionService:
             entity_type = "Prescription",
             entity_id   = prescription.id,
             user_id     = prescribed_by,
-            new_value   = {"consultation_id": data["consultation_id"], "items": len(validated_items)}
+            new_value   = {
+                "consultation_id":      data["consultation_id"],
+                "items":                len(validated_items),
+                "new_drugs_created":    newly_created_drugs,
+            }
         )
         # ───────────────────────────────────────────────────────
 
         # ── Move the health file into the Pharmacy queue ────────
-        # Non-fatal: if the health file isn't currently with the
-        # Doctor (e.g. still with_lab, or legacy data with no
-        # health file at all), the prescription itself still stands.
         if consultation.health_file_id:
             HealthFileService.forward_to_pharmacy(consultation.health_file_id, prescribed_by)
         # ───────────────────────────────────────────────────────
 
-        return {"success": True, "message": f"Prescription written with {len(validated_items)} drug(s).", "data": prescription.to_dict()}
+        message = f"Prescription written with {len(validated_items)} drug(s)."
+        if newly_created_drugs:
+            message += f" {len(newly_created_drugs)} new drug(s) added to the catalogue, pending Pharmacy setup: {', '.join(newly_created_drugs)}."
+
+        return {"success": True, "message": message, "data": prescription.to_dict()}
 
     @staticmethod
     def dispense_prescription(prescription_id: int, dispensed_by: int):
@@ -158,7 +190,7 @@ class PrescriptionService:
 
         now             = datetime.now(timezone.utc)
         dispensed_count = 0
-        touched_batches = {}  # drug_id -> (drug, last-touched batch), deduped for low-stock alerts
+        touched_batches = {}
 
         for item in prescription.items:
             if item.is_dispensed:
@@ -178,8 +210,7 @@ class PrescriptionService:
                 batch.quantity_in_stock -= deduct
                 remaining_to_deduct     -= deduct
 
-                # ── Ledger entry — one per batch actually touched ──
-                db.session.flush()  # ensure item.drug_id total_stock reads post-deduction below
+                db.session.flush()
                 drug = Drug.query.get(item.drug_id)
                 transaction = DrugTransaction(
                     drug_id          = item.drug_id,
@@ -193,7 +224,6 @@ class PrescriptionService:
                     performed_by     = dispensed_by,
                 )
                 db.session.add(transaction)
-                # ────────────────────────────────────────────────
 
                 touched_batches[item.drug_id] = (drug, batch)
 
@@ -206,13 +236,10 @@ class PrescriptionService:
         prescription.updated_at = now
         db.session.commit()
 
-        # ── Low-stock alerts — one per drug actually dispensed, not per batch ──
         from app.services.pharmacy_service import PharmacyService
         for drug, batch in touched_batches.values():
             PharmacyService._alert_if_low_stock(drug, batch)
-        # ─────────────────────────────────────────────────────────────────────
 
-        # ── Audit log ──────────────────────────────────────────
         from app.services.audit_service import AuditService
         AuditService.log(
             action      = "DISPENSE_PRESCRIPTION",
@@ -221,12 +248,7 @@ class PrescriptionService:
             user_id     = dispensed_by,
             new_value   = {"status": "dispensed", "items_dispensed": dispensed_count}
         )
-        # ───────────────────────────────────────────────────────
 
-        # ── Close the health file, if this was the last outstanding ──
-        # prescription for this visit. A consultation can technically
-        # have more than one prescription over time, so we only close
-        # the file once nothing else is still waiting on Pharmacy.
         consultation = Consultation.query.get(prescription.consultation_id)
         if consultation and consultation.health_file_id:
             other_pending = Prescription.query.filter(
@@ -236,7 +258,6 @@ class PrescriptionService:
             ).count()
             if other_pending == 0:
                 HealthFileService.close_health_file(consultation.health_file_id, dispensed_by)
-        # ───────────────────────────────────────────────────────
 
         return {
             "success": True,
@@ -245,7 +266,7 @@ class PrescriptionService:
         }
 
     @staticmethod
-    def cancel_prescription(prescription_id: int):
+    def cancel_prescription(prescription_id: int, cancelled_by: int = None):
         prescription = Prescription.query.get(prescription_id)
         if not prescription:
             return {"success": False, "message": f"Prescription with ID {prescription_id} not found.", "data": None}
@@ -259,15 +280,14 @@ class PrescriptionService:
         prescription.status = "cancelled"
         db.session.commit()
 
-        # ── Audit log ──────────────────────────────────────────
         from app.services.audit_service import AuditService
         AuditService.log(
             action      = "CANCEL_PRESCRIPTION",
             entity_type = "Prescription",
             entity_id   = prescription_id,
+            user_id     = cancelled_by,
             new_value   = {"status": "cancelled"}
         )
-        # ───────────────────────────────────────────────────────
 
         return {"success": True, "message": "Prescription cancelled successfully.", "data": prescription.to_dict()}
 

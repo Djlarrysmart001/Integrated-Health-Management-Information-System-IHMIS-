@@ -9,6 +9,12 @@
   <link rel="stylesheet" href="../../assets/css/sidebar.css" />
   <link rel="stylesheet" href="../../assets/css/dashboard.css" />
   <link rel="stylesheet" href="../../assets/css/components.css" />
+  <style>
+    .pending-setup-badge {
+      font-size:0.65rem; font-weight:700; background:#fff7ed; color:#e67e22;
+      border-radius:10px; padding:0.1rem 0.5rem; margin-left:0.4rem; white-space:nowrap;
+    }
+  </style>
 </head>
 <body>
 
@@ -45,6 +51,12 @@
           <span class="nav-label">Drug Inventory</span>
         </a>
       </div>
+      <div class="nav-item">
+        <a href="notifications.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-bell"></i></span>
+          <span class="nav-label">Notifications</span>
+        </a>
+      </div>
     </nav>
     <div class="sidebar-footer">
       <div class="sidebar-user-avatar" id="sidebarAvatar">PH</div>
@@ -65,7 +77,7 @@
       </div>
     </div>
     <div class="navbar-right">
-      <button class="navbar-icon-btn"><i class="fa-solid fa-bell"></i></button>
+      <button class="navbar-icon-btn" title="Notifications"><i class="fa-solid fa-bell"></i></button>
       <button class="navbar-user" id="userMenuBtn">
         <div class="navbar-user-avatar" id="navbarAvatar">PH</div>
         <span class="navbar-user-name" id="navbarName">Pharmacist</span>
@@ -80,7 +92,7 @@
       <div class="dropdown-header-name" id="dropdownName">Pharmacist</div>
       <div class="dropdown-header-role" id="dropdownRole">Pharmacist</div>
     </div>
-    <a href="#" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <a href="profile.html" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
     <div class="dropdown-divider"></div>
     <button class="dropdown-item danger" id="logoutBtn">
       <i class="fa-solid fa-right-from-bracket"></i> Sign Out
@@ -95,6 +107,9 @@
         <h2>Drug Inventory</h2>
         <p>Manage drug stock levels and batches</p>
       </div>
+      <button class="btn btn-primary" id="addDrugBtn">
+        <i class="fa-solid fa-plus"></i> Add Drug
+      </button>
     </div>
 
     <!-- Stat Cards -->
@@ -168,10 +183,11 @@
               <th>Min Level</th>
               <th>Expiry Date</th>
               <th>Stock Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody id="drugTableBody">
-            <tr><td colspan="7">
+            <tr><td colspan="8">
               <div class="empty-state">
                 <div class="spinner-sm" style="margin:0 auto 0.5rem"></div>
                 <p>Loading inventory...</p>
@@ -186,9 +202,145 @@
   </main>
 </div>
 
+<!-- ── Add Drug Modal ── -->
+<div class="modal-overlay" id="addDrugModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-plus" style="color:var(--primary);margin-right:0.5rem"></i>Add Drug to Formulary</h3>
+      <button class="modal-close" id="closeAddDrugModal"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Drug Name <span class="required">*</span></label>
+        <input type="text" class="form-control" id="newDrugName" placeholder="e.g. Paracetamol" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Brand Name</label>
+        <input type="text" class="form-control" id="newDrugBrand" placeholder="e.g. Panadol (optional)" />
+      </div>
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <input type="text" class="form-control" id="newDrugCategory" placeholder="e.g. Analgesic" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Unit <span class="required">*</span></label>
+          <input type="text" class="form-control" id="newDrugUnit" placeholder="e.g. tablet, capsule, vial" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-control" id="newDrugDescription" placeholder="Optional notes"></textarea>
+      </div>
+      <div class="alert alert-danger" id="addDrugError" style="display:none">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span id="addDrugErrorMsg"></span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="cancelAddDrugBtn">Cancel</button>
+      <button class="btn btn-primary" id="submitAddDrugBtn">
+        <span class="spinner-sm" id="addDrugSpinner" style="display:none;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+        <span id="addDrugText">Add Drug</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Receive Stock Modal ── -->
+<div class="modal-overlay" id="receiveStockModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-truck-ramp-box" style="color:var(--primary);margin-right:0.5rem"></i>Receive Stock</h3>
+      <button class="modal-close" id="closeReceiveStockModal"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div style="font-weight:600;color:var(--text-dark);margin-bottom:1rem" id="receiveStockDrugName">—</div>
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Quantity Received <span class="required">*</span></label>
+          <input type="number" min="1" class="form-control" id="receiveQty" placeholder="e.g. 500" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Batch Number</label>
+          <input type="text" class="form-control" id="receiveBatch" placeholder="Optional" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Minimum Stock Level</label>
+          <input type="number" min="0" class="form-control" id="receiveMinLevel" value="20" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Expiry Date</label>
+          <input type="date" class="form-control" id="receiveExpiry" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Supplied By</label>
+        <input type="text" class="form-control" id="receiveSupplier" placeholder="Optional" />
+      </div>
+      <div class="alert alert-danger" id="receiveStockError" style="display:none">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span id="receiveStockErrorMsg"></span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="cancelReceiveStockBtn">Cancel</button>
+      <button class="btn btn-primary" id="submitReceiveStockBtn">
+        <span class="spinner-sm" id="receiveStockSpinner" style="display:none;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+        <span id="receiveStockText">Receive Stock</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Finish Setup Modal ── -->
+<div class="modal-overlay" id="finishSetupModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-screwdriver-wrench" style="color:var(--primary);margin-right:0.5rem"></i>Finish Drug Setup</h3>
+      <button class="modal-close" id="closeFinishSetupModal"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:0.85rem;color:var(--text-muted);margin-top:0">
+        This drug was auto-created from a doctor's prescription and isn't fully set up yet. Fill in the details below to finish setting it up.
+      </p>
+      <div class="form-group">
+        <label class="form-label">Drug Name</label>
+        <input type="text" class="form-control" id="setupDrugName" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Brand Name</label>
+        <input type="text" class="form-control" id="setupDrugBrand" placeholder="Optional" />
+      </div>
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Category <span class="required">*</span></label>
+          <input type="text" class="form-control" id="setupDrugCategory" placeholder="e.g. Antimalarial" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Unit <span class="required">*</span></label>
+          <input type="text" class="form-control" id="setupDrugUnit" placeholder="e.g. tablet" />
+        </div>
+      </div>
+      <div class="alert alert-danger" id="finishSetupError" style="display:none">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span id="finishSetupErrorMsg"></span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="cancelFinishSetupBtn">Cancel</button>
+      <button class="btn btn-primary" id="submitFinishSetupBtn">
+        <span class="spinner-sm" id="finishSetupSpinner" style="display:none;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+        <span id="finishSetupText">Save</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <script src="../../assets/js/api.js"></script>
 <script src="../../assets/js/utils.js"></script>
 <script src="../../assets/js/sidebar.js"></script>
+<script src="../../assets/js/notifications-widget.js"></script>
 <script>
   requireAuth('pharmacist');
 
@@ -196,58 +348,126 @@
   let searchQuery  = '';
   let stockFilter  = '';
   const today      = new Date();
+  let drugRows     = [];  // merged drug + batch data, kept for row lookups (Receive Stock / Finish Setup)
 
-  function getStockStatus(drug) {
-    const qty     = drug.quantity_in_stock ?? drug.stock ?? 0;
-    const minLevel= drug.minimum_stock_level ?? drug.min_stock ?? 0;
-    const expiry  = drug.expiry_date ? new Date(drug.expiry_date) : null;
-
-    if (expiry && expiry < today)         return { label: 'Expired',      color: 'badge-danger',  icon: 'fa-skull-crossbones' };
-    if (qty === 0)                        return { label: 'Out of Stock',  color: 'badge-danger',  icon: 'fa-circle-xmark' };
-    if (minLevel && qty <= minLevel)      return { label: 'Low Stock',     color: 'badge-warning', icon: 'fa-triangle-exclamation' };
-    return                                       { label: 'In Stock',      color: 'badge-success', icon: 'fa-circle-check' };
+  function extractList(resData, keys) {
+    if (!resData) return [];
+    if (Array.isArray(resData)) return resData;
+    for (const k of keys) { if (Array.isArray(resData[k])) return resData[k]; }
+    for (const k in resData) { if (Array.isArray(resData[k])) return resData[k]; }
+    return [];
   }
 
-  /* ── Load Drugs ── */
+  /* FIX: "Low Stock" now matches the backend's own definition exactly —
+     PharmacyService.get_pharmacy_stats() counts a batch as low stock when
+     that batch's own quantity_in_stock <= that batch's own
+     minimum_stock_level (per-batch, no aggregation across a drug's other
+     batches). The row's row._isLowStock flag is computed once in
+     loadDrugs() below and simply read here, so this page and the
+     Pharmacist Dashboard can never disagree again. */
+  function getStockStatus(row) {
+    const qty    = row.total_stock ?? 0;
+    const expiry = row._expiry ? new Date(row._expiry) : null;
+
+    if (expiry && expiry < today)   return { label: 'Expired',       color: 'badge-danger',  icon: 'fa-skull-crossbones' };
+    if (qty === 0)                  return { label: 'Out of Stock',  color: 'badge-danger',  icon: 'fa-circle-xmark' };
+    if (row._isLowStock)            return { label: 'Low Stock',     color: 'badge-warning', icon: 'fa-triangle-exclamation' };
+    return                                 { label: 'In Stock',      color: 'badge-success', icon: 'fa-circle-check' };
+  }
+
+  /* ── Load Drugs ──
+     Drug.to_dict() only has total_stock (an aggregate) — min level and
+     expiry live on DrugInventory batches, not on the drug itself. We
+     merge in batch data per drug for a meaningful single-row display. */
   async function loadDrugs() {
     const tbody = document.getElementById('drugTableBody');
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="spinner-sm" style="margin:0 auto 0.5rem"></div><p>Loading...</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="spinner-sm" style="margin:0 auto 0.5rem"></div><p>Loading...</p></div></td></tr>`;
 
     try {
-      let url = `/pharmacy/drugs?page=${currentPage}&per_page=15`;
-      if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
-      if (stockFilter) url += `&stock_status=${stockFilter}`;
+      let drugUrl = `/pharmacy/drugs?page=${currentPage}&per_page=15`;
+      if (searchQuery) drugUrl += `&search=${encodeURIComponent(searchQuery)}`;
 
-      const res   = await api.get(url);
-      const data  = res.data;
-      const drugs = data.drugs || data.items || data || [];
-      const total = data.total || drugs.length;
-      const pages = data.pages || 1;
+      const [drugRes, invRes] = await Promise.all([
+        api.get(drugUrl),
+        api.get('/pharmacy/inventory?per_page=500'),
+      ]);
 
-      /* Summary counts */
+      const drugs      = extractList(drugRes.data, ['drugs', 'items', 'data']);
+      const total       = drugRes.data.total || drugs.length;
+      const pages        = drugRes.data.pages || 1;
+      const batches      = extractList(invRes.data, ['inventory', 'items', 'data']);
+
+      drugRows = drugs.map(d => {
+        const drugBatches = batches.filter(b => b.drug_id === d.id);
+
+        // FIX (v2): judge "Low Stock" against the TOTAL quantity shown in
+        // the row, not against any single batch in isolation. A drug can
+        // have several batches — e.g. one large current batch plus a
+        // near-empty older one — and flagging the whole row as low stock
+        // because of that small leftover batch is misleading when the
+        // pharmacist can plainly see hundreds of units on screen.
+        //
+        // Rule: the "primary" batch is the one holding the most stock
+        // (the main contributor to what's displayed). Its
+        // minimum_stock_level is the threshold we compare the drug's
+        // total_stock against. This keeps the displayed number and the
+        // badge in agreement.
+        const primary = [...drugBatches]
+          .sort((a, b) => b.quantity_in_stock - a.quantity_in_stock)[0]
+          || null;
+
+        const qty       = d.total_stock ?? 0;
+        const minLevel  = primary?.minimum_stock_level ?? null;
+        const isLowStock = minLevel !== null && qty <= minLevel;
+
+        // Soonest-expiring batch with stock left is still the most
+        // operationally relevant one for the Expiry Date column.
+        const soonestExpiring = drugBatches
+          .filter(b => b.quantity_in_stock > 0 && b.expiry_date)
+          .sort((a, b) => new Date(a.expiry_date) - new Date(b.expiry_date))[0]
+          || drugBatches[0] || null;
+
+        return {
+          ...d,
+          _minLevel:   minLevel,
+          _expiry:     soonestExpiring?.expiry_date ?? null,
+          _isLowStock: isLowStock,
+          _batchCount: drugBatches.length,
+        };
+      });
+
+      let filtered = drugRows;
+      if (stockFilter) {
+        filtered = filtered.filter(row => {
+          const s = getStockStatus(row).label;
+          return (stockFilter === 'in_stock'     && s === 'In Stock') ||
+                 (stockFilter === 'low_stock'     && s === 'Low Stock') ||
+                 (stockFilter === 'out_of_stock'  && s === 'Out of Stock') ||
+                 (stockFilter === 'expired'       && s === 'Expired');
+        });
+      }
+
       setText('totalDrugs',       formatNumber(total));
-      setText('inStockCount',     formatNumber(drugs.filter(d => getStockStatus(d).label === 'In Stock').length));
-      setText('lowStockCount',    formatNumber(drugs.filter(d => getStockStatus(d).label === 'Low Stock').length));
-      setText('expiredCount',     formatNumber(drugs.filter(d => getStockStatus(d).label === 'Expired').length));
-      setText('expiringSoonCount',formatNumber(drugs.filter(d => {
-        if (!d.expiry_date) return false;
-        const exp  = new Date(d.expiry_date);
-        const diff = (exp - today) / (1000*60*60*24);
+      setText('inStockCount',     formatNumber(drugRows.filter(r => getStockStatus(r).label === 'In Stock').length));
+      setText('lowStockCount',    formatNumber(drugRows.filter(r => getStockStatus(r).label === 'Low Stock').length));
+      setText('expiredCount',     formatNumber(drugRows.filter(r => getStockStatus(r).label === 'Expired').length));
+      setText('expiringSoonCount',formatNumber(drugRows.filter(r => {
+        if (!r._expiry) return false;
+        const diff = (new Date(r._expiry) - today) / (1000*60*60*24);
         return diff >= 0 && diff <= 30;
       }).length));
 
-      if (drugs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fa-solid fa-boxes-stacked"></i><h4>No drugs found</h4><p>Try adjusting your search</p></div></td></tr>`;
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fa-solid fa-boxes-stacked"></i><h4>No drugs found</h4><p>Try adjusting your search, or add a new drug</p></div></td></tr>`;
         return;
       }
 
-      tbody.innerHTML = drugs.map(d => {
-        const status = getStockStatus(d);
-        const qty    = d.quantity_in_stock ?? d.stock ?? 0;
-        const min    = d.minimum_stock_level ?? d.min_stock ?? 0;
-        const expiry = d.expiry_date;
+      tbody.innerHTML = filtered.map(row => {
+        const status = getStockStatus(row);
+        const qty    = row.total_stock ?? 0;
+        const min    = row._minLevel;
+        const expiry = row._expiry;
 
-        /* Expiry color */
         let expiryHtml = '—';
         if (expiry) {
           const exp      = new Date(expiry);
@@ -256,20 +476,22 @@
           expiryHtml = `<span style="color:${color};font-weight:${daysLeft<=30?600:400}">${formatDate(expiry)}</span>`;
         }
 
-        /* Stock level bar */
-        const pct  = min > 0 ? Math.min(Math.round((qty / (min * 3)) * 100), 100) : 100;
-        const barColor = status.label === 'Expired' ? 'var(--danger)' :
-                         status.label === 'Low Stock' ? 'var(--warning)' :
-                         status.label === 'Out of Stock' ? 'var(--danger)' : 'var(--primary)';
+        const pct       = min ? Math.min(Math.round((qty / (min * 3)) * 100), 100) : (qty > 0 ? 100 : 0);
+        const barColor  = status.label === 'Expired' ? 'var(--danger)' :
+                           status.label === 'Low Stock' ? 'var(--warning)' :
+                           status.label === 'Out of Stock' ? 'var(--danger)' : 'var(--primary)';
 
         return `
           <tr>
             <td>
-              <div style="font-weight:500;color:var(--text-dark)">${d.name || d.drug_name || '—'}</div>
-              ${d.generic_name ? `<div style="font-size:0.75rem;color:var(--text-muted)">${d.generic_name}</div>` : ''}
+              <div style="font-weight:500;color:var(--text-dark)">
+                ${row.name}
+                ${row.is_pending_setup ? '<span class="pending-setup-badge">NEW — needs setup</span>' : ''}
+              </div>
+              ${row.brand_name ? `<div style="font-size:0.75rem;color:var(--text-muted)">${row.brand_name}</div>` : ''}
             </td>
-            <td class="muted">${d.category || d.drug_category || '—'}</td>
-            <td class="muted">${d.unit || d.dosage_form || '—'}</td>
+            <td class="muted">${row.category || '—'}</td>
+            <td class="muted">${row.unit || '—'}</td>
             <td>
               <div style="display:flex;align-items:center;gap:0.5rem">
                 <div style="flex:1;min-width:60px">
@@ -288,13 +510,24 @@
                 ${status.label}
               </span>
             </td>
+            <td>
+              <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
+                <button class="btn btn-secondary btn-sm" onclick="openReceiveStock(${row.id})">
+                  <i class="fa-solid fa-truck-ramp-box"></i> Receive
+                </button>
+                ${row.is_pending_setup ? `
+                  <button class="btn btn-primary btn-sm" onclick="openFinishSetup(${row.id})">
+                    <i class="fa-solid fa-screwdriver-wrench"></i> Finish Setup
+                  </button>` : ''}
+              </div>
+            </td>
           </tr>`;
       }).join('');
 
       renderPagination(currentPage, pages);
 
     } catch(err) {
-      tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fa-solid fa-circle-exclamation" style="color:var(--danger)"></i><h4>Failed to load</h4><p>${err.message}</p></div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fa-solid fa-circle-exclamation" style="color:var(--danger)"></i><h4>Failed to load</h4><p>${err.message}</p></div></td></tr>`;
     }
   }
 
@@ -324,6 +557,165 @@
     stockFilter = e.target.value; currentPage=1; loadDrugs();
   });
   document.getElementById('refreshDrugBtn').addEventListener('click', loadDrugs);
+
+  /* ── Add Drug ── */
+  document.getElementById('addDrugBtn').addEventListener('click', () => {
+    document.getElementById('newDrugName').value = '';
+    document.getElementById('newDrugBrand').value = '';
+    document.getElementById('newDrugCategory').value = '';
+    document.getElementById('newDrugUnit').value = '';
+    document.getElementById('newDrugDescription').value = '';
+    document.getElementById('addDrugError').style.display = 'none';
+    document.getElementById('addDrugModal').classList.add('open');
+  });
+  function closeAddDrugModal() { document.getElementById('addDrugModal').classList.remove('open'); }
+  document.getElementById('closeAddDrugModal').addEventListener('click', closeAddDrugModal);
+  document.getElementById('cancelAddDrugBtn').addEventListener('click', closeAddDrugModal);
+
+  document.getElementById('submitAddDrugBtn').addEventListener('click', async () => {
+    const errBox = document.getElementById('addDrugError');
+    errBox.style.display = 'none';
+
+    const name = document.getElementById('newDrugName').value.trim();
+    const unit = document.getElementById('newDrugUnit').value.trim();
+    if (!name || !unit) {
+      document.getElementById('addDrugErrorMsg').textContent = 'Drug name and unit are both required.';
+      errBox.style.display = 'flex';
+      return;
+    }
+
+    setAddDrugLoading(true);
+    try {
+      await api.post('/pharmacy/drugs', {
+        name,
+        unit,
+        brand_name:  document.getElementById('newDrugBrand').value.trim() || null,
+        category:    document.getElementById('newDrugCategory').value.trim() || undefined,
+        description: document.getElementById('newDrugDescription').value.trim() || null,
+      });
+      showToast('Drug added to formulary.', 'success');
+      closeAddDrugModal();
+      loadDrugs();
+    } catch (err) {
+      document.getElementById('addDrugErrorMsg').textContent = err.message;
+      errBox.style.display = 'flex';
+    } finally {
+      setAddDrugLoading(false);
+    }
+  });
+  function setAddDrugLoading(state) {
+    document.getElementById('submitAddDrugBtn').disabled = state;
+    document.getElementById('addDrugSpinner').style.display = state ? 'inline-block' : 'none';
+    document.getElementById('addDrugText').textContent = state ? 'Adding...' : 'Add Drug';
+  }
+
+  /* ── Receive Stock ── */
+  let receiveStockDrugId = null;
+  function openReceiveStock(drugId) {
+    const row = drugRows.find(r => r.id === drugId);
+    if (!row) return;
+    receiveStockDrugId = drugId;
+    document.getElementById('receiveStockDrugName').textContent = row.name;
+    document.getElementById('receiveQty').value = '';
+    document.getElementById('receiveBatch').value = '';
+    document.getElementById('receiveMinLevel').value = row._minLevel || 20;
+    document.getElementById('receiveExpiry').value = '';
+    document.getElementById('receiveSupplier').value = '';
+    document.getElementById('receiveStockError').style.display = 'none';
+    document.getElementById('receiveStockModal').classList.add('open');
+  }
+  function closeReceiveStockModal() { document.getElementById('receiveStockModal').classList.remove('open'); }
+  document.getElementById('closeReceiveStockModal').addEventListener('click', closeReceiveStockModal);
+  document.getElementById('cancelReceiveStockBtn').addEventListener('click', closeReceiveStockModal);
+
+  document.getElementById('submitReceiveStockBtn').addEventListener('click', async () => {
+    const errBox = document.getElementById('receiveStockError');
+    errBox.style.display = 'none';
+
+    const qty = document.getElementById('receiveQty').value;
+    if (!qty || parseInt(qty) <= 0) {
+      document.getElementById('receiveStockErrorMsg').textContent = 'Enter a quantity greater than zero.';
+      errBox.style.display = 'flex';
+      return;
+    }
+
+    setReceiveStockLoading(true);
+    try {
+      await api.post(`/pharmacy/drugs/${receiveStockDrugId}/receive`, {
+        quantity_in_stock:   parseInt(qty),
+        batch_number:        document.getElementById('receiveBatch').value.trim() || null,
+        minimum_stock_level: parseInt(document.getElementById('receiveMinLevel').value) || 20,
+        expiry_date:         document.getElementById('receiveExpiry').value || null,
+        supplied_by:         document.getElementById('receiveSupplier').value.trim() || null,
+      });
+      showToast('Stock received.', 'success');
+      closeReceiveStockModal();
+      loadDrugs();
+    } catch (err) {
+      document.getElementById('receiveStockErrorMsg').textContent = err.message;
+      errBox.style.display = 'flex';
+    } finally {
+      setReceiveStockLoading(false);
+    }
+  });
+  function setReceiveStockLoading(state) {
+    document.getElementById('submitReceiveStockBtn').disabled = state;
+    document.getElementById('receiveStockSpinner').style.display = state ? 'inline-block' : 'none';
+    document.getElementById('receiveStockText').textContent = state ? 'Saving...' : 'Receive Stock';
+  }
+
+  /* ── Finish Setup (clears is_pending_setup) ── */
+  let finishSetupDrugId = null;
+  function openFinishSetup(drugId) {
+    const row = drugRows.find(r => r.id === drugId);
+    if (!row) return;
+    finishSetupDrugId = drugId;
+    document.getElementById('setupDrugName').value = row.name;
+    document.getElementById('setupDrugBrand').value = row.brand_name || '';
+    document.getElementById('setupDrugCategory').value = (row.category && row.category !== 'Uncategorized') ? row.category : '';
+    document.getElementById('setupDrugUnit').value = row.unit || '';
+    document.getElementById('finishSetupError').style.display = 'none';
+    document.getElementById('finishSetupModal').classList.add('open');
+  }
+  function closeFinishSetupModal() { document.getElementById('finishSetupModal').classList.remove('open'); }
+  document.getElementById('closeFinishSetupModal').addEventListener('click', closeFinishSetupModal);
+  document.getElementById('cancelFinishSetupBtn').addEventListener('click', closeFinishSetupModal);
+
+  document.getElementById('submitFinishSetupBtn').addEventListener('click', async () => {
+    const errBox = document.getElementById('finishSetupError');
+    errBox.style.display = 'none';
+
+    const category = document.getElementById('setupDrugCategory').value.trim();
+    const unit     = document.getElementById('setupDrugUnit').value.trim();
+    if (!category || !unit) {
+      document.getElementById('finishSetupErrorMsg').textContent = 'Category and unit are both required.';
+      errBox.style.display = 'flex';
+      return;
+    }
+
+    setFinishSetupLoading(true);
+    try {
+      await api.put(`/pharmacy/drugs/${finishSetupDrugId}`, {
+        category,
+        unit,
+        brand_name:       document.getElementById('setupDrugBrand').value.trim() || null,
+        is_pending_setup: false,
+      });
+      showToast('Drug setup completed.', 'success');
+      closeFinishSetupModal();
+      loadDrugs();
+    } catch (err) {
+      document.getElementById('finishSetupErrorMsg').textContent = err.message;
+      errBox.style.display = 'flex';
+    } finally {
+      setFinishSetupLoading(false);
+    }
+  });
+  function setFinishSetupLoading(state) {
+    document.getElementById('submitFinishSetupBtn').disabled = state;
+    document.getElementById('finishSetupSpinner').style.display = state ? 'inline-block' : 'none';
+    document.getElementById('finishSetupText').textContent = state ? 'Saving...' : 'Save';
+  }
 
   loadDrugs();
 </script>

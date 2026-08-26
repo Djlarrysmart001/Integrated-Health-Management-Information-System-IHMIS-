@@ -20,3 +20,5 @@ from app.models.staff_attendance import StaffAttendance
 from app.models.notification import Notification
 from app.models.audit_log import AuditLog
 from app.models.system_settings import SystemSettings
+from app.models.ai_recommendation import AIRecommendation
+from app.models.drug_interaction import DrugInteraction

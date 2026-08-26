@@ -48,8 +48,8 @@ class AdmissionService:
                 return {"success": False, "message": "Invalid 'expected_discharge_date' format. Use YYYY-MM-DD.", "data": None}
 
         consultation_id = data.get("consultation_id")
-        health_file_id  = None
-        if consultation_id:
+        health_file_id  = data.get("health_file_id")  # preferred when given directly
+        if consultation_id and not health_file_id:
             consultation = Consultation.query.get(consultation_id)
             if not consultation:
                 return {"success": False, "message": f"Consultation with ID {consultation_id} not found.", "data": None}
@@ -70,11 +70,14 @@ class AdmissionService:
         db.session.add(admission)
         db.session.commit()
 
-        # ── Close the health file — the visit ends here; the patient ──
-        # is now an inpatient rather than continuing the walk-in queue.
-        # Non-fatal: if there's no linked health file, admission still stands.
+        # ── Route the health file into the Nurse's monitoring loop ──
+        # (with_doctor -> admitted, NOT closed -- see HealthFileService.
+        # admit_patient for why: the patient stays under active care,
+        # they don't leave the clinic like a referral does).
+        # Non-fatal: if there's no linked health file, the Admission
+        # record still stands on its own.
         if health_file_id:
-            HealthFileService.close_via_admission(health_file_id, admitted_by)
+            HealthFileService.admit_patient(health_file_id, admitted_by)
         # ───────────────────────────────────────────────────────
 
         # ── Audit log ──────────────────────────────────────────
@@ -107,6 +110,17 @@ class AdmissionService:
         admission.discharged_by         = discharged_by
         admission.discharge_summary     = (discharge_summary or "").strip() or None
         db.session.commit()
+
+        # ── Close the health file too, if one's linked and still open ──
+        # Discharging the Admission record without this would leave the
+        # health file stuck at "with_doctor" forever -- the two records
+        # need to close together. Non-fatal: if the health file was
+        # already closed some other way (or was never linked), the
+        # Admission discharge still stands on its own.
+        if admission.health_file_id:
+            hf_result = HealthFileService.discharge_patient(admission.health_file_id, discharged_by)
+            if not hf_result["success"]:
+                pass  # already closed, or in a state that can't discharge -- Admission side still succeeded
 
         # ── Audit log ──────────────────────────────────────────
         from app.services.audit_service import AuditService

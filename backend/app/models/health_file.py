@@ -15,15 +15,22 @@ class HealthFile(db.Model):
         with_doctor   -> Nurse forwarded it, waiting on consultation
         with_lab      -> Doctor requested a test, waiting on Lab
         with_pharmacy -> Doctor prescribed, waiting on dispensing
-        closed        -> Pharmacist dispensed, visit complete
+        admitted      -> Doctor admitted for inpatient monitoring, Nurse's care
+        closed        -> Pharmacist dispensed (or Doctor discharged), visit complete
 
     Note: "with_lab" always returns to "with_doctor" once the Lab
     uploads a result — the Doctor makes the final call either way.
+
+    Similarly, "admitted" always returns to "with_doctor" once the
+    Nurse forwards the file back after inpatient monitoring — an
+    admitted patient is never discharged directly by the Nurse; the
+    Doctor makes that call too. See HealthFileService.admit_patient /
+    forward_to_doctor / discharge_patient.
     """
     __tablename__ = "health_files"
 
     STATUSES = ("with_mho", "with_nurse", "with_doctor", "with_lab",
-                "with_pharmacy", "closed")
+                "with_pharmacy", "admitted", "closed")
 
     id           = db.Column(db.Integer, primary_key=True)
     patient_id   = db.Column(db.Integer, db.ForeignKey("patients.id", ondelete="CASCADE"),

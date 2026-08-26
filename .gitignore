@@ -10,3 +10,4 @@ logs/
 instance/
 .DS_Store
 certs/
+*.sql

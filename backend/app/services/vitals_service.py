@@ -73,23 +73,75 @@ class VitalsService:
         return {"success": True, "message": "Vitals recorded successfully.", "data": vitals.to_dict()}
 
     @staticmethod
-    def get_vitals(patient_id=None, health_file_id=None, page=1, per_page=20):
-        """Returns a plain list (not a paginated envelope) — matches what
-        consultation.html / queue.html already expect from
-        GET /vitals?health_file_id=<id> (Array.isArray(res.data))."""
+    def get_vitals(patient_id=None, health_file_id=None, recorded_by=None,
+                    date_from=None, date_to=None, search=None, page=1, per_page=20):
+        """
+        Two response shapes, chosen automatically:
+
+        - LOOKUP mode (patient_id or health_file_id given): returns a plain
+          list under "data" -- matches what consultation.html / queue.html
+          already expect from GET /vitals?health_file_id=<id>.
+
+        - SUMMARY mode (neither given -- e.g. a nurse's "patients seen"
+          history): returns {"items": [...], "total": N, "pages": P,
+          "current_page": page} under "data". Each item is enriched with
+          patient_name / patient_number (VitalSigns itself only stores
+          patient_id) and health_file_status (the file's CURRENT stage --
+          e.g. a vitals record taken this morning may now show "closed" if
+          the visit has already finished; this reflects where the patient
+          is right now, not a frozen snapshot of the moment vitals were
+          recorded).
+
+        RBAC scoping (who is allowed to land in summary mode with which
+        recorded_by) is enforced by the route, not here -- this method
+        trusts whatever filters it's given.
+        """
         query = VitalSigns.query
         if patient_id:
             query = query.filter(VitalSigns.patient_id == patient_id)
         if health_file_id:
             query = query.filter(VitalSigns.health_file_id == health_file_id)
+        if recorded_by:
+            query = query.filter(VitalSigns.recorded_by == recorded_by)
+        if date_from:
+            query = query.filter(VitalSigns.recorded_at >= date_from)
+        if date_to:
+            query = query.filter(VitalSigns.recorded_at < date_to)
+        if search:
+            query = query.join(Patient, VitalSigns.patient_id == Patient.id).filter(
+                db.or_(
+                    Patient.first_name.ilike(f"%{search}%"),
+                    Patient.last_name.ilike(f"%{search}%"),
+                    Patient.patient_number.ilike(f"%{search}%"),
+                )
+            )
 
         query = query.order_by(VitalSigns.recorded_at.desc())
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
 
+        summary_mode = not patient_id and not health_file_id
+        if summary_mode:
+            items = []
+            for v in pagination.items:
+                d = v.to_dict()
+                d["patient_name"]   = v.patient.full_name if v.patient else None
+                d["patient_number"] = v.patient.patient_number if v.patient else None
+                d["health_file_status"] = v.health_file.status if v.health_file else None
+                items.append(d)
+        else:
+            items = [v.to_dict() for v in pagination.items]
+
+        data = {
+            "items": items,
+            "total": pagination.total,
+            "pages": pagination.pages,
+            "current_page": page,
+        } if summary_mode else items
+
         return {
             "success": True,
             "message": "Vitals retrieved successfully.",
-            "data": [v.to_dict() for v in pagination.items],
+            "data": data,
         }
 
     @staticmethod

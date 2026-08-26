@@ -129,7 +129,7 @@ class ReferralService:
         }
 
     @staticmethod
-    def update_referral_status(referral_id: int, new_status: str, notes: str = None):
+    def update_referral_status(referral_id: int, new_status: str, notes: str = None, updated_by: int = None):
         """
         Updates a referral's lifecycle status based on follow-up with
         the external facility (e.g. confirmation the patient was seen).
@@ -171,6 +171,7 @@ class ReferralService:
             action      = "UPDATE_REFERRAL_STATUS",
             entity_type = "Referral",
             entity_id   = referral_id,
+            user_id     = updated_by,
             old_value   = {"status": old_status},
             new_value   = {"status": new_status}
         )

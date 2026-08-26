@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — Notifications</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+  <style>
+    .notif-row {
+      display:flex; gap:0.9rem; padding:1rem 1.25rem; border-bottom:1px solid var(--border-light);
+      align-items:flex-start;
+    }
+    .notif-row.unread { background:var(--primary-light); }
+    .notif-row-icon {
+      width:38px; height:38px; border-radius:50%; background:var(--page-bg);
+      display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    }
+    .notif-row-title { font-weight:600; font-size:0.92rem; color:var(--text-dark); }
+    .notif-row-msg { font-size:0.85rem; color:var(--text-muted); margin-top:2px; }
+    .notif-row-time { font-size:0.75rem; color:var(--text-light); margin-top:6px; }
+    .type-tag {
+      font-size:0.68rem; font-weight:700; padding:0.15rem 0.55rem; border-radius:20px;
+      background:var(--page-bg); color:var(--text-muted); text-transform:capitalize;
+    }
+    .notif-row-actions { display:flex; gap:0.4rem; margin-left:auto; flex-shrink:0; }
+  </style>
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Pharmacy</div>
+      <div class="nav-item">
+        <a href="prescriptions.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-prescription-bottle-medical"></i></span>
+          <span class="nav-label">Prescriptions</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="inventory.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-boxes-stacked"></i></span>
+          <span class="nav-label">Drug Inventory</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="notifications.html" class="nav-link active">
+          <span class="nav-icon"><i class="fa-solid fa-bell"></i></span>
+          <span class="nav-label">Notifications</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">PH</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">Pharmacist</div>
+        <div class="sidebar-user-role" id="sidebarRole">Pharmacist</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="navbar-page-title">Notifications</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> Pharmacist <span>/</span> Notifications</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <button class="navbar-icon-btn" title="Notifications"><i class="fa-solid fa-bell"></i></button>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">PH</div>
+        <span class="navbar-user-name" id="navbarName">Pharmacist</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">Pharmacist</div>
+      <div class="dropdown-header-role" id="dropdownRole">Pharmacist</div>
+    </div>
+    <a href="profile.html" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+      <div>
+        <h2>Notifications</h2>
+        <p>Prescriptions, low stock, and system messages sent your way</p>
+      </div>
+      <button class="btn btn-secondary" id="markAllBtn">
+        <i class="fa-solid fa-check-double"></i> Mark all as read
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="table-toolbar">
+        <div style="display:flex;gap:0.5rem">
+          <button class="btn btn-secondary btn-sm filter-tab active" data-filter="all">All</button>
+          <button class="btn btn-secondary btn-sm filter-tab" data-filter="unread">Unread</button>
+        </div>
+        <div class="toolbar-actions">
+          <button class="btn btn-secondary btn-sm" id="refreshNotifBtn"><i class="fa-solid fa-rotate-right"></i></button>
+        </div>
+      </div>
+      <div id="notifListFull">
+        <div class="empty-state" style="padding:2rem 0"><div class="spinner-sm" style="margin:0 auto"></div></div>
+      </div>
+      <div class="pagination" id="notifPagination"></div>
+    </div>
+
+  </main>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script src="../../assets/js/notifications-widget.js"></script>
+<script>
+  requireAuth('pharmacist');
+
+  let currentPage = 1;
+  let unreadOnly  = false;
+
+  const typeMeta = {
+    patient_flow: { icon: 'fa-layer-group', color: 'var(--primary)' },
+    lab_result:   { icon: 'fa-flask',        color: '#e67e22' },
+    low_stock:    { icon: 'fa-triangle-exclamation', color: 'var(--danger)' },
+    system:       { icon: 'fa-gear',         color: 'var(--text-muted)' },
+    general:      { icon: 'fa-bell',         color: 'var(--text-muted)' },
+  };
+
+  // Pharmacist doesn't have deep-link targets for every notification type
+  // (e.g. no laboratory.html), so notifications are marked read on click
+  // but never navigate anywhere — same approach used on the other portals.
+  function getNotificationLink(n) {
+    return null;
+  }
+
+  async function loadNotifications() {
+    const list = document.getElementById('notifListFull');
+    list.innerHTML = '<div class="empty-state" style="padding:2rem 0"><div class="spinner-sm" style="margin:0 auto"></div></div>';
+
+    try {
+      const res = await api.get(`/notifications?page=${currentPage}&per_page=20&unread_only=${unreadOnly}`);
+      const notifs = res.data.notifications || [];
+      const pages  = res.data.pages || 1;
+
+      if (!notifs.length) {
+        list.innerHTML = `<div class="empty-state" style="padding:2rem 0"><i class="fa-solid fa-bell-slash"></i><h4>No notifications</h4><p>${unreadOnly ? "You're all caught up" : 'Nothing here yet'}</p></div>`;
+        document.getElementById('notifPagination').innerHTML = '';
+        return;
+      }
+
+      list.innerHTML = notifs.map(n => {
+        const meta = typeMeta[n.notification_type] || typeMeta.general;
+        return `
+          <div class="notif-row ${n.is_read ? '' : 'unread'}" id="notifRow${n.id}">
+            <div class="notif-row-icon"><i class="fa-solid ${meta.icon}" style="color:${meta.color}"></i></div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
+                <span class="notif-row-title">${n.title}</span>
+                <span class="type-tag">${n.notification_type.replace('_',' ')}</span>
+              </div>
+              <div class="notif-row-msg">${n.message}</div>
+              <div class="notif-row-time">${timeAgo(n.created_at)}</div>
+            </div>
+            <div class="notif-row-actions">
+              ${!n.is_read ? `<button class="btn btn-secondary btn-sm" onclick="markOne(${n.id})" title="Mark as read"><i class="fa-solid fa-check"></i></button>` : ''}
+              <button class="btn btn-secondary btn-sm" onclick="deleteOne(${n.id})" title="Delete"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>`;
+      }).join('');
+
+      renderPagination(currentPage, pages);
+
+    } catch (err) {
+      list.innerHTML = `<div class="empty-state" style="padding:2rem 0"><i class="fa-solid fa-circle-exclamation" style="color:var(--danger)"></i><h4>Failed to load</h4><p>${err.message}</p></div>`;
+    }
+  }
+
+  function renderPagination(current, total) {
+    const c = document.getElementById('notifPagination');
+    if (total <= 1) { c.innerHTML = ''; return; }
+    let html = `<button class="page-btn" onclick="goPage(${current-1})" ${current===1?'disabled':''}><i class="fa-solid fa-chevron-left"></i></button>`;
+    for (let i = 1; i <= total; i++) {
+      if (i===1||i===total||(i>=current-1&&i<=current+1))
+        html += `<button class="page-btn ${i===current?'active':''}" onclick="goPage(${i})">${i}</button>`;
+      else if (i===current-2||i===current+2)
+        html += `<span style="padding:0 4px;color:var(--text-light)">…</span>`;
+    }
+    html += `<button class="page-btn" onclick="goPage(${current+1})" ${current===total?'disabled':''}><i class="fa-solid fa-chevron-right"></i></button>`;
+    c.innerHTML = html;
+  }
+  function goPage(p) { currentPage = p; loadNotifications(); }
+
+  document.querySelectorAll('.filter-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      unreadOnly = tab.dataset.filter === 'unread';
+      currentPage = 1;
+      loadNotifications();
+    });
+  });
+  document.getElementById('refreshNotifBtn').addEventListener('click', loadNotifications);
+
+  async function markOne(id) {
+    try {
+      await api.patch(`/notifications/${id}/read`);
+      loadNotifications();
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+  async function deleteOne(id) {
+    if (!confirm('Delete this notification?')) return;
+    try {
+      await api.delete(`/notifications/${id}`);
+      loadNotifications();
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+  document.getElementById('markAllBtn').addEventListener('click', async () => {
+    try {
+      await api.patch('/notifications/read-all');
+      showToast('All notifications marked as read.', 'success');
+      loadNotifications();
+    } catch (err) { showToast(err.message, 'error'); }
+  });
+
+  loadNotifications();
+</script>
+</body>
+</html>

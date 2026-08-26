@@ -17,15 +17,31 @@ VIEWING_ROLES = (Roles.ADMIN, Roles.DOCTOR, Roles.NURSE, Roles.LAB_TECH, Roles.M
 
 
 # ─────────────────────────────────────────────────────────────
+# LAB TEST CATEGORIES
+# ─────────────────────────────────────────────────────────────
+
+@laboratory_bp.route("/categories", methods=["GET"])
+@role_required(*VIEWING_ROLES)
+def get_all_categories():
+    # Powers the Doctor's Category dropdown (select category, then the
+    # Test dropdown filters to that category_id) and the grouped view on
+    # the Lab Test Catalogue page.
+    result = LaboratoryService.get_all_categories()
+    return success_response(result["message"], data=result["data"])
+
+
+# ─────────────────────────────────────────────────────────────
 # LAB TEST CATALOGUE
 # ─────────────────────────────────────────────────────────────
 
 @laboratory_bp.route("/tests", methods=["GET"])
 @role_required(*VIEWING_ROLES)
 def get_all_lab_tests():
-    search   = request.args.get("search")
-    category = request.args.get("category")
-    result   = LaboratoryService.get_all_lab_tests(search, category)
+    search       = request.args.get("search")
+    category     = request.args.get("category")
+    category_id  = request.args.get("category_id", type=int)
+    pending_only = request.args.get("pending_setup", "false").lower() == "true"
+    result       = LaboratoryService.get_all_lab_tests(search, category, category_id, pending_only)
     return success_response(result["message"], data=result["data"])
 
 
@@ -41,6 +57,44 @@ def create_lab_test():
     return success_response(result["message"], data=result["data"], status_code=201)
 
 
+@laboratory_bp.route("/tests/bulk", methods=["POST"])
+@role_required(Roles.ADMIN, Roles.LAB_TECH)
+def bulk_create_lab_tests():
+    # Lab Tech included here (unlike single-test POST /tests, which stays
+    # Admin-only) since this is the intended path for loading a whole
+    # category's worth of tests at once, e.g. { "category": "Haematology",
+    # "names": ["Full Blood Count (FBC)", "Haemoglobin (Hb)", ...] }.
+    data = request.get_json()
+    if not data:
+        return error_response("Request body must be JSON.", status_code=400)
+    result = LaboratoryService.bulk_create_lab_tests(
+        category=data.get("category"),
+        names=data.get("names") or [],
+        defaults=data.get("defaults") or {},
+    )
+    if not result["success"]:
+        return error_response(result["message"], status_code=400)
+    return success_response(result["message"], data=result["data"], status_code=201)
+
+
+@laboratory_bp.route("/tests/<int:test_id>", methods=["PATCH"])
+@role_required(Roles.ADMIN, Roles.LAB_TECH)
+def update_lab_test(test_id):
+    # Lab Tech is included here specifically so whoever is running the
+    # bench can finish setting up a test that a Doctor auto-created by
+    # typing a name not yet in the catalogue (is_pending_setup=True),
+    # without having to go find an Admin first. They can only fill in
+    # normal_range/unit/turnaround_hours — creating brand-new catalogue
+    # entries from scratch is still Admin-only via POST /tests above.
+    data = request.get_json()
+    if not data:
+        return error_response("Request body must be JSON.", status_code=400)
+    result = LaboratoryService.update_lab_test(test_id, data)
+    if not result["success"]:
+        return error_response(result["message"], status_code=400)
+    return success_response(result["message"], data=result["data"])
+
+
 # ─────────────────────────────────────────────────────────────
 # LAB REQUESTS
 # ─────────────────────────────────────────────────────────────
@@ -53,9 +107,10 @@ def get_all_requests():
     status     = request.args.get("status")
     patient_id = request.args.get("patient_id", type=int)
     priority   = request.args.get("priority")
+    search     = request.args.get("search")
     result     = LaboratoryService.get_all_requests(
         page=page, per_page=per_page,
-        status=status, patient_id=patient_id, priority=priority
+        status=status, patient_id=patient_id, priority=priority, search=search
     )
     return success_response(result["message"], data=result["data"])
 
@@ -109,6 +164,16 @@ def update_request_status(request_id):
     if not data or not data.get("status"):
         return error_response("'status' field is required.", status_code=400)
     result = LaboratoryService.update_request_status(request_id, data["status"])
+    if not result["success"]:
+        return error_response(result["message"], status_code=400)
+    return success_response(result["message"], data=result["data"])
+
+
+@laboratory_bp.route("/requests/<int:request_id>/send-to-doctor", methods=["PATCH"])
+@role_required(Roles.ADMIN, Roles.LAB_TECH)
+def send_results_to_doctor(request_id):
+    sent_by = int(get_jwt_identity())
+    result  = LaboratoryService.send_results_to_doctor(request_id, sent_by)
     if not result["success"]:
         return error_response(result["message"], status_code=400)
     return success_response(result["message"], data=result["data"])

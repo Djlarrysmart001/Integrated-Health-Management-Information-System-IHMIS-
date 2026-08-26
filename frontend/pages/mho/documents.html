@@ -129,6 +129,12 @@
           <span class="nav-label">Documents</span>
         </a>
       </div>
+      <div class="nav-item">
+        <a href="notifications.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-bell"></i></span>
+          <span class="nav-label">Notifications</span>
+        </a>
+      </div>
     </nav>
     <div class="sidebar-footer">
       <div class="sidebar-user-avatar" id="sidebarAvatar">MH</div>
@@ -149,10 +155,7 @@
       </div>
     </div>
     <div class="navbar-right">
-      <a href="notifications.html" class="navbar-icon-btn" title="Notifications">
-        <i class="fa-solid fa-bell"></i>
-        <span class="notif-dot" style="display:none"></span>
-      </a>
+      <button class="navbar-icon-btn" title="Notifications"><i class="fa-solid fa-bell"></i></button>
       <button class="navbar-user" id="userMenuBtn">
         <div class="navbar-user-avatar" id="navbarAvatar">MH</div>
         <span class="navbar-user-name" id="navbarName">MHO</span>
@@ -296,6 +299,7 @@
 <script src="../../assets/js/api.js"></script>
 <script src="../../assets/js/utils.js"></script>
 <script src="../../assets/js/sidebar.js"></script>
+<script src="../../assets/js/notifications-widget.js"></script>
 <script>
   requireAuth('mho');
 

@@ -5,7 +5,7 @@
 const API_BASE = 'http://127.0.0.1:5000/api/v1';
 
 async function apiRequest(endpoint, method = 'GET', body = null) {
-  const token = localStorage.getItem('ihmis_token');
+  const token = sessionStorage.getItem('ihmis_token');
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -42,23 +42,30 @@ const api = {
   delete: (endpoint)       => apiRequest(endpoint, 'DELETE'),
 };
 
+// NOTE: sessionStorage (not localStorage) is deliberate here. localStorage
+// is shared across every tab of the same origin, so with multiple role
+// portals open in different tabs, logging into one would silently
+// overwrite the session every other tab was reading -- causing random
+// "jumps" to whichever role most recently logged in anywhere in the
+// browser. sessionStorage is isolated per tab, so each open portal keeps
+// its own independent session.
 function saveSession(token, user) {
-  localStorage.setItem('ihmis_token', token);
-  localStorage.setItem('ihmis_user', JSON.stringify(user));
+  sessionStorage.setItem('ihmis_token', token);
+  sessionStorage.setItem('ihmis_user', JSON.stringify(user));
 }
 
 function getUser() {
-  const u = localStorage.getItem('ihmis_user');
+  const u = sessionStorage.getItem('ihmis_user');
   return u ? JSON.parse(u) : null;
 }
 
 function clearSession() {
-  localStorage.removeItem('ihmis_token');
-  localStorage.removeItem('ihmis_user');
+  sessionStorage.removeItem('ihmis_token');
+  sessionStorage.removeItem('ihmis_user');
 }
 
 function isLoggedIn() {
-  return !!localStorage.getItem('ihmis_token');
+  return !!sessionStorage.getItem('ihmis_token');
 }
 
 function redirectByRole(role) {

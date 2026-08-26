@@ -57,6 +57,12 @@
           <span class="nav-label">Audit Log</span>
         </a>
       </div>
+          <div class="nav-item">
+        <a href="notifications.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-bell"></i></span>
+          <span class="nav-label">Notifications</span>
+        </a>
+      </div>
     </nav>
     <div class="sidebar-footer">
       <div class="sidebar-user-avatar" id="sidebarAvatar">AD</div>
@@ -79,10 +85,7 @@
       </div>
     </div>
     <div class="navbar-right">
-      <button class="navbar-icon-btn" title="Notifications">
-        <i class="fa-solid fa-bell"></i>
-        <span class="notif-dot"></span>
-      </button>
+      <button class="navbar-icon-btn" title="Notifications"><i class="fa-solid fa-bell"></i></button>
       <button class="navbar-user" id="userMenuBtn">
         <div class="navbar-user-avatar" id="navbarAvatar">AD</div>
         <span class="navbar-user-name" id="navbarName">Admin</span>
@@ -97,8 +100,8 @@
       <div class="dropdown-header-name" id="dropdownName">Admin</div>
       <div class="dropdown-header-role" id="dropdownRole">Administrator</div>
     </div>
-    <a href="#" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
-    <a href="#" class="dropdown-item"><i class="fa-solid fa-gear"></i> Settings</a>
+    <a href="profile.html" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <a href="settings.html" class="dropdown-item"><i class="fa-solid fa-gear"></i> Settings</a>
     <div class="dropdown-divider"></div>
     <button class="dropdown-item danger" id="logoutBtn">
       <i class="fa-solid fa-right-from-bracket"></i> Sign Out
@@ -220,6 +223,7 @@
 <script src="../../assets/js/api.js"></script>
 <script src="../../assets/js/utils.js"></script>
 <script src="../../assets/js/sidebar.js"></script>
+<script src="../../assets/js/notifications-widget.js"></script>
 <script>
   const user = requireAuth('admin');
 

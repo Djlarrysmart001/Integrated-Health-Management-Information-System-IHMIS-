@@ -39,6 +39,18 @@
           <span class="nav-label">Lab Requests</span>
         </a>
       </div>
+      <div class="nav-item">
+        <a href="lab-catalogue.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-book-medical"></i></span>
+          <span class="nav-label">Test Catalogue</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="notifications.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-bell"></i></span>
+          <span class="nav-label">Notifications</span>
+        </a>
+      </div>
     </nav>
     <div class="sidebar-footer">
       <div class="sidebar-user-avatar" id="sidebarAvatar">LT</div>
@@ -74,7 +86,7 @@
       <div class="dropdown-header-name" id="dropdownName">Lab Tech</div>
       <div class="dropdown-header-role" id="dropdownRole">Lab Technician</div>
     </div>
-    <a href="#" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <a href="profile.html" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
     <div class="dropdown-divider"></div>
     <button class="dropdown-item danger" id="logoutBtn">
       <i class="fa-solid fa-right-from-bracket"></i> Sign Out
@@ -157,7 +169,7 @@
           <thead>
             <tr>
               <th>Patient</th>
-              <th>Test</th>
+              <th>Test(s)</th>
               <th>Requested By</th>
               <th>Priority</th>
               <th>Date</th>
@@ -199,39 +211,18 @@
 
 <!-- ── Enter Results Modal ── -->
 <div class="modal-overlay" id="resultsModal">
-  <div class="modal">
+  <div class="modal modal-lg">
     <div class="modal-header">
       <h3><i class="fa-solid fa-file-medical" style="color:var(--primary);margin-right:0.5rem"></i>Enter Lab Results</h3>
       <button class="modal-close" id="closeResultsModal"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="resultLabId" />
-      <div class="form-group">
-        <label class="form-label">Test Name</label>
-        <input type="text" class="form-control" id="resultTestName" disabled />
-      </div>
-      <div class="form-group" style="margin-top:1rem">
-        <label class="form-label">Result Value <span class="required">*</span></label>
-        <input type="text" class="form-control" id="resultValue" placeholder="e.g. 120/80, Positive, 5.2 mmol/L" />
-      </div>
-      <div class="form-group" style="margin-top:1rem">
-        <label class="form-label">Reference Range</label>
-        <input type="text" class="form-control" id="resultReference" placeholder="e.g. 70-100 mg/dL" />
-      </div>
-      <div class="form-group" style="margin-top:1rem">
-        <label class="form-label">Interpretation</label>
-        <select class="form-control" id="resultInterpretation">
-          <option value="">Select...</option>
-          <option value="normal">Normal</option>
-          <option value="abnormal">Abnormal</option>
-          <option value="critical">Critical</option>
-          <option value="inconclusive">Inconclusive</option>
-        </select>
-      </div>
-      <div class="form-group" style="margin-top:1rem">
-        <label class="form-label">Notes / Comments</label>
-        <textarea class="form-control" id="resultNotes" rows="3" placeholder="Additional observations..."></textarea>
-      </div>
+      <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:1rem">
+        This request has <strong id="resultTestCount">0</strong> test(s). Enter a result for each — tests with a
+        result already saved are pre-filled and can be corrected before the request is marked complete.
+      </p>
+      <div id="resultTestRows"><!-- one block per test, injected by openResults() --></div>
       <div class="alert alert-danger" id="resultError" style="display:none;margin-top:1rem">
         <i class="fa-solid fa-circle-exclamation"></i>
         <span id="resultErrorMsg"></span>
@@ -248,9 +239,26 @@
   </div>
 </div>
 
+<!-- ── Patient History Modal ── -->
+<div class="modal-overlay" id="historyModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-clock-rotate-left" style="color:var(--primary);margin-right:0.5rem"></i>Patient Lab History</h3>
+      <button class="modal-close" id="closeHistoryModal"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" id="historyModalBody">
+      <div class="empty-state"><div class="spinner-sm" style="margin:0 auto"></div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="closeHistoryBtn">Close</button>
+    </div>
+  </div>
+</div>
+
 <script src="../../assets/js/api.js"></script>
 <script src="../../assets/js/utils.js"></script>
 <script src="../../assets/js/sidebar.js"></script>
+<script src="../../assets/js/notifications-widget.js"></script>
 <script>
   requireAuth('lab_tech');
 
@@ -273,6 +281,33 @@
     stat:    { color: 'badge-danger',  label: 'STAT' },
   };
 
+  // Must match the backend enum exactly (LabResult.interpretation in
+  // app/models/laboratory.py). The old "abnormal"/"inconclusive" options
+  // here did not exist on the backend and would throw a DB error on submit.
+  const interpretationOptions = [
+    { value: '',         label: 'Select...' },
+    { value: 'normal',   label: 'Normal' },
+    { value: 'low',      label: 'Low' },
+    { value: 'high',     label: 'High' },
+    { value: 'critical', label: 'Critical' },
+  ];
+
+  /* Pre-fill status/priority filters from ?filter= query param, same
+     behaviour the dashboard's Quick Action links already rely on. */
+  (function applyQueryFilter() {
+    const params = new URLSearchParams(window.location.search);
+    const f = params.get('filter');
+    if (f === 'pending')   statusFilter = 'pending';
+    if (f === 'urgent')    priorityFilter = 'urgent';
+    if (f === 'completed') statusFilter = 'completed';
+    if (statusFilter)   document.addEventListener('DOMContentLoaded', () => document.getElementById('statusFilter').value = statusFilter);
+    if (priorityFilter) document.addEventListener('DOMContentLoaded', () => document.getElementById('priorityFilter').value = priorityFilter);
+  })();
+
+  function testNames(r) {
+    return (r.tests && r.tests.length) ? r.tests.map(t => t.name).join(', ') : '—';
+  }
+
   /* ── Load Lab Requests ── */
   async function loadLabRequests() {
     const tbody = document.getElementById('labTableBody');
@@ -287,10 +322,11 @@
       const res  = await api.get(url);
       const data = res.data;
       const reqs = data.requests || data.lab_requests || data.items || data || [];
-      const total= data.total || reqs.length;
       const pages= data.pages || 1;
 
-      /* Summary counts */
+      /* Summary counts (reflects current filtered page — for true
+         totals across all pages, the /dashboard summary endpoint is
+         the source of truth) */
       setText('pendingCount',    formatNumber(reqs.filter(r=>r.status==='pending'||r.status==='sample_collected').length));
       setText('inProgressCount', formatNumber(reqs.filter(r=>r.status==='in_progress').length));
       setText('urgentCount',     formatNumber(reqs.filter(r=>r.priority==='urgent'||r.priority==='stat').length));
@@ -305,8 +341,11 @@
         const s  = statusConfig[r.status]     || { color: 'badge-muted', label: r.status||'—' };
         const p  = priorityConfig[r.priority] || { color: 'badge-muted', label: r.priority||'Routine' };
         const patient = r.patient?.full_name  || r.patient_name || '—';
-        const test    = r.test_name || r.laboratory_test?.name || r.test_type || '—';
+        const tests   = testNames(r);
         const doctor  = r.requested_by_name  || r.doctor?.full_name || '—';
+        const setupWarning = r.has_pending_setup_test
+          ? `<span class="badge badge-warning" style="font-size:0.62rem;margin-left:0.35rem" title="One of these tests still needs its normal range/unit set up in the catalogue">Needs setup</span>`
+          : '';
 
         return `
           <tr style="cursor:pointer" onclick="viewRequest(${r.id})">
@@ -315,7 +354,7 @@
               <div style="font-size:0.75rem;color:var(--text-muted)">${r.patient?.patient_id||''}</div>
             </td>
             <td>
-              <div style="font-weight:500;color:var(--text-dark)">${test}</div>
+              <div style="font-weight:500;color:var(--text-dark)">${tests}${setupWarning}</div>
             </td>
             <td class="muted">${doctor}</td>
             <td><span class="badge ${p.color}">${p.label}</span></td>
@@ -327,9 +366,17 @@
                   <i class="fa-solid fa-eye"></i>
                 </button>
                 ${r.status !== 'completed' && r.status !== 'cancelled' ? `
-                <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openResults(${r.id},'${test}')">
+                <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openResults(${r.id})">
                   <i class="fa-solid fa-file-medical"></i> Results
                 </button>` : ''}
+                ${r.status === 'completed' && !r.sent_to_doctor ? `
+                <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();sendToDoctor(${r.id})" title="Notify the requesting doctor that results are ready">
+                  <i class="fa-solid fa-paper-plane"></i> Send
+                </button>` : ''}
+                ${r.status === 'completed' && r.sent_to_doctor ? `
+                <span class="badge badge-success" style="font-size:0.65rem;display:flex;align-items:center" title="Sent ${r.sent_to_doctor_at ? formatDateTime(r.sent_to_doctor_at) : ''}">
+                  <i class="fa-solid fa-check" style="margin-right:3px"></i>Sent
+                </span>` : ''}
               </div>
             </td>
           </tr>`;
@@ -388,26 +435,57 @@
       const s   = statusConfig[r.status]     || { color: 'badge-muted', label: r.status||'—' };
       const p   = priorityConfig[r.priority] || { color: 'badge-muted', label: r.priority||'Routine' };
       const patient = r.patient?.full_name   || r.patient_name || '—';
-      const test    = r.test_name || r.laboratory_test?.name || '—';
+      const tests   = testNames(r);
 
       /* Update footer with action buttons */
-      if (r.status !== 'completed' && r.status !== 'cancelled') {
-        document.getElementById('labModalFooter').innerHTML = `
-          <button class="btn btn-secondary" onclick="document.getElementById('labModal').classList.remove('open')">Close</button>
-          <button class="btn btn-info" onclick="updateLabStatus(${r.id},'sample_collected')" ${r.status==='sample_collected'||r.status==='in_progress'?'disabled':''}>
-            <i class="fa-solid fa-vial"></i> Mark Sample Collected
-          </button>
-          <button class="btn btn-primary" onclick="openResults(${r.id},'${test}');document.getElementById('labModal').classList.remove('open')">
-            <i class="fa-solid fa-file-medical"></i> Enter Results
-          </button>`;
+      const footerBtns = [`<button class="btn btn-secondary" onclick="document.getElementById('labModal').classList.remove('open')">Close</button>`];
+      if (r.patient_id) {
+        footerBtns.push(`<button class="btn btn-outline" onclick="viewPatientHistory(${r.patient_id})"><i class="fa-solid fa-clock-rotate-left"></i> Patient History</button>`);
       }
+      if (r.status !== 'completed' && r.status !== 'cancelled') {
+        footerBtns.push(`<button class="btn btn-info" onclick="updateLabStatus(${r.id},'sample_collected')" ${r.status==='sample_collected'||r.status==='in_progress'?'disabled':''}>
+            <i class="fa-solid fa-vial"></i> Mark Sample Collected
+          </button>`);
+        footerBtns.push(`<button class="btn btn-primary" onclick="openResults(${r.id});document.getElementById('labModal').classList.remove('open')">
+            <i class="fa-solid fa-file-medical"></i> Enter Results
+          </button>`);
+      }
+      if (r.status === 'completed' && !r.sent_to_doctor) {
+        footerBtns.push(`<button class="btn btn-primary" onclick="sendToDoctor(${r.id}, true)">
+            <i class="fa-solid fa-paper-plane"></i> Send Results to Doctor
+          </button>`);
+      }
+      if (r.status === 'completed' && r.sent_to_doctor) {
+        footerBtns.push(`<span class="badge badge-success" style="display:flex;align-items:center;padding:0.5rem 0.9rem">
+            <i class="fa-solid fa-check" style="margin-right:5px"></i>
+            Sent to ${r.requested_by_name || 'Doctor'}${r.sent_to_doctor_at ? ' on ' + formatDateTime(r.sent_to_doctor_at) : ''}
+          </span>`);
+      }
+      document.getElementById('labModalFooter').innerHTML = footerBtns.join('');
+
+      const resultsBlock = (r.results && r.results.length)
+        ? r.results.map(res => `
+            <table style="width:100%;font-size:0.875rem;border-collapse:collapse;margin-bottom:1rem">
+              ${dRow('Test', `<strong>${res.test_name||'—'}</strong>`)}
+              ${dRow('Result', res.result_value||'—')}
+              ${dRow('Unit', res.unit||'—')}
+              ${dRow('Reference', res.reference_range||'—')}
+              ${dRow('Interpretation', res.interpretation ? `<span class="badge ${res.interpretation==='normal'?'badge-success':res.interpretation==='critical'?'badge-danger':'badge-warning'}">${res.interpretation}</span>` : '—')}
+              ${dRow('Remarks', res.remarks||'—')}
+              ${dRow('Performed By', res.performed_by_name||'—')}
+              ${dRow('Entered', formatDateTime(res.result_date))}
+            </table>`).join('')
+        : `<div class="empty-state" style="padding:1rem 0">
+              <i class="fa-solid fa-flask" style="color:var(--text-light)"></i>
+              <p>No results entered yet</p>
+            </div>`;
 
       document.getElementById('labModalBody').innerHTML = `
         <!-- Header -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--border-light)">
           <div>
             <div style="font-size:1rem;font-weight:600;color:var(--text-dark)">${patient}</div>
-            <div style="font-size:0.8rem;color:var(--text-muted)">${test} &bull; Requested ${formatDate(r.created_at)}</div>
+            <div style="font-size:0.8rem;color:var(--text-muted)">${tests} &bull; Requested ${formatDate(r.created_at)}</div>
           </div>
           <div style="display:flex;gap:0.5rem">
             <span class="badge ${p.color}">${p.label}</span>
@@ -420,32 +498,18 @@
           <div>
             <div class="form-section-title" style="margin-bottom:0.75rem">Request Details</div>
             <table style="width:100%;font-size:0.875rem;border-collapse:collapse">
-              ${dRow('Test', test)}
+              ${dRow('Test(s)', tests)}
               ${dRow('Patient', patient)}
-              ${dRow('Requested By', r.requested_by_name||r.doctor?.full_name||'—')}
+              ${dRow('Requested By', r.requested_by_name||'—')}
               ${dRow('Priority', `<span class="badge ${p.color}">${p.label}</span>`)}
               ${dRow('Date Requested', formatDate(r.created_at))}
-              ${r.clinical_notes ? dRow('Clinical Notes', r.clinical_notes) : ''}
+              ${r.notes ? dRow('Clinical Notes', r.notes) : ''}
             </table>
           </div>
-          ${r.result ? `
           <div>
             <div class="form-section-title" style="margin-bottom:0.75rem">Results</div>
-            <table style="width:100%;font-size:0.875rem;border-collapse:collapse">
-              ${dRow('Result', `<strong>${r.result.result_value||'—'}</strong>`)}
-              ${dRow('Reference', r.result.reference_range||'—')}
-              ${dRow('Interpretation', r.result.interpretation ? `<span class="badge ${r.result.interpretation==='normal'?'badge-success':r.result.interpretation==='critical'?'badge-danger':'badge-warning'}">${r.result.interpretation}</span>` : '—')}
-              ${dRow('Notes', r.result.notes||'—')}
-              ${dRow('Entered', formatDateTime(r.result.created_at))}
-            </table>
-          </div>` : `
-          <div>
-            <div class="form-section-title" style="margin-bottom:0.75rem">Results</div>
-            <div class="empty-state" style="padding:1rem 0">
-              <i class="fa-solid fa-flask" style="color:var(--text-light)"></i>
-              <p>No results entered yet</p>
-            </div>
-          </div>`}
+            ${resultsBlock}
+          </div>
         </div>
       `;
 
@@ -472,16 +536,89 @@
     } catch(err) { showToast(err.message, 'error'); }
   }
 
-  /* ── Enter Results Modal ── */
-  function openResults(id, testName) {
-    document.getElementById('resultLabId').value    = id;
-    document.getElementById('resultTestName').value = testName;
-    document.getElementById('resultValue').value    = '';
-    document.getElementById('resultReference').value= '';
-    document.getElementById('resultNotes').value    = '';
-    document.getElementById('resultInterpretation').value = '';
-    document.getElementById('resultError').style.display  = 'none';
+  /* ── Send Results to Doctor ──
+     Only enabled once every test on the request has a result (status
+     'completed'). The health file already moves back to the doctor's
+     queue automatically at that point — this adds the explicit
+     notification + a visible "Sent" record so it isn't invisible. */
+  async function sendToDoctor(id, closeModalAfter) {
+    try {
+      await api.patch(`/laboratory/requests/${id}/send-to-doctor`);
+      showToast('Results sent to the doctor.', 'success');
+      if (closeModalAfter) document.getElementById('labModal').classList.remove('open');
+      loadLabRequests();
+    } catch(err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  /* ── Enter Results Modal ──────────────────────────────────────
+     A lab request can carry more than one test (e.g. Full Blood Count +
+     Malaria Test), and the backend expects one result object per test
+     in a single "results" array. This fetches the request fresh so it
+     always has the current list of tests, builds one input block per
+     test, and pre-fills anything already recorded (so a partial
+     submission can be picked back up and finished later). */
+  async function openResults(id) {
+    document.getElementById('resultLabId').value = id;
+    document.getElementById('resultError').style.display = 'none';
+    const rowsDiv = document.getElementById('resultTestRows');
+    rowsDiv.innerHTML = '<div class="empty-state" style="padding:1rem 0"><div class="spinner-sm" style="margin:0 auto"></div></div>';
     document.getElementById('resultsModal').classList.add('open');
+
+    try {
+      const res = await api.get(`/laboratory/requests/${id}`);
+      const r   = res.data;
+      const existingByTest = {};
+      (r.results || []).forEach(res2 => { existingByTest[res2.lab_test_id] = res2; });
+
+      document.getElementById('resultTestCount').textContent = (r.tests || []).length;
+
+      if (!r.tests || !r.tests.length) {
+        rowsDiv.innerHTML = `<div class="alert alert-warning"><i class="fa-solid fa-triangle-exclamation"></i><span>This request has no tests attached — nothing to record.</span></div>`;
+        return;
+      }
+
+      rowsDiv.innerHTML = r.tests.map(t => {
+        const existing = existingByTest[t.id];
+        const setupNote = t.is_pending_setup
+          ? `<div class="form-hint" style="color:var(--warning)"><i class="fa-solid fa-triangle-exclamation"></i> This test's normal range/unit hasn't been set up in the catalogue yet — you can still record a result now, then finish setup from the Test Catalogue page.</div>`
+          : (t.normal_range ? `<div class="form-hint">Normal range: ${t.normal_range}${t.unit ? ' ' + t.unit : ''}</div>` : '');
+
+        return `
+        <div class="form-section" data-test-id="${t.id}" style="margin-bottom:1rem">
+          <div class="form-section-title" style="margin-bottom:0.9rem">${t.name}</div>
+          ${setupNote}
+          <div class="form-grid form-grid-2">
+            <div class="form-group">
+              <label class="form-label">Result Value <span class="required">*</span></label>
+              <input type="text" class="form-control result-value" placeholder="e.g. 120/80, Positive, 5.2" value="${existing?.result_value || ''}" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Unit</label>
+              <input type="text" class="form-control result-unit" placeholder="${t.unit || 'e.g. mmol/L'}" value="${existing?.unit || ''}" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Reference Range</label>
+              <input type="text" class="form-control result-reference" placeholder="${t.normal_range || 'e.g. 70-100'}" value="${existing?.reference_range || ''}" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Interpretation</label>
+              <select class="form-control result-interpretation">
+                ${interpretationOptions.map(o => `<option value="${o.value}" ${existing?.interpretation===o.value?'selected':''}>${o.label}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div class="form-group" style="margin-top:0.9rem">
+            <label class="form-label">Remarks</label>
+            <textarea class="form-control result-remarks" rows="2" placeholder="Additional observations...">${existing?.remarks || ''}</textarea>
+          </div>
+        </div>`;
+      }).join('');
+
+    } catch(err) {
+      rowsDiv.innerHTML = `<div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i><span>${err.message}</span></div>`;
+    }
   }
 
   document.getElementById('closeResultsModal').addEventListener('click', () =>
@@ -493,16 +630,36 @@
   });
 
   document.getElementById('submitResultsBtn').addEventListener('click', async () => {
-    const id     = document.getElementById('resultLabId').value;
-    const value  = document.getElementById('resultValue').value.trim();
-    const ref    = document.getElementById('resultReference').value.trim();
-    const interp = document.getElementById('resultInterpretation').value;
-    const notes  = document.getElementById('resultNotes').value.trim();
+    const id = document.getElementById('resultLabId').value;
+    const blocks = Array.from(document.querySelectorAll('#resultTestRows .form-section'));
 
-    if (!value) {
-      document.getElementById('resultErrorMsg').textContent = 'Result value is required.';
+    const results = [];
+    let missing = false;
+
+    blocks.forEach(block => {
+      const value = block.querySelector('.result-value').value.trim();
+      if (value) {
+        results.push({
+          lab_test_id:     parseInt(block.dataset.testId, 10),
+          result_value:    value,
+          unit:            block.querySelector('.result-unit').value.trim() || null,
+          reference_range: block.querySelector('.result-reference').value.trim() || null,
+          interpretation:  block.querySelector('.result-interpretation').value || null,
+          remarks:         block.querySelector('.result-remarks').value.trim() || null,
+        });
+      }
+    });
+
+    if (results.length === 0) {
+      document.getElementById('resultErrorMsg').textContent = 'Enter a result for at least one test.';
       document.getElementById('resultError').style.display = 'flex';
       return;
+    }
+    if (results.length < blocks.length) {
+      // Not an error — partial submission is allowed and the request stays
+      // in-progress until every test has a result — just confirm intent.
+      const proceed = confirm(`You've entered ${results.length} of ${blocks.length} results. The request will stay open until the rest are entered. Submit anyway?`);
+      if (!proceed) return;
     }
 
     document.getElementById('resultError').style.display  = 'none';
@@ -512,14 +669,15 @@
     document.getElementById('submitResultsBtn').disabled  = true;
 
     try {
-      await api.post(`/laboratory/requests/${id}/results`, {
-        result_value:    value,
-        reference_range: ref    || null,
-        interpretation:  interp || null,
-        notes:           notes  || null,
-      });
+      const res = await api.post(`/laboratory/requests/${id}/results`, { results });
       showToast('Lab results submitted successfully!', 'success');
       document.getElementById('resultsModal').classList.remove('open');
+
+      if (res.data?.status === 'completed') {
+        if (confirm('All results are in and this request is now complete. Send results to the doctor now?')) {
+          await sendToDoctor(id, false);
+        }
+      }
       loadLabRequests();
     } catch(err) {
       document.getElementById('resultErrorMsg').textContent = err.message;
@@ -530,6 +688,53 @@
       document.getElementById('resultBtnText').textContent  = 'Submit Results';
       document.getElementById('submitResultsBtn').disabled  = false;
     }
+  });
+
+  /* ── Patient History Modal ── */
+  async function viewPatientHistory(patientId) {
+    document.getElementById('historyModal').classList.add('open');
+    const body = document.getElementById('historyModalBody');
+    body.innerHTML = '<div class="empty-state"><div class="spinner-sm" style="margin:0 auto"></div></div>';
+
+    try {
+      const res = await api.get(`/laboratory/requests/patients/${patientId}?per_page=25`);
+      const d    = res.data;
+      const reqs = d.requests || [];
+
+      if (!reqs.length) {
+        body.innerHTML = `<div class="empty-state"><i class="fa-solid fa-clock-rotate-left"></i><h4>No lab history</h4><p>${d.patient_name || 'This patient'} has no previous lab requests.</p></div>`;
+        return;
+      }
+
+      body.innerHTML = `
+        <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1rem">${d.total} request(s) for <strong>${d.patient_name}</strong></div>
+        ${reqs.map(r => {
+          const s = statusConfig[r.status] || { color: 'badge-muted', label: r.status||'—' };
+          const resultsSummary = (r.results && r.results.length)
+            ? r.results.map(res => `${res.test_name}: <strong>${res.result_value}</strong>${res.unit ? ' ' + res.unit : ''}`).join(' &bull; ')
+            : 'No results yet';
+          return `
+            <div style="padding:0.85rem 0;border-bottom:1px solid var(--border-light)">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-weight:500">${testNames(r)}</span>
+                <span class="badge ${s.color}" style="font-size:0.65rem">${s.label}</span>
+              </div>
+              <div style="font-size:0.78rem;color:var(--text-muted);margin-top:2px">${formatDate(r.created_at)}</div>
+              <div style="font-size:0.8rem;color:var(--text-dark);margin-top:4px">${resultsSummary}</div>
+            </div>`;
+        }).join('')}
+      `;
+    } catch(err) {
+      body.innerHTML = `<div class="alert alert-danger"><i class="fa-solid fa-circle-exclamation"></i><span>${err.message}</span></div>`;
+    }
+  }
+
+  document.getElementById('closeHistoryModal').addEventListener('click', () =>
+    document.getElementById('historyModal').classList.remove('open'));
+  document.getElementById('closeHistoryBtn').addEventListener('click', () =>
+    document.getElementById('historyModal').classList.remove('open'));
+  document.getElementById('historyModal').addEventListener('click', function(e) {
+    if (e.target===this) this.classList.remove('open');
   });
 
   /* ── Close modals ── */

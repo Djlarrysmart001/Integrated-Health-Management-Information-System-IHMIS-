@@ -82,6 +82,12 @@
           <span class="nav-label">Reports</span>
         </a>
       </div>
+      <div class="nav-item">
+        <a href="notifications.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-bell"></i></span>
+          <span class="nav-label">Notifications</span>
+        </a>
+      </div>
     </nav>
     <div class="sidebar-footer">
       <div class="sidebar-user-avatar" id="sidebarAvatar">DR</div>
@@ -102,7 +108,7 @@
       </div>
     </div>
     <div class="navbar-right">
-      <button class="navbar-icon-btn">
+      <button class="navbar-icon-btn" id="notifBellBtn">
         <i class="fa-solid fa-bell"></i>
         <span class="notif-dot" id="notifDot" style="display:none"></span>
       </button>
@@ -120,8 +126,8 @@
       <div class="dropdown-header-name" id="dropdownName">Doctor</div>
       <div class="dropdown-header-role" id="dropdownRole">Doctor</div>
     </div>
-    <a href="#" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
-    <a href="#" class="dropdown-item"><i class="fa-solid fa-gear"></i> Settings</a>
+    <a href="profile.html" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <a href="settings.html" class="dropdown-item"><i class="fa-solid fa-gear"></i> Settings</a>
     <div class="dropdown-divider"></div>
     <button class="dropdown-item danger" id="logoutBtn">
       <i class="fa-solid fa-right-from-bracket"></i> Sign Out
@@ -230,6 +236,8 @@
 <script src="../../assets/js/api.js"></script>
 <script src="../../assets/js/utils.js"></script>
 <script src="../../assets/js/sidebar.js"></script>
+<script src="../../assets/js/notifications-widget.js"></script>
+<script src="../../assets/js/notifications.js"></script>
 <script>
   const user = requireAuth('doctor');
 
@@ -324,10 +332,6 @@
       setText('statLabResults',       pendingLab);
       setText('statPrescriptions',    scripts);
       setText('statLabSub',           `${labReqs} lab requests this month`);
-
-      if ((d.unread_notifications ?? 0) > 0) {
-        document.getElementById('notifDot').style.display = 'block';
-      }
 
       /* Open consultations list */
       const consults   = d.open_consultations?.list || [];

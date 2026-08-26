@@ -45,6 +45,12 @@
           <span class="nav-label">Drug Inventory</span>
         </a>
       </div>
+      <div class="nav-item">
+        <a href="notifications.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-bell"></i></span>
+          <span class="nav-label">Notifications</span>
+        </a>
+      </div>
     </nav>
     <div class="sidebar-footer">
       <div class="sidebar-user-avatar" id="sidebarAvatar">PH</div>
@@ -65,7 +71,7 @@
       </div>
     </div>
     <div class="navbar-right">
-      <button class="navbar-icon-btn"><i class="fa-solid fa-bell"></i></button>
+      <button class="navbar-icon-btn" title="Notifications"><i class="fa-solid fa-bell"></i></button>
       <button class="navbar-user" id="userMenuBtn">
         <div class="navbar-user-avatar" id="navbarAvatar">PH</div>
         <span class="navbar-user-name" id="navbarName">Pharmacist</span>
@@ -80,7 +86,7 @@
       <div class="dropdown-header-name" id="dropdownName">Pharmacist</div>
       <div class="dropdown-header-role" id="dropdownRole">Pharmacist</div>
     </div>
-    <a href="#" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <a href="profile.html" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
     <div class="dropdown-divider"></div>
     <button class="dropdown-item danger" id="logoutBtn">
       <i class="fa-solid fa-right-from-bracket"></i> Sign Out
@@ -182,12 +188,26 @@
 
       </div>
     </div>
+
+    <!-- AI Reorder Recommendations (advisory only — see IHMIS addendum) -->
+    <div class="card" style="margin-top:1.25rem">
+      <div class="card-header">
+        <h3><i class="fa-solid fa-robot" style="color:var(--info);margin-right:0.4rem"></i>AI Reorder Recommendations</h3>
+        <button class="btn btn-sm btn-outline" id="runForecastBtn">
+          <i class="fa-solid fa-arrows-rotate"></i> Run Forecast
+        </button>
+      </div>
+      <div class="card-body" id="aiRecommendationsList" style="padding:0.75rem 1.5rem">
+        <p style="color:var(--text-light);font-size:0.85rem">Click "Run Forecast" to check inventory against recent dispensing.</p>
+      </div>
+    </div>
   </main>
 </div>
 
 <script src="../../assets/js/api.js"></script>
 <script src="../../assets/js/utils.js"></script>
 <script src="../../assets/js/sidebar.js"></script>
+<script src="../../assets/js/notifications-widget.js"></script>
 <script>
   const user = requireAuth('pharmacist');
 
@@ -318,6 +338,97 @@
   }
 
   loadPharmacistDashboard();
+
+  /* ============================================================
+     AI Reorder Recommendations
+     — Advisory only: this widget never edits Drug/DrugInventory
+       directly. Accept/Dismiss just records the Pharmacist's
+       decision (see AIRecommendation.status in the backend).
+     ============================================================ */
+  function extractList(resData, keys) {
+    if (!resData) return [];
+    if (Array.isArray(resData)) return resData;
+    for (const k of keys) { if (Array.isArray(resData[k])) return resData[k]; }
+    for (const k in resData) { if (Array.isArray(resData[k])) return resData[k]; }
+    return [];
+  }
+
+  async function loadAIRecommendations() {
+    const listDiv = document.getElementById('aiRecommendationsList');
+    try {
+      const res  = await api.get('/ai/inventory-forecast?page=1&per_page=50');
+      const list = extractList(res.data, ['recommendations', 'items', 'data']);
+      renderAIRecommendations(list);
+    } catch (err) {
+      listDiv.innerHTML = `<p style="color:var(--text-light);font-size:0.85rem">Could not load recommendations: ${err.message}</p>`;
+    }
+  }
+
+  function renderAIRecommendations(list) {
+    const listDiv = document.getElementById('aiRecommendationsList');
+
+    if (!list.length) {
+      listDiv.innerHTML = `
+        <div class="empty-state" style="padding:1rem 0">
+          <i class="fa-solid fa-circle-check" style="color:var(--success)"></i>
+          <p>No pending reorder recommendations</p>
+        </div>`;
+      return;
+    }
+
+    listDiv.innerHTML = list.map(rec => {
+      const p    = rec.payload || {};
+      const days = p.projected_days_remaining;
+      const hasProjection = days !== null && days !== undefined;
+      const urgency = hasProjection && days <= 3 ? 'badge-danger' : 'badge-warning';
+
+      return `
+        <div class="activity-item" data-rec-id="${rec.id}" style="align-items:center">
+          <div style="width:36px;height:36px;background:#eff6ff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.85rem;color:var(--info);flex-shrink:0">
+            <i class="fa-solid fa-robot"></i>
+          </div>
+          <div class="activity-content">
+            <div class="activity-title">${p.drug_name || 'Drug'}</div>
+            <div class="activity-desc">
+              ${formatNumber(p.current_stock ?? 0)} in stock &bull; ~${p.avg_daily_use ?? 0}/day used over last ${p.lookback_days ?? 7}d
+            </div>
+          </div>
+          <div style="display:flex;gap:0.4rem;align-items:center;flex-shrink:0">
+            <span class="badge ${urgency}">${hasProjection ? days + 'd left' : 'Review'}</span>
+            <button class="btn btn-sm btn-primary" onclick="reviewRecommendation(${rec.id}, 'accepted')">Accept</button>
+            <button class="btn btn-sm btn-secondary" onclick="reviewRecommendation(${rec.id}, 'dismissed')">Dismiss</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  async function reviewRecommendation(id, decision) {
+    try {
+      await api.post(`/ai/recommendations/${id}/review`, { decision });
+      showToast(`Recommendation ${decision}.`, decision === 'accepted' ? 'success' : 'info');
+      loadAIRecommendations();
+    } catch (err) {
+      showToast(err.message || 'Could not update recommendation', 'error');
+    }
+  }
+
+  document.getElementById('runForecastBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('runForecastBtn');
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Running...`;
+    try {
+      const res = await api.post('/ai/inventory-forecast/run');
+      showToast(res.message || 'Forecast complete', 'success');
+      loadAIRecommendations();
+    } catch (err) {
+      showToast(err.message || 'Forecast failed', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fa-solid fa-arrows-rotate"></i> Run Forecast`;
+    }
+  });
+
+  loadAIRecommendations();
 </script>
 </body>
 </html>

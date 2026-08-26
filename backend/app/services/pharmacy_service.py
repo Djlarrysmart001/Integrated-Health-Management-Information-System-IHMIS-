@@ -72,13 +72,8 @@ class PharmacyService:
     @staticmethod
     def create_drug(data: dict):
         """
-        Adds a new drug to the formulary.
-
-        Required fields:
-            name, unit
-
-        Optional fields:
-            brand_name, category, description
+        Adds a new drug to the formulary via the normal Pharmacy/Admin
+        path. Required fields: name, unit.
         """
         if not data.get("name"):
             return {
@@ -94,7 +89,6 @@ class PharmacyService:
                 "data": None
             }
 
-        # Check drug name uniqueness
         existing = Drug.query.filter(
             Drug.name.ilike(data["name"].strip())
         ).first()
@@ -123,8 +117,57 @@ class PharmacyService:
         }
 
     @staticmethod
+    def find_or_create_by_name(name: str):
+        """
+        Used only when a Doctor prescribes a drug by typed name instead of
+        picking a drug_id from the catalogue (drug not found there).
+
+        - If an active or inactive drug with this name (case-insensitive)
+          already exists, it's reused as-is — no duplicate is created.
+        - Otherwise, a brand-new Drug row is created immediately as
+          is_active=True (so the prescription can go through right away,
+          per confirmed design) but flagged is_pending_setup=True, so
+          Pharmacy's dashboard can surface it as "needs setup" — proper
+          category, unit, and stock still need to be added manually.
+
+        Returns the raw Drug ORM object (not to_dict()) in "data", since
+        the caller (PrescriptionService.write_prescription) needs it
+        directly to build a PrescriptionItem.
+        """
+        if not name or not name.strip():
+            return {"success": False, "message": "Drug name is required.", "data": None, "created": False}
+
+        clean_name = name.strip()
+        existing = Drug.query.filter(Drug.name.ilike(clean_name)).first()
+        if existing:
+            return {
+                "success": True,
+                "message": f"Matched existing drug '{existing.name}'.",
+                "data": existing,
+                "created": False,
+            }
+
+        drug = Drug(
+            name             = clean_name,
+            category         = "Uncategorized",
+            unit             = None,
+            is_active        = True,
+            is_pending_setup = True,
+        )
+        db.session.add(drug)
+        db.session.commit()
+
+        return {
+            "success": True,
+            "message": f"New drug '{drug.name}' created — pending Pharmacy setup.",
+            "data": drug,
+            "created": True,
+        }
+
+    @staticmethod
     def update_drug(drug_id: int, data: dict):
-        """Updates drug details."""
+        """Updates drug details. Also how Pharmacy clears is_pending_setup
+        once a doctor-typed drug has been properly categorised/stocked."""
         drug = Drug.query.get(drug_id)
         if not drug:
             return {
@@ -145,6 +188,8 @@ class PharmacyService:
             drug.description = data["description"].strip() or None
         if "is_active" in data:
             drug.is_active = bool(data["is_active"])
+        if "is_pending_setup" in data:
+            drug.is_pending_setup = bool(data["is_pending_setup"])
 
         db.session.commit()
 
@@ -191,7 +236,6 @@ class PharmacyService:
                 "data": None
             }
 
-        # Parse expiry date
         expiry_date = None
         if data.get("expiry_date"):
             try:
@@ -227,7 +271,6 @@ class PharmacyService:
         db.session.add(batch)
         db.session.commit()
 
-        # ── Ledger entry ──────────────────────────────────────
         transaction = DrugTransaction(
             drug_id          = drug_id,
             batch_id         = batch.id,
@@ -241,7 +284,6 @@ class PharmacyService:
         )
         db.session.add(transaction)
         db.session.commit()
-        # ────────────────────────────────────────────────────────
 
         return {
             "success": True,
@@ -257,13 +299,6 @@ class PharmacyService:
         """
         Manually corrects stock — for physical count reconciliation,
         or writing off expired/damaged stock (disposal).
-
-        quantity_delta:
-            negative -> removing stock (disposal / correction down)
-            positive -> adding stock (correction up, e.g. found miscounted units)
-
-        A reason is mandatory — this bypasses the normal receive/dispense
-        flow, so there must always be a stated justification on record.
         """
         drug = Drug.query.get(drug_id)
         if not drug:
@@ -305,7 +340,6 @@ class PharmacyService:
         db.session.add(transaction)
         db.session.commit()
 
-        # ── Audit log ──────────────────────────────────────────
         from app.services.audit_service import AuditService
         AuditService.log(
             action      = "ADJUST_DRUG_STOCK",
@@ -315,7 +349,6 @@ class PharmacyService:
             old_value   = {"quantity_in_stock": new_batch_quantity - quantity_delta},
             new_value   = {"quantity_in_stock": new_batch_quantity, "reason": reason.strip()}
         )
-        # ───────────────────────────────────────────────────────
 
         if quantity_delta < 0:
             PharmacyService._alert_if_low_stock(drug, batch)
@@ -332,11 +365,8 @@ class PharmacyService:
 
     @staticmethod
     def _alert_if_low_stock(drug, batch):
-        """
-        Broadcasts a low-stock notification to Pharmacists + Admin the
-        moment a batch crosses at-or-below its minimum_stock_level.
-        Non-fatal: never blocks the stock movement that triggered it.
-        """
+        """Broadcasts a low-stock notification to Pharmacists + Admin the
+        moment a batch crosses at-or-below its minimum_stock_level."""
         if not batch.is_low_stock:
             return
         try:
@@ -362,11 +392,6 @@ class PharmacyService:
     # ──────────────────────────────────────────────────────────
     @staticmethod
     def get_drug_transactions(drug_id=None, transaction_type=None, page=1, per_page=20):
-        """
-        Returns the full stock-movement ledger — every receipt, dispense,
-        adjustment, and disposal, in one place. Used for reconciliation
-        and for tracing exactly why a drug's stock changed over time.
-        """
         query = DrugTransaction.query
 
         if drug_id:
@@ -398,10 +423,6 @@ class PharmacyService:
     @staticmethod
     def get_inventory(page=1, per_page=20, low_stock_only=False,
                       expired_only=False):
-        """
-        Returns current inventory status.
-        Can filter to show only low stock or expired items.
-        """
         query = DrugInventory.query.join(Drug).filter(Drug.is_active == True)
 
         batches = query.order_by(DrugInventory.expiry_date.asc()).all()
@@ -424,7 +445,6 @@ class PharmacyService:
             item["unit"]          = batch.drug.unit
             result_list.append(item)
 
-        # Paginate manually
         total    = len(result_list)
         start    = (page - 1) * per_page
         end      = start + per_page
@@ -442,31 +462,56 @@ class PharmacyService:
         }
 
     @staticmethod
-    def get_low_stock_drugs():
+    def _drugs_with_low_stock():
         """
-        Returns all drugs where any batch is at or below
-        the minimum stock level. Used for alerts.
-        """
-        low_stock_batches = DrugInventory.query.filter(
-            DrugInventory.quantity_in_stock <= DrugInventory.minimum_stock_level
-        ).all()
-        low_stock    = []
-        seen_drug_ids = set()
+        Shared helper: returns the list of active Drug objects that are
+        genuinely low on stock, judged the SAME way the Drug Inventory
+        page judges it — against the drug's total (aggregate) stock
+        compared to the minimum_stock_level of its primary batch (the
+        batch holding the most stock), not against any single small
+        leftover batch in isolation.
 
-        for batch in low_stock_batches:
-            if batch.drug_id not in seen_drug_ids:
-                drug = Drug.query.get(batch.drug_id)
-                if drug and drug.is_active:
-                    low_stock.append({
-                        "drug_id":             drug.id,
-                        "drug_name":           drug.name,
-                        "category":            drug.category,
-                        "unit":                drug.unit,
-                        "total_stock":         drug.total_stock,
-                        "minimum_stock_level": batch.minimum_stock_level,
-                        "batch_number":        batch.batch_number,
-                    })
-                    seen_drug_ids.add(batch.drug_id)
+        This keeps the Pharmacist Dashboard's "Low Stock Drugs" count and
+        the Drug Inventory page's "Low Stock" badges in agreement — a
+        drug with 468 units on hand and a 30-unit minimum will not be
+        flagged just because it also has a nearly-empty secondary batch.
+        """
+        drugs = Drug.query.filter_by(is_active=True).all()
+        low_stock_drugs = []
+
+        for drug in drugs:
+            batches = list(drug.inventory_batches)
+            if not batches:
+                continue
+
+            primary = max(batches, key=lambda b: b.quantity_in_stock)
+            min_level = primary.minimum_stock_level
+            total_stock = drug.total_stock
+
+            if total_stock <= min_level:
+                low_stock_drugs.append({
+                    "drug":         drug,
+                    "primary_batch": primary,
+                    "total_stock":  total_stock,
+                    "min_level":    min_level,
+                })
+
+        return low_stock_drugs
+
+    @staticmethod
+    def get_low_stock_drugs():
+        low_stock = [
+            {
+                "drug_id":             entry["drug"].id,
+                "drug_name":           entry["drug"].name,
+                "category":            entry["drug"].category,
+                "unit":                entry["drug"].unit,
+                "total_stock":         entry["total_stock"],
+                "minimum_stock_level": entry["min_level"],
+                "batch_number":        entry["primary_batch"].batch_number,
+            }
+            for entry in PharmacyService._drugs_with_low_stock()
+        ]
 
         return {
             "success": True,
@@ -476,10 +521,6 @@ class PharmacyService:
 
     @staticmethod
     def get_expiring_soon(days: int = 90):
-        """
-        Returns drugs expiring within the next N days.
-        Default is 90 days.
-        """
         from datetime import timedelta
         today      = date.today()
         threshold  = today + timedelta(days=days)
@@ -517,10 +558,6 @@ class PharmacyService:
     # ──────────────────────────────────────────────────────────
     @staticmethod
     def get_dispensation_history(page=1, per_page=20, drug_id=None):
-        """
-        Returns history of all dispensed prescription items.
-        Used by pharmacists for reporting.
-        """
         query = PrescriptionItem.query.filter_by(is_dispensed=True)
 
         if drug_id:
@@ -562,14 +599,20 @@ class PharmacyService:
     # ──────────────────────────────────────────────────────────
     @staticmethod
     def get_pharmacy_stats():
-        """Returns summary statistics for the pharmacy dashboard."""
         today = date.today()
 
         total_drugs       = Drug.query.filter_by(is_active=True).count()
         total_batches     = DrugInventory.query.count()
-        low_stock_count   = DrugInventory.query.filter(
-            DrugInventory.quantity_in_stock <= DrugInventory.minimum_stock_level
-        ).count()
+
+        # FIX: low_stock_count now uses the same aggregate-vs-primary-batch
+        # rule as the Drug Inventory page (see _drugs_with_low_stock),
+        # instead of counting individual batches in isolation. Previously
+        # a drug with hundreds of units in its main batch could still be
+        # counted here as "low stock" purely because of an unrelated,
+        # nearly-empty secondary batch — which disagreed with what the
+        # Pharmacist actually saw on the Inventory page.
+        low_stock_count = len(PharmacyService._drugs_with_low_stock())
+
         expired_count     = DrugInventory.query.filter(
             DrugInventory.expiry_date != None,
             DrugInventory.expiry_date < today
@@ -577,6 +620,7 @@ class PharmacyService:
         pending_prescriptions = Prescription.query.filter_by(
             status="pending"
         ).count()
+        pending_setup_count = Drug.query.filter_by(is_pending_setup=True).count()
         dispensed_today   = PrescriptionItem.query.filter(
             PrescriptionItem.is_dispensed == True,
             db.func.date(PrescriptionItem.dispensed_at) == today
@@ -591,6 +635,7 @@ class PharmacyService:
                 "low_stock_alerts":       low_stock_count,
                 "expired_batches":        expired_count,
                 "pending_prescriptions":  pending_prescriptions,
+                "pending_setup_drugs":    pending_setup_count,
                 "dispensed_today":        dispensed_today,
             }
         }

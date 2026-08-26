@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — Lab Test Catalogue</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Laboratory</div>
+      <div class="nav-item">
+        <a href="lab-requests.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-flask-vial"></i></span>
+          <span class="nav-label">Lab Requests</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="lab-catalogue.html" class="nav-link active">
+          <span class="nav-icon"><i class="fa-solid fa-book-medical"></i></span>
+          <span class="nav-label">Test Catalogue</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="notifications.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-bell"></i></span>
+          <span class="nav-label">Notifications</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">LT</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">Lab Tech</div>
+        <div class="sidebar-user-role" id="sidebarRole">Lab Technician</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="navbar-page-title">Test Catalogue</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> Lab <span>/</span> Catalogue</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <button class="navbar-icon-btn"><i class="fa-solid fa-bell"></i></button>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">LT</div>
+        <span class="navbar-user-name" id="navbarName">Lab Tech</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">Lab Tech</div>
+      <div class="dropdown-header-role" id="dropdownRole">Lab Technician</div>
+    </div>
+    <a href="profile.html" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+      <div>
+        <h2>Lab Test Catalogue</h2>
+        <p>Reference list of every test the lab can process, grouped by category. Tests marked "Needs setup" were created automatically when a Doctor requested a test not yet in the catalogue fill in the missing details below.</p>
+      </div>
+      <button class="btn btn-primary" id="openBulkAddBtn" style="white-space:nowrap">
+        <i class="fa-solid fa-layer-group"></i> Add Tests by Category
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="table-toolbar">
+        <div class="search-input-wrapper">
+          <i class="fa-solid fa-search"></i>
+          <input type="text" class="search-input" id="catalogueSearch" placeholder="Search test name..." />
+        </div>
+        <div class="toolbar-actions">
+          <select class="form-control btn-sm" id="categoryFilter" style="height:38px;min-width:160px">
+            <option value="">All Categories</option>
+          </select>
+          <select class="form-control btn-sm" id="groupToggle" style="height:38px;min-width:150px">
+            <option value="grouped">Grouped by category</option>
+            <option value="flat">Flat list</option>
+          </select>
+          <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.85rem;color:var(--text-dark);cursor:pointer">
+            <input type="checkbox" id="pendingOnlyToggle" />
+            Needs setup only
+          </label>
+          <button class="btn btn-secondary btn-sm" id="refreshCatalogueBtn">
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <div id="catalogueContent">
+        <div class="empty-state"><div class="spinner-sm" style="margin:0 auto 0.5rem"></div><p>Loading catalogue...</p></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── Bulk Add Tests Modal ── -->
+<div class="modal-overlay" id="bulkAddModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-layer-group" style="color:var(--primary);margin-right:0.5rem"></i>Add Tests by Category</h3>
+      <button class="modal-close" id="closeBulkAddModal"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:1rem">
+        Paste in a category and every test under it — one test per line. Tests that already exist in the
+        catalogue (matched by name) are skipped automatically, so it's safe to paste an updated or overlapping list.
+      </p>
+      <div class="form-group">
+        <label class="form-label">Category <span class="required">*</span></label>
+        <input type="text" class="form-control" id="bulkCategory" placeholder="e.g. Haematology" />
+      </div>
+      <div class="form-group" style="margin-top:1rem">
+        <label class="form-label">Test Names <span class="required">*</span> <span class="form-hint">(one per line)</span></label>
+        <textarea class="form-control" id="bulkNames" rows="8" placeholder="Full Blood Count (FBC)&#10;Haemoglobin (Hb)&#10;Packed Cell Volume (PCV)&#10;White Blood Cell Count (WBC)&#10;Platelet Count&#10;ESR&#10;Blood Film"></textarea>
+      </div>
+      <div class="alert alert-danger" id="bulkAddError" style="display:none;margin-top:1rem">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span id="bulkAddErrorMsg"></span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="cancelBulkAddBtn">Cancel</button>
+      <button class="btn btn-primary" id="saveBulkAddBtn">
+        <span class="spinner-sm" id="bulkAddSpinner" style="display:none;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+        Add Tests
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Edit Test Modal ── -->
+<div class="modal-overlay" id="editTestModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3><i class="fa-solid fa-pen-to-square" style="color:var(--primary);margin-right:0.5rem"></i>Complete Test Setup</h3>
+      <button class="modal-close" id="closeEditTestModal"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editTestId" />
+      <div class="form-group">
+        <label class="form-label">Test Name</label>
+        <input type="text" class="form-control" id="editTestName" />
+      </div>
+      <div class="form-group" style="margin-top:1rem">
+        <label class="form-label">Category</label>
+        <input type="text" class="form-control" id="editTestCategory" placeholder="e.g. Haematology, Microbiology" />
+      </div>
+      <div class="form-grid form-grid-2" style="margin-top:1rem">
+        <div class="form-group">
+          <label class="form-label">Normal Range</label>
+          <input type="text" class="form-control" id="editTestRange" placeholder="e.g. 70-100 mg/dL" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Unit</label>
+          <input type="text" class="form-control" id="editTestUnit" placeholder="e.g. mmol/L" />
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:1rem">
+        <label class="form-label">Turnaround Time (hours)</label>
+        <input type="number" class="form-control" id="editTestTurnaround" min="1" />
+      </div>
+      <div class="alert alert-danger" id="editTestError" style="display:none;margin-top:1rem">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span id="editTestErrorMsg"></span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="cancelEditTestBtn">Cancel</button>
+      <button class="btn btn-primary" id="saveEditTestBtn">
+        <span class="spinner-sm" id="editTestSpinner" style="display:none;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+        Save
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script src="../../assets/js/notifications-widget.js"></script>
+<script>
+  requireAuth('lab_tech');
+
+  let searchQuery   = '';
+  let categoryValue = '';
+  let pendingOnly   = false;
+  let allTests      = [];
+
+  (function applyQueryFilter() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('filter') === 'pending') {
+      pendingOnly = true;
+      document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('pendingOnlyToggle').checked = true;
+      });
+    }
+  })();
+
+  let groupMode = 'grouped';
+
+  async function loadCatalogue() {
+    const content = document.getElementById('catalogueContent');
+    content.innerHTML = `<div class="empty-state"><div class="spinner-sm" style="margin:0 auto 0.5rem"></div><p>Loading...</p></div>`;
+
+    try {
+      let url = '/laboratory/tests?';
+      if (searchQuery)   url += `search=${encodeURIComponent(searchQuery)}&`;
+      if (categoryValue) url += `category=${encodeURIComponent(categoryValue)}&`;
+      if (pendingOnly)   url += `pending_setup=true&`;
+
+      const res = await api.get(url);
+      allTests  = res.data || [];
+
+      populateCategoryOptions(allTests);
+
+      if (!allTests.length) {
+        content.innerHTML = `<div class="empty-state"><i class="fa-solid fa-book-medical"></i><h4>No tests found</h4><p>Try adjusting your filters, or add some via "Add Tests by Category" above.</p></div>`;
+        return;
+      }
+
+      content.innerHTML = (groupMode === 'grouped') ? renderGrouped(allTests) : renderFlatTable(allTests);
+
+    } catch(err) {
+      content.innerHTML = `<div class="empty-state"><i class="fa-solid fa-circle-exclamation" style="color:var(--danger)"></i><h4>Failed to load</h4><p>${err.message}</p></div>`;
+    }
+  }
+
+  function testRowsHtml(tests) {
+    return tests.map(t => `
+      <tr>
+        <td><div style="font-weight:500">${t.name}</div></td>
+        <td class="muted">${t.normal_range || '—'}</td>
+        <td class="muted">${t.unit || '—'}</td>
+        <td class="muted">${t.turnaround_hours ? t.turnaround_hours + ' hrs' : '—'}</td>
+        <td>${t.is_pending_setup
+            ? `<span class="badge badge-warning">Needs setup</span>`
+            : `<span class="badge badge-success">Ready</span>`}</td>
+        <td>
+          <button class="btn btn-info btn-sm" onclick="openEditTest(${t.id})">
+            <i class="fa-solid fa-pen-to-square"></i> ${t.is_pending_setup ? 'Complete Setup' : 'Edit'}
+          </button>
+        </td>
+      </tr>`).join('');
+  }
+
+  function renderFlatTable(tests) {
+    return `
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead><tr><th>Test Name</th><th>Category</th><th>Normal Range</th><th>Unit</th><th>Turnaround</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            ${tests.map(t => `
+              <tr>
+                <td><div style="font-weight:500">${t.name}</div></td>
+                <td class="muted">${t.category || '—'}</td>
+                <td class="muted">${t.normal_range || '—'}</td>
+                <td class="muted">${t.unit || '—'}</td>
+                <td class="muted">${t.turnaround_hours ? t.turnaround_hours + ' hrs' : '—'}</td>
+                <td>${t.is_pending_setup ? `<span class="badge badge-warning">Needs setup</span>` : `<span class="badge badge-success">Ready</span>`}</td>
+                <td><button class="btn btn-info btn-sm" onclick="openEditTest(${t.id})"><i class="fa-solid fa-pen-to-square"></i> ${t.is_pending_setup ? 'Complete Setup' : 'Edit'}</button></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  function renderGrouped(tests) {
+    const byCategory = {};
+    tests.forEach(t => {
+      const cat = t.category || 'Uncategorized';
+      (byCategory[cat] = byCategory[cat] || []).push(t);
+    });
+    const categories = Object.keys(byCategory).sort();
+
+    return categories.map((cat, i) => {
+      const list = byCategory[cat];
+      const pendingCount = list.filter(t => t.is_pending_setup).length;
+      return `
+        <div style="border-bottom:1px solid var(--border-light)">
+          <button class="category-toggle" data-target="cat-${i}" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1.5rem;background:none;border:none;cursor:pointer;text-align:left">
+            <span style="font-weight:600;font-size:0.9rem;color:var(--text-dark)">
+              <i class="fa-solid fa-chevron-down" style="font-size:0.7rem;margin-right:0.6rem;color:var(--text-muted)"></i>
+              ${cat} <span style="color:var(--text-muted);font-weight:400">(${list.length})</span>
+            </span>
+            ${pendingCount ? `<span class="badge badge-warning">${pendingCount} need setup</span>` : ''}
+          </button>
+          <div id="cat-${i}" class="table-wrapper">
+            <table class="data-table">
+              <thead><tr><th>Test Name</th><th>Normal Range</th><th>Unit</th><th>Turnaround</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody>${testRowsHtml(list)}</tbody>
+            </table>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  document.getElementById('catalogueContent').addEventListener('click', e => {
+    const btn = e.target.closest('.category-toggle');
+    if (!btn) return;
+    const panel = document.getElementById(btn.dataset.target);
+    const icon  = btn.querySelector('i');
+    const collapsed = panel.style.display === 'none';
+    panel.style.display = collapsed ? '' : 'none';
+    icon.style.transform = collapsed ? '' : 'rotate(-90deg)';
+  });
+
+  document.getElementById('groupToggle').addEventListener('change', e => {
+    groupMode = e.target.value; loadCatalogue();
+  });
+
+  function populateCategoryOptions(tests) {
+    const select  = document.getElementById('categoryFilter');
+    const current = select.value;
+    const cats = [...new Set(tests.map(t => t.category).filter(Boolean))].sort();
+    select.innerHTML = '<option value="">All Categories</option>' +
+      cats.map(c => `<option value="${c}">${c}</option>`).join('');
+    select.value = current;
+  }
+
+  let searchTimer;
+  document.getElementById('catalogueSearch').addEventListener('input', e => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { searchQuery = e.target.value.trim(); loadCatalogue(); }, 400);
+  });
+  document.getElementById('categoryFilter').addEventListener('change', e => {
+    categoryValue = e.target.value; loadCatalogue();
+  });
+  document.getElementById('pendingOnlyToggle').addEventListener('change', e => {
+    pendingOnly = e.target.checked; loadCatalogue();
+  });
+  document.getElementById('refreshCatalogueBtn').addEventListener('click', loadCatalogue);
+
+  /* ── Edit / Complete Setup Modal ── */
+  function openEditTest(id) {
+    const t = allTests.find(x => x.id === id);
+    if (!t) return;
+    document.getElementById('editTestId').value          = t.id;
+    document.getElementById('editTestName').value        = t.name || '';
+    document.getElementById('editTestCategory').value    = t.category || '';
+    document.getElementById('editTestRange').value       = t.normal_range || '';
+    document.getElementById('editTestUnit').value        = t.unit || '';
+    document.getElementById('editTestTurnaround').value  = t.turnaround_hours || 24;
+    document.getElementById('editTestError').style.display = 'none';
+    document.getElementById('editTestModal').classList.add('open');
+  }
+
+  document.getElementById('closeEditTestModal').addEventListener('click', () =>
+    document.getElementById('editTestModal').classList.remove('open'));
+  document.getElementById('cancelEditTestBtn').addEventListener('click', () =>
+    document.getElementById('editTestModal').classList.remove('open'));
+  document.getElementById('editTestModal').addEventListener('click', function(e) {
+    if (e.target===this) this.classList.remove('open');
+  });
+
+  document.getElementById('saveEditTestBtn').addEventListener('click', async () => {
+    const id = document.getElementById('editTestId').value;
+    const payload = {
+      name:             document.getElementById('editTestName').value.trim(),
+      category:         document.getElementById('editTestCategory').value.trim(),
+      normal_range:     document.getElementById('editTestRange').value.trim(),
+      unit:             document.getElementById('editTestUnit').value.trim(),
+      turnaround_hours: parseInt(document.getElementById('editTestTurnaround').value, 10) || 24,
+    };
+
+    document.getElementById('editTestSpinner').style.display = 'inline-block';
+    document.getElementById('saveEditTestBtn').disabled = true;
+
+    try {
+      await api.patch(`/laboratory/tests/${id}`, payload);
+      showToast('Test updated.', 'success');
+      document.getElementById('editTestModal').classList.remove('open');
+      loadCatalogue();
+    } catch(err) {
+      document.getElementById('editTestErrorMsg').textContent = err.message;
+      document.getElementById('editTestError').style.display = 'flex';
+    } finally {
+      document.getElementById('editTestSpinner').style.display = 'none';
+      document.getElementById('saveEditTestBtn').disabled = false;
+    }
+  });
+
+  /* ── Bulk Add Tests Modal ── */
+  document.getElementById('openBulkAddBtn').addEventListener('click', () => {
+    document.getElementById('bulkCategory').value = '';
+    document.getElementById('bulkNames').value    = '';
+    document.getElementById('bulkAddError').style.display = 'none';
+    document.getElementById('bulkAddModal').classList.add('open');
+  });
+  document.getElementById('closeBulkAddModal').addEventListener('click', () =>
+    document.getElementById('bulkAddModal').classList.remove('open'));
+  document.getElementById('cancelBulkAddBtn').addEventListener('click', () =>
+    document.getElementById('bulkAddModal').classList.remove('open'));
+  document.getElementById('bulkAddModal').addEventListener('click', function(e) {
+    if (e.target===this) this.classList.remove('open');
+  });
+
+  document.getElementById('saveBulkAddBtn').addEventListener('click', async () => {
+    const category = document.getElementById('bulkCategory').value.trim();
+    const names = document.getElementById('bulkNames').value
+      .split('\n').map(n => n.trim()).filter(Boolean);
+
+    if (!category) {
+      document.getElementById('bulkAddErrorMsg').textContent = 'Category is required.';
+      document.getElementById('bulkAddError').style.display = 'flex';
+      return;
+    }
+    if (!names.length) {
+      document.getElementById('bulkAddErrorMsg').textContent = 'Enter at least one test name.';
+      document.getElementById('bulkAddError').style.display = 'flex';
+      return;
+    }
+
+    document.getElementById('bulkAddError').style.display = 'none';
+    document.getElementById('bulkAddSpinner').style.display = 'inline-block';
+    document.getElementById('saveBulkAddBtn').disabled = true;
+
+    try {
+      const res = await api.post('/laboratory/tests/bulk', { category, names });
+      showToast(res.message || 'Tests added.', 'success');
+      document.getElementById('bulkAddModal').classList.remove('open');
+      loadCatalogue();
+    } catch(err) {
+      document.getElementById('bulkAddErrorMsg').textContent = err.message;
+      document.getElementById('bulkAddError').style.display = 'flex';
+    } finally {
+      document.getElementById('bulkAddSpinner').style.display = 'none';
+      document.getElementById('saveBulkAddBtn').disabled = false;
+    }
+  });
+
+  loadCatalogue();
+</script>
+</body>
+</html>

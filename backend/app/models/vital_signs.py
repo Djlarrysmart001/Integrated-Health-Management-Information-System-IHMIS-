@@ -50,6 +50,11 @@ class VitalSigns(db.Model):
     recorded_by               = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     recorded_at                = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
+    # NOTE: `patient` and `health_file` accessors already exist via backrefs
+    # from Patient.vital_signs and HealthFile.vital_signs respectively (see
+    # patient.py / health_file.py) -- not redefined here to avoid a mapper
+    # conflict ("property of that name exists on mapper").
+
     def compute_bmi(self):
         """Auto-calculate BMI if weight and height are provided. Server-side
         is the source of truth — any bmi sent by the client is ignored."""

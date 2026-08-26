@@ -41,9 +41,21 @@
         </a>
       </div>
       <div class="nav-item">
-        <a href="patients.html" class="nav-link">
-          <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
-          <span class="nav-label">Patients</span>
+        <a href="patients-admitted.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-bed-pulse"></i></span>
+          <span class="nav-label">Admitted Patients</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="patients-seen.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-clock-rotate-left"></i></span>
+          <span class="nav-label">Patients Seen</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="notifications.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-bell"></i></span>
+          <span class="nav-label">Notifications</span>
         </a>
       </div>
     </nav>
@@ -66,7 +78,7 @@
       </div>
     </div>
     <div class="navbar-right">
-      <a href="notifications.html" class="navbar-icon-btn"><i class="fa-solid fa-bell"></i></a>
+      <button class="navbar-icon-btn" title="Notifications"><i class="fa-solid fa-bell"></i></button>
       <button class="navbar-user" id="userMenuBtn">
         <div class="navbar-user-avatar" id="navbarAvatar">NR</div>
         <span class="navbar-user-name" id="navbarName">Nurse</span>
@@ -120,40 +132,17 @@
         </div>
       </div>
       <div class="stat-card">
+        <div class="stat-icon orange"><i class="fa-solid fa-bed-pulse"></i></div>
+        <div class="stat-info">
+          <div class="stat-value" id="statAdmitted">—</div>
+          <div class="stat-label">Admitted — Monitoring</div>
+        </div>
+      </div>
+      <div class="stat-card">
         <div class="stat-icon purple"><i class="fa-solid fa-layer-group"></i></div>
         <div class="stat-info">
           <div class="stat-value" id="statQueueTotal">—</div>
           <div class="stat-label">Total in Active Queue</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Quick Patient Search -->
-    <div class="card" style="margin-bottom:1.25rem">
-      <div class="card-header">
-        <h3><i class="fa-solid fa-magnifying-glass" style="color:var(--primary);margin-right:0.4rem"></i>Quick Patient Search</h3>
-        <a href="patients.html" class="btn-link">View all patients</a>
-      </div>
-      <div class="card-body">
-        <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap">
-          <div class="search-input-wrapper" style="flex:1;max-width:400px">
-            <i class="fa-solid fa-search"></i>
-            <input type="text" class="search-input" id="quickSearch"
-              placeholder="Search by name, patient number or phone..." />
-          </div>
-          <button class="btn btn-primary" id="quickSearchBtn">
-            <i class="fa-solid fa-search"></i> Search
-          </button>
-        </div>
-        <div id="quickSearchResults" style="margin-top:1rem;display:none">
-          <div class="table-wrapper">
-            <table class="data-table">
-              <thead>
-                <tr><th>Patient</th><th>Patient Number</th><th>Type</th><th>Phone</th><th>Status</th><th></th></tr>
-              </thead>
-              <tbody id="quickSearchBody"></tbody>
-            </table>
-          </div>
         </div>
       </div>
     </div>
@@ -177,6 +166,7 @@
 <script src="../../assets/js/api.js"></script>
 <script src="../../assets/js/utils.js"></script>
 <script src="../../assets/js/sidebar.js"></script>
+<script src="../../assets/js/notifications-widget.js"></script>
 <script>
   const user = requireAuth('nurse');
 
@@ -199,16 +189,17 @@
     `${greeting}, ${user?.full_name || user?.username || 'Nurse'}! Here's who's waiting on you today.`;
 
   async function loadDashboard() {
+    let waitingTotal = 0, admittedTotal = 0;
+
     try {
       const res = await api.get('/health-files/queue/with_nurse?per_page=50');
       const files = extractQueueList(res.data);
-      const total = res.data?.total ?? files.length;
+      waitingTotal = res.data?.total ?? files.length;
 
-      setText('statWaiting', formatNumber(total));
-      setText('statQueueTotal', formatNumber(total));
+      setText('statWaiting', formatNumber(waitingTotal));
 
       const badge = document.getElementById('navQueueBadge');
-      if (total > 0) { badge.textContent = total; badge.style.display = 'inline-flex'; }
+      if (waitingTotal > 0) { badge.textContent = waitingTotal; badge.style.display = 'inline-flex'; }
 
       renderQueueSnapshot(files.slice(0, 5));
     } catch (err) {
@@ -217,17 +208,30 @@
         `<div class="empty-state"><i class="fa-solid fa-circle-exclamation" style="color:var(--danger)"></i><p>${err.message}</p></div>`;
     }
 
+    // Admitted patients (inpatient monitoring) -- a separate workload from
+    // the new-triage queue above, but still counts toward the Nurse's
+    // total active queue.
+    try {
+      const res = await api.get('/health-files/queue/admitted?per_page=1');
+      admittedTotal = res.data?.total ?? 0;
+      setText('statAdmitted', formatNumber(admittedTotal));
+    } catch (err) {
+      setText('statAdmitted', '—');
+    }
+
+    setText('statQueueTotal', formatNumber(waitingTotal + admittedTotal));
+
     // Today's vitals-recorded / forwarded counts are informational only —
     // if your backend doesn't expose a dedicated endpoint for these yet,
     // they'll just sit at "—" without breaking the rest of the page.
     try {
-      const res = await api.get('/vitals?recorded_today=true&recorded_by=me');
+      const res = await api.get('/vitals?range=today&recorded_by=me');
       setText('statVitalsToday', formatNumber(res.data?.total ?? (res.data?.items || []).length));
     } catch (err) { setText('statVitalsToday', '—'); }
 
     try {
-      const res = await api.get('/health-files/queue/with_doctor?forwarded_by=me&forwarded_today=true');
-      setText('statForwardedToday', formatNumber(res.data?.total ?? (res.data?.items || []).length));
+      const res = await api.get('/health-files/stats/forwards/FORWARD_TO_DOCTOR?by=me&range=today');
+      setText('statForwardedToday', formatNumber(res.data?.count ?? 0));
     } catch (err) { setText('statForwardedToday', '—'); }
   }
 
@@ -257,62 +261,6 @@
   }
 
   loadDashboard();
-
-  /* ── Quick Patient Search ── */
-  const quickSearchInput   = document.getElementById('quickSearch');
-  const quickSearchBtn     = document.getElementById('quickSearchBtn');
-  const quickSearchResults = document.getElementById('quickSearchResults');
-  const quickSearchBody    = document.getElementById('quickSearchBody');
-
-  async function doQuickSearch() {
-    const query = quickSearchInput.value.trim();
-    if (!query) return;
-
-    quickSearchBody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="spinner-sm" style="margin:0 auto"></div></div></td></tr>`;
-    quickSearchResults.style.display = 'block';
-
-    try {
-      const res = await api.get(`/patients?search=${encodeURIComponent(query)}&per_page=10`);
-      const patients = res.data?.patients || res.data?.items || [];
-
-      if (patients.length === 0) {
-        quickSearchBody.innerHTML = `<tr><td colspan="6"><div class="empty-state" style="padding:1rem 0"><i class="fa-solid fa-users-slash"></i><p>No patients found for "<strong>${query}</strong>"</p></div></td></tr>`;
-        return;
-      }
-
-      quickSearchBody.innerHTML = patients.map(p => {
-        const name = p.full_name || `${p.first_name||''} ${p.last_name||''}`.trim();
-        return `
-          <tr>
-            <td>
-              <div style="display:flex;align-items:center;gap:0.6rem">
-                <div style="width:32px;height:32px;background:var(--primary-light);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:var(--primary);flex-shrink:0">
-                  ${((p.first_name?.[0]||'')+(p.last_name?.[0]||'')).toUpperCase()||'?'}
-                </div>
-                <span style="font-weight:500">${name}</span>
-              </div>
-            </td>
-            <td><span style="font-family:monospace;font-size:0.8rem;color:var(--primary)">${p.patient_number||`#${p.id}`}</span></td>
-            <td class="muted">${capitalize(p.patient_type||'—')}</td>
-            <td class="muted">${p.phone||'—'}</td>
-            <td><span class="badge ${p.is_active?'badge-success':'badge-muted'}">${p.is_active?'Active':'Inactive'}</span></td>
-            <td><a href="patient-file.html?patient_id=${p.id}" class="btn btn-info btn-sm" title="View File"><i class="fa-solid fa-folder-open"></i></a></td>
-          </tr>`;
-      }).join('');
-    } catch (err) {
-      quickSearchBody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><p style="color:var(--danger)">${err.message}</p></div></td></tr>`;
-    }
-  }
-
-  quickSearchBtn.addEventListener('click', doQuickSearch);
-  quickSearchInput.addEventListener('keydown', e => { if (e.key === 'Enter') doQuickSearch(); });
-
-  let quickTimer;
-  quickSearchInput.addEventListener('input', e => {
-    clearTimeout(quickTimer);
-    if (e.target.value.trim().length >= 2) quickTimer = setTimeout(doQuickSearch, 400);
-    else quickSearchResults.style.display = 'none';
-  });
 </script>
 </body>
 </html>

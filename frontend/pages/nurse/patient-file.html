@@ -85,9 +85,21 @@
         </a>
       </div>
       <div class="nav-item">
-        <a href="patients.html" class="nav-link">
-          <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
-          <span class="nav-label">Patients</span>
+        <a href="patients-admitted.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-bed-pulse"></i></span>
+          <span class="nav-label">Admitted Patients</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="patients-seen.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-clock-rotate-left"></i></span>
+          <span class="nav-label">Patients Seen</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="notifications.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-bell"></i></span>
+          <span class="nav-label">Notifications</span>
         </a>
       </div>
     </nav>
@@ -110,7 +122,7 @@
       </div>
     </div>
     <div class="navbar-right">
-      <a href="notifications.html" class="navbar-icon-btn"><i class="fa-solid fa-bell"></i></a>
+      <button class="navbar-icon-btn" title="Notifications"><i class="fa-solid fa-bell"></i></button>
       <button class="navbar-user" id="userMenuBtn">
         <div class="navbar-user-avatar" id="navbarAvatar">NR</div>
         <span class="navbar-user-name" id="navbarName">Nurse</span>
@@ -255,6 +267,7 @@
 <script src="../../assets/js/api.js"></script>
 <script src="../../assets/js/utils.js"></script>
 <script src="../../assets/js/sidebar.js"></script>
+<script src="../../assets/js/notifications-widget.js"></script>
 <script>
   requireAuth('nurse');
 

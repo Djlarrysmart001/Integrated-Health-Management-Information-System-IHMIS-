@@ -15,6 +15,7 @@ STATUS_TO_ROLE = {
     "with_doctor":   Roles.DOCTOR,
     "with_lab":      Roles.LAB_TECH,
     "with_pharmacy": Roles.PHARMACIST,
+    "admitted":      Roles.NURSE,
 }
 
 # Friendlier, action-specific wording than a generic "status changed" message.
@@ -24,6 +25,7 @@ ACTION_MESSAGES = {
     "FORWARD_TO_LAB":      "New lab test request for {patient_name}.",
     "RETURN_FROM_LAB":     "Lab result ready for review: {patient_name}.",
     "FORWARD_TO_PHARMACY": "New prescription to dispense for {patient_name}.",
+    "ADMIT_PATIENT":       "{patient_name} has been admitted — ongoing monitoring needed.",
 }
 
 
@@ -161,6 +163,12 @@ class HealthFileService:
 
     # ──────────────────────────────────────────────────────────
     # Nurse -> Doctor
+    # Two paths land here: the normal "with_nurse" triage handoff, and
+    # the "admitted" loop-back once a Nurse has finished a round of
+    # inpatient monitoring and wants the Doctor to review again (see
+    # admit_patient below). Same destination, same vitals requirement
+    # either way -- a fresh vitals reading should exist before either
+    # handoff reaches the Doctor.
     # ──────────────────────────────────────────────────────────
     @staticmethod
     def forward_to_doctor(health_file_id: int, user_id: int):
@@ -172,7 +180,7 @@ class HealthFileService:
                 "data": health_file.to_dict()
             }
         return HealthFileService._transition(
-            health_file_id, ["with_nurse"], "with_doctor", user_id, "FORWARD_TO_DOCTOR"
+            health_file_id, ["with_nurse", "admitted"], "with_doctor", user_id, "FORWARD_TO_DOCTOR"
         )
 
     # ──────────────────────────────────────────────────────────
@@ -268,28 +276,38 @@ class HealthFileService:
         )
 
     # ──────────────────────────────────────────────────────────
-    # Doctor admits patient -> Closed (visit ends here, patient becomes an inpatient)
+    # Doctor admits patient -> Admitted (inpatient monitoring begins)
+    #
+    # Unlike close_via_referral (patient leaves the clinic entirely),
+    # admission does NOT end the clinic's involvement -- the patient
+    # stays, under the Nurse's ongoing care. The file loops back to
+    # with_doctor only once the Nurse forwards it again (see
+    # forward_to_doctor above); it only reaches "closed" when the
+    # Doctor explicitly discharges (see discharge_patient below).
     # ──────────────────────────────────────────────────────────
     @staticmethod
-    def close_via_admission(health_file_id: int, user_id: int):
-        """
-        Same idea as close_via_referral: admitting a patient ends the
-        normal walk-in flow, so the health file closes regardless of
-        which stage the Doctor was at.
-        """
-        health_file = HealthFile.query.get(health_file_id)
-        if not health_file:
-            return {"success": False, "message": f"Health file with ID {health_file_id} not found.", "data": None}
-        if health_file.status == "closed":
-            return {"success": False, "message": "Health file is already closed.", "data": health_file.to_dict()}
-        if health_file.status not in ("with_doctor", "with_lab", "with_pharmacy"):
-            return {
-                "success": False,
-                "message": f"Cannot close via admission from status '{health_file.status}'.",
-                "data": health_file.to_dict()
-            }
+    def admit_patient(health_file_id: int, user_id: int):
         return HealthFileService._transition(
-            health_file_id, [health_file.status], "closed", user_id, "CLOSE_VIA_ADMISSION"
+            health_file_id, ["with_doctor"], "admitted", user_id, "ADMIT_PATIENT"
+        )
+
+    # ──────────────────────────────────────────────────────────
+    # Doctor discharges -> Closed (ends an admission)
+    #
+    # Deliberately a DIFFERENT action from close_via_referral and
+    # close_health_file, even though all three end at "closed" from
+    # "with_doctor" -- keeping the audit action name distinct
+    # ("DISCHARGE_PATIENT" vs "CLOSE_VIA_REFERRAL" vs "CLOSE_HEALTH_FILE")
+    # means the care trail accurately reflects WHY a visit ended, not
+    # just that it did. Per the agreed design, discharge only ever
+    # happens from "with_doctor" -- i.e. only after the Nurse has
+    # forwarded an admitted patient back for a final review. There is
+    # deliberately no direct "admitted -> closed" path.
+    # ──────────────────────────────────────────────────────────
+    @staticmethod
+    def discharge_patient(health_file_id: int, user_id: int):
+        return HealthFileService._transition(
+            health_file_id, ["with_doctor"], "closed", user_id, "DISCHARGE_PATIENT"
         )
 
     # ──────────────────────────────────────────────────────────
@@ -464,3 +482,33 @@ class HealthFileService:
                 "trail":          trail,
             }
         }
+
+    # ──────────────────────────────────────────────────────────
+    # "How many did I forward today/this week/this month" -- a per-role
+    # work-log count, deliberately NOT based on HealthFile.status.
+    #
+    # Filtering by current status (e.g. status == 'with_doctor') would
+    # UNDERCOUNT: if the Doctor has already acted on a file a Nurse forwarded
+    # this morning (sent it to Lab, prescribed, closed it), that file is no
+    # longer 'with_doctor' even though the Nurse's forward absolutely still
+    # happened today. The only durable record of "who forwarded this, and
+    # when" is the AuditLog entry _transition() writes on every handoff --
+    # so that's what this counts, not the live queue snapshot.
+    # ──────────────────────────────────────────────────────────
+    @staticmethod
+    def count_forwards(action: str, user_id: int = None,
+                        date_from=None, date_to=None) -> int:
+        from app.models.audit_log import AuditLog
+
+        query = AuditLog.query.filter(
+            AuditLog.action == action,
+            AuditLog.entity_type == "HealthFile",
+        )
+        if user_id:
+            query = query.filter(AuditLog.user_id == user_id)
+        if date_from:
+            query = query.filter(AuditLog.created_at >= date_from)
+        if date_to:
+            query = query.filter(AuditLog.created_at < date_to)
+
+        return query.count()

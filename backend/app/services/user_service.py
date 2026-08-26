@@ -49,7 +49,7 @@ class UserService:
         return {"success": True, "message": "User retrieved successfully.", "data": user.to_dict()}
 
     @staticmethod
-    def create_user(data: dict):
+    def create_user(data: dict, performed_by: int = None):
         required = ["username", "email", "password", "first_name", "last_name", "roles"]
         for field in required:
             if not data.get(field):
@@ -98,6 +98,7 @@ class UserService:
             action      = "CREATE_USER",
             entity_type = "User",
             entity_id   = user.id,
+            user_id     = performed_by,
             new_value   = {"username": user.username, "roles": user.get_role_names()}
         )
         # ───────────────────────────────────────────────────────
@@ -109,7 +110,7 @@ class UserService:
         }
 
     @staticmethod
-    def update_user(user_id: int, data: dict):
+    def update_user(user_id: int, data: dict, performed_by: int = None):
         user = User.query.get(user_id)
         if not user:
             return {"success": False, "message": f"User with ID {user_id} not found.", "data": None}
@@ -148,6 +149,7 @@ class UserService:
             action      = "UPDATE_USER",
             entity_type = "User",
             entity_id   = user.id,
+            user_id     = performed_by,
             new_value   = {"username": user.username, "roles": user.get_role_names()}
         )
         # ───────────────────────────────────────────────────────

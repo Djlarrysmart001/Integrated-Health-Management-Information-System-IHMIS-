@@ -9,6 +9,7 @@ from app.models.prescription import Prescription, PrescriptionItem
 from app.models.laboratory import LabRequest, LabResult
 from app.models.pharmacy import Drug, DrugInventory
 from app.models.user import User
+from app.services.pharmacy_service import PharmacyService
 
 
 class ReportService:
@@ -343,9 +344,21 @@ class ReportService:
         threshold_90  = today + timedelta(days=90)
 
         all_drugs  = Drug.query.filter_by(is_active=True).all()
-        low_stock  = []
         expiring   = []
         out_of_stock = []
+
+        # Low stock, judged the SAME way everywhere in the system: against
+        # the drug's total (aggregate) stock, not any single batch in
+        # isolation. See PharmacyService._drugs_with_low_stock for why.
+        low_stock = [
+            {
+                "drug_id":             entry["drug"].id,
+                "drug_name":           entry["drug"].name,
+                "quantity_in_stock":   entry["total_stock"],
+                "minimum_stock_level": entry["min_level"],
+            }
+            for entry in PharmacyService._drugs_with_low_stock()
+        ]
 
         for drug in all_drugs:
             total_stock = drug.total_stock
@@ -357,15 +370,6 @@ class ReportService:
                 })
 
             for batch in drug.inventory_batches:
-                if batch.is_low_stock and total_stock > 0:
-                    low_stock.append({
-                        "drug_id":             drug.id,
-                        "drug_name":           drug.name,
-                        "quantity_in_stock":   batch.quantity_in_stock,
-                        "minimum_stock_level": batch.minimum_stock_level,
-                    })
-                    break
-
                 if batch.expiry_date and batch.expiry_date <= threshold_90:
                     expiring.append({
                         "drug_id":      drug.id,

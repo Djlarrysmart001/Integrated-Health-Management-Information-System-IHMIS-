@@ -53,6 +53,11 @@ class User(db.Model):
     phone         = db.Column(db.String(20), nullable=True)
     is_active     = db.Column(db.Boolean, default=True, nullable=False)
     last_login    = db.Column(db.DateTime, nullable=True)
+    # JSON-encoded personal notification preferences (e.g. which types of
+    # notifications this user wants surfaced). Nullable — a NULL value is
+    # treated as "all defaults on" rather than requiring a row to exist
+    # for every user up front.
+    notification_preferences = db.Column(db.Text, nullable=True)
     created_at    = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at    = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
                               onupdate=lambda: datetime.now(timezone.utc), nullable=False)
@@ -73,6 +78,27 @@ class User(db.Model):
         """Return a list of role name strings."""
         return [r.name for r in self.roles]
 
+    DEFAULT_NOTIFICATION_PREFERENCES = {
+        "patient_flow": True,
+        "lab_result":   True,
+        "low_stock":    True,
+        "system":       True,
+    }
+
+    def get_notification_preferences(self) -> dict:
+        """Parsed preferences, falling back to all-on defaults for any
+        key that's missing or if nothing has been saved yet."""
+        import json
+        prefs = dict(self.DEFAULT_NOTIFICATION_PREFERENCES)
+        if self.notification_preferences:
+            try:
+                saved = json.loads(self.notification_preferences)
+                if isinstance(saved, dict):
+                    prefs.update(saved)
+            except (ValueError, TypeError):
+                pass
+        return prefs
+
     def __repr__(self):
         return f"<User {self.username}>"
 
@@ -89,4 +115,5 @@ class User(db.Model):
             "last_login": self.last_login.isoformat() if self.last_login else None,
             "roles":      self.get_role_names(),
             "created_at": self.created_at.isoformat(),
+            "notification_preferences": self.get_notification_preferences(),
         }

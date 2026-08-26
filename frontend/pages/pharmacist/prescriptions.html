@@ -45,6 +45,12 @@
           <span class="nav-label">Drug Inventory</span>
         </a>
       </div>
+      <div class="nav-item">
+        <a href="notifications.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-bell"></i></span>
+          <span class="nav-label">Notifications</span>
+        </a>
+      </div>
     </nav>
     <div class="sidebar-footer">
       <div class="sidebar-user-avatar" id="sidebarAvatar">PH</div>
@@ -65,7 +71,7 @@
       </div>
     </div>
     <div class="navbar-right">
-      <button class="navbar-icon-btn"><i class="fa-solid fa-bell"></i></button>
+      <button class="navbar-icon-btn" title="Notifications"><i class="fa-solid fa-bell"></i></button>
       <button class="navbar-user" id="userMenuBtn">
         <div class="navbar-user-avatar" id="navbarAvatar">PH</div>
         <span class="navbar-user-name" id="navbarName">Pharmacist</span>
@@ -80,7 +86,7 @@
       <div class="dropdown-header-name" id="dropdownName">Pharmacist</div>
       <div class="dropdown-header-role" id="dropdownRole">Pharmacist</div>
     </div>
-    <a href="#" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <a href="profile.html" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
     <div class="dropdown-divider"></div>
     <button class="dropdown-item danger" id="logoutBtn">
       <i class="fa-solid fa-right-from-bracket"></i> Sign Out
@@ -200,6 +206,7 @@
 <script src="../../assets/js/api.js"></script>
 <script src="../../assets/js/utils.js"></script>
 <script src="../../assets/js/sidebar.js"></script>
+<script src="../../assets/js/notifications-widget.js"></script>
 <script>
   requireAuth('pharmacist');
 
@@ -363,7 +370,10 @@
                 ? `<tr><td colspan="6"><div class="empty-state"><p>No items</p></div></td></tr>`
                 : items.map(item => `
                   <tr>
-                    <td style="font-weight:500">${item.drug?.name || item.drug_name || '—'}</td>
+                    <td style="font-weight:500">
+                      ${item.drug?.name || item.drug_name || '—'}
+                      ${item.drug_is_pending_setup ? '<span class="badge badge-warning" style="margin-left:0.4rem;font-size:0.68rem">NEW — needs setup</span>' : ''}
+                    </td>
                     <td class="muted">${item.dosage||'—'}</td>
                     <td class="muted">${item.frequency||'—'}</td>
                     <td class="muted">${item.duration||'—'}</td>
@@ -385,11 +395,16 @@
     }
   }
 
-  /* ── Dispense All ── */
+  /* ── Dispense All ──
+     Real route: PATCH /prescriptions/<id>/dispense, no body needed
+     (dispensed_by comes from the JWT). The previous PUT with a status
+     body pointed at a route that doesn't exist — this was 405'ing after
+     any Send-to-Pharmacy request had already saved successfully,
+     surfacing as "Unexpected token '<'" from the resulting HTML response. */
   document.getElementById('dispensAllBtn').addEventListener('click', async () => {
     if (!confirm('Mark all items in this prescription as dispensed?')) return;
     try {
-      await api.put(`/prescriptions/${currentPrescId}`, { status: 'dispensed' });
+      await api.patch(`/prescriptions/${currentPrescId}/dispense`);
       showToast('Prescription dispensed successfully!', 'success');
       document.getElementById('dispensModal').classList.remove('open');
       loadPrescriptions();

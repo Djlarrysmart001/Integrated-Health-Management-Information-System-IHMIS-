@@ -29,6 +29,7 @@ def register_blueprints(flask_app: Flask) -> None:
     from app.api.v1.mho.routes import mho_bp
     from app.api.v1.documents.routes import documents_bp
     from app.api.v1.vitals.routes import vitals_bp
+    from app.api.v1.ai.routes import ai_bp
 
     url_prefix = "/api/v1"
 
@@ -56,3 +57,4 @@ def register_blueprints(flask_app: Flask) -> None:
     flask_app.register_blueprint(mho_bp,             url_prefix=f"{url_prefix}/mho")
     flask_app.register_blueprint(documents_bp,       url_prefix=f"{url_prefix}/documents")
     flask_app.register_blueprint(vitals_bp,          url_prefix=f"{url_prefix}/vitals")
+    flask_app.register_blueprint(ai_bp,              url_prefix=f"{url_prefix}/ai")

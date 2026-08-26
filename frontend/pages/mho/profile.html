@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IHMIS — My Profile</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../assets/css/main.css" />
+  <link rel="stylesheet" href="../../assets/css/sidebar.css" />
+  <link rel="stylesheet" href="../../assets/css/dashboard.css" />
+  <link rel="stylesheet" href="../../assets/css/components.css" />
+  <style>
+    .profile-header {
+      display:flex; align-items:center; gap:1.1rem; padding:1.5rem;
+      background:var(--card-bg); border:1px solid var(--border-light);
+      border-radius:var(--border-radius); margin-bottom:1.25rem;
+    }
+    .profile-avatar {
+      width:64px; height:64px; border-radius:50%; background:var(--primary-light);
+      color:var(--primary); display:flex; align-items:center; justify-content:center;
+      font-weight:700; font-size:1.35rem; flex-shrink:0;
+    }
+    .profile-header-name { font-size:1.15rem; font-weight:700; color:var(--text-dark); }
+    .profile-header-role { font-size:0.85rem; color:var(--text-muted); margin-top:2px; }
+    .profile-header-username { font-size:0.8rem; color:var(--text-light); font-family:monospace; margin-top:4px; }
+    .readonly-field {
+      padding:0.6rem 0.85rem; background:var(--page-bg); border-radius:var(--border-radius-sm);
+      font-size:0.9rem; color:var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-layout">
+  <div class="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="dashboard.html" class="sidebar-brand">
+      <div class="sidebar-brand-icon"><i class="fa-solid fa-hospital-user"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-name">IHMIS</span>
+        <span class="sidebar-brand-sub">FedPoly Ilaro</span>
+      </div>
+    </a>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item">
+        <a href="dashboard.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-gauge"></i></span>
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="patients.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+          <span class="nav-label">Patients</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="register-patient.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-user-plus"></i></span>
+          <span class="nav-label">Register Patient</span>
+        </a>
+      </div>
+      <div class="sidebar-section-label">Patient Flow</div>
+      <div class="nav-item">
+        <a href="checkin.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-clipboard-check"></i></span>
+          <span class="nav-label">Check-In</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="queue.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-layer-group"></i></span>
+          <span class="nav-label">Active Queue</span>
+        </a>
+      </div>
+      <div class="nav-item">
+        <a href="notifications.html" class="nav-link">
+          <span class="nav-icon"><i class="fa-solid fa-bell"></i></span>
+          <span class="nav-label">Notifications</span>
+        </a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-avatar" id="sidebarAvatar">MH</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">MHO</div>
+        <div class="sidebar-user-role" id="sidebarRole">Medical Health Officer</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-left">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+      <div>
+        <div class="navbar-page-title">My Profile</div>
+        <div class="navbar-breadcrumb">IHMIS <span>/</span> MHO <span>/</span> My Profile</div>
+      </div>
+    </div>
+    <div class="navbar-right">
+      <button class="navbar-icon-btn" title="Notifications"><i class="fa-solid fa-bell"></i></button>
+      <button class="navbar-user" id="userMenuBtn">
+        <div class="navbar-user-avatar" id="navbarAvatar">MH</div>
+        <span class="navbar-user-name" id="navbarName">MHO</span>
+        <i class="fa-solid fa-chevron-down"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- User Dropdown -->
+  <div class="user-dropdown" id="userDropdown">
+    <div class="dropdown-header">
+      <div class="dropdown-header-name" id="dropdownName">MHO</div>
+      <div class="dropdown-header-role" id="dropdownRole">Medical Health Officer</div>
+    </div>
+    <a href="profile.html" class="dropdown-item"><i class="fa-solid fa-user"></i> My Profile</a>
+    <div class="dropdown-divider"></div>
+    <button class="dropdown-item danger" id="logoutBtn">
+      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <div class="page-header">
+      <h2>My Profile</h2>
+      <p>View and update your account details</p>
+    </div>
+
+    <div class="profile-header" id="profileHeaderCard" style="display:none">
+      <div class="profile-avatar" id="profileAvatar">--</div>
+      <div>
+        <div class="profile-header-name" id="profileHeaderName">—</div>
+        <div class="profile-header-role" id="profileHeaderRole">—</div>
+        <div class="profile-header-username" id="profileHeaderUsername">—</div>
+      </div>
+    </div>
+
+    <div class="card" id="profileLoading">
+      <div class="empty-state" style="padding:2rem 0"><div class="spinner-sm" style="margin:0 auto"></div></div>
+    </div>
+
+    <div class="card" id="profileFormCard" style="display:none">
+      <div style="padding:1.25rem 1.25rem 0">
+        <div class="form-section">
+          <div class="form-section-title">Personal Details</div>
+          <div class="form-grid form-grid-2">
+            <div class="form-group">
+              <label class="form-label">First Name <span class="required">*</span></label>
+              <input type="text" class="form-control" id="pFirstName" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Last Name <span class="required">*</span></label>
+              <input type="text" class="form-control" id="pLastName" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email <span class="required">*</span></label>
+              <input type="email" class="form-control" id="pEmail" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phone</label>
+              <input type="text" class="form-control" id="pPhone" />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-title">Account Info <span style="font-weight:400;color:var(--text-muted);font-size:0.78rem">(read-only)</span></div>
+          <div class="form-grid form-grid-2">
+            <div class="form-group">
+              <label class="form-label">Username</label>
+              <div class="readonly-field" id="pUsername">—</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Role</label>
+              <div class="readonly-field" id="pRole">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-danger" id="profileError" style="display:none">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          <span id="profileErrorMsg"></span>
+        </div>
+      </div>
+      <div class="modal-footer" style="border-top:1px solid var(--border-light);margin-top:0.5rem">
+        <button class="btn btn-primary" id="saveProfileBtn">
+          <span class="spinner-sm" id="profileSaveSpinner" style="display:none;border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>
+          <i class="fa-solid fa-floppy-disk" id="profileSaveIcon"></i>
+          <span id="profileSaveText">Save Changes</span>
+        </button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="../../assets/js/api.js"></script>
+<script src="../../assets/js/utils.js"></script>
+<script src="../../assets/js/sidebar.js"></script>
+<script src="../../assets/js/notifications-widget.js"></script>
+<script>
+  const currentUser = requireAuth('mho');
+
+  const roleLabel = { admin: 'Administrator', doctor: 'Doctor', pharmacist: 'Pharmacist', lab_tech: 'Lab Technician', nurse: 'Nurse', mho: 'Medical Health Officer' };
+
+  async function loadProfile() {
+    try {
+      // Self-service profile endpoint — works for any authenticated role,
+      // unlike /users/:id which is Admin-only. Used consistently across
+      // every portal's profile page for that reason.
+      const res = await api.get(`/auth/me`);
+      const u = res.data;
+
+      const initials = ((u.first_name?.[0]||'') + (u.last_name?.[0]||'')).toUpperCase() || u.username?.[0]?.toUpperCase() || '?';
+      const fullName = u.full_name || `${u.first_name||''} ${u.last_name||''}`.trim() || u.username;
+
+      document.getElementById('profileAvatar').textContent = initials;
+      document.getElementById('profileHeaderName').textContent = fullName;
+      document.getElementById('profileHeaderRole').textContent = roleLabel[currentUser.role] || currentUser.role;
+      document.getElementById('profileHeaderUsername').textContent = '@' + u.username;
+
+      document.getElementById('pFirstName').value = u.first_name || '';
+      document.getElementById('pLastName').value  = u.last_name  || '';
+      document.getElementById('pEmail').value     = u.email      || '';
+      document.getElementById('pPhone').value     = u.phone      || '';
+      document.getElementById('pUsername').textContent = u.username;
+      document.getElementById('pRole').textContent = roleLabel[currentUser.role] || currentUser.role;
+
+      document.getElementById('profileLoading').style.display = 'none';
+      document.getElementById('profileHeaderCard').style.display = 'flex';
+      document.getElementById('profileFormCard').style.display = 'block';
+
+    } catch (err) {
+      document.getElementById('profileLoading').innerHTML =
+        `<div class="empty-state" style="padding:2rem 0"><i class="fa-solid fa-circle-exclamation" style="color:var(--danger)"></i><h4>Could not load your profile</h4><p>${err.message}</p></div>`;
+    }
+  }
+
+  document.getElementById('saveProfileBtn').addEventListener('click', async () => {
+    const errBox = document.getElementById('profileError');
+    errBox.style.display = 'none';
+
+    const firstName = document.getElementById('pFirstName').value.trim();
+    const lastName  = document.getElementById('pLastName').value.trim();
+    const email     = document.getElementById('pEmail').value.trim();
+
+    if (!firstName || !lastName || !email) {
+      document.getElementById('profileErrorMsg').textContent = 'First name, last name, and email are required.';
+      errBox.style.display = 'flex';
+      return;
+    }
+
+    const btn = document.getElementById('saveProfileBtn');
+    btn.disabled = true;
+    document.getElementById('profileSaveSpinner').style.display = 'inline-block';
+    document.getElementById('profileSaveIcon').style.display = 'none';
+    document.getElementById('profileSaveText').textContent = 'Saving...';
+
+    try {
+      await api.put(`/auth/me`, {
+        first_name: firstName,
+        last_name:  lastName,
+        email:      email,
+        phone:      document.getElementById('pPhone').value.trim(),
+      });
+
+      const updatedUser = { ...currentUser, first_name: firstName, last_name: lastName, full_name: `${firstName} ${lastName}`, email };
+      saveSession(sessionStorage.getItem('ihmis_token'), updatedUser);
+
+      showToast('Profile updated successfully.', 'success');
+      setTimeout(() => window.location.reload(), 600);
+
+    } catch (err) {
+      document.getElementById('profileErrorMsg').textContent = err.message;
+      errBox.style.display = 'flex';
+    } finally {
+      btn.disabled = false;
+      document.getElementById('profileSaveSpinner').style.display = 'none';
+      document.getElementById('profileSaveIcon').style.display = 'inline-block';
+      document.getElementById('profileSaveText').textContent = 'Save Changes';
+    }
+  });
+
+  loadProfile();
+</script>
+</body>
+</html>

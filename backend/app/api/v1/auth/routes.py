@@ -40,6 +40,19 @@ def me():
     return success_response(result["message"], data=result["data"])
 
 
+@auth_bp.route("/me", methods=["PUT"])
+@jwt_required()
+def update_me():
+    data = request.get_json()
+    if not data:
+        return error_response("Request body must be JSON.", status_code=400)
+    user_id = get_jwt_identity()
+    result = AuthService.update_current_user(int(user_id), data)
+    if not result["success"]:
+        return error_response(result["message"], status_code=400)
+    return success_response(result["message"], data=result["data"])
+
+
 @auth_bp.route("/logout", methods=["POST"])
 @jwt_required()
 def logout():

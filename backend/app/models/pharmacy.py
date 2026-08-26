@@ -17,6 +17,14 @@ class Drug(db.Model):
     unit        = db.Column(db.String(30), nullable=True)   # e.g. tablet, vial, sachet
     description = db.Column(db.Text, nullable=True)
     is_active   = db.Column(db.Boolean, default=True)
+
+    # Set True only when a Doctor prescribes a drug name that wasn't in the
+    # catalogue — the drug is created immediately (active) so the
+    # prescription can still go through, but this flag tells Pharmacy the
+    # entry still needs a real category/unit/stock before it's a properly
+    # set-up catalogue item. Cleared by Pharmacy/Admin via update_drug.
+    is_pending_setup = db.Column(db.Boolean, default=False, nullable=False)
+
     created_at  = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     # ── relationships ──────────────────────────────────────────
@@ -37,14 +45,15 @@ class Drug(db.Model):
 
     def to_dict(self):
         return {
-            "id":          self.id,
-            "name":        self.name,
-            "brand_name":  self.brand_name,
-            "category":    self.category,
-            "unit":        self.unit,
-            "description": self.description,
-            "is_active":   self.is_active,
-            "total_stock": self.total_stock,
+            "id":                self.id,
+            "name":              self.name,
+            "brand_name":        self.brand_name,
+            "category":          self.category,
+            "unit":              self.unit,
+            "description":       self.description,
+            "is_active":         self.is_active,
+            "is_pending_setup":  self.is_pending_setup,
+            "total_stock":       self.total_stock,
         }
 
 

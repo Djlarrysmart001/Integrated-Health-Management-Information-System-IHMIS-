@@ -57,9 +57,16 @@ document.addEventListener('DOMContentLoaded', () => {
       userDropdown.classList.toggle('open');
     });
 
-    // Close on outside click
-    document.addEventListener('click', () => {
-      userDropdown.classList.remove('open');
+    // Close on outside click only — closing on every click (including
+    // clicks on the dropdown's own items) was hiding the dropdown in the
+    // same tick as a link inside it was clicked, which silently cancelled
+    // the link's navigation (a known browser quirk: hiding an element
+    // during its own click event can cancel the pending default action).
+    // That's why "My Profile" intermittently did nothing.
+    document.addEventListener('click', (e) => {
+      if (!userDropdown.contains(e.target) && !userMenuBtn.contains(e.target)) {
+        userDropdown.classList.remove('open');
+      }
     });
   }
 

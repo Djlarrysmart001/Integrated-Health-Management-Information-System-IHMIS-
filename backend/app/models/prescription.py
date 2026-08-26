@@ -66,14 +66,20 @@ class PrescriptionItem(db.Model):
 
     def to_dict(self):
         return {
-            "id":              self.id,
-            "drug_id":         self.drug_id,
-            "drug_name":       self.drug.name if self.drug else None,
-            "dosage":          self.dosage,
-            "frequency":       self.frequency,
-            "duration":        self.duration,
-            "quantity":        self.quantity,
-            "instructions":    self.instructions,
-            "is_dispensed":    self.is_dispensed,
-            "dispensed_at":    self.dispensed_at.isoformat() if self.dispensed_at else None,
+            "id":                     self.id,
+            "drug_id":                self.drug_id,
+            "drug_name":              self.drug.name if self.drug else None,
+            # Lets the frontend show a "NEW — needs Pharmacy setup" badge
+            # on any item whose drug was auto-created from a doctor-typed
+            # name, and keep showing it correctly after a page reload —
+            # this reflects live state, so it disappears once Pharmacy
+            # clears the flag via update_drug.
+            "drug_is_pending_setup":  self.drug.is_pending_setup if self.drug else False,
+            "dosage":                 self.dosage,
+            "frequency":              self.frequency,
+            "duration":               self.duration,
+            "quantity":               self.quantity,
+            "instructions":           self.instructions,
+            "is_dispensed":           self.is_dispensed,
+            "dispensed_at":           self.dispensed_at.isoformat() if self.dispensed_at else None,
         }

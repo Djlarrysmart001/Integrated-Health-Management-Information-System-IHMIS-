@@ -69,7 +69,8 @@ def create_user():
     if not data:
         return error_response("Request body must be JSON.", status_code=400)
 
-    result = UserService.create_user(data)
+    performed_by = int(get_jwt_identity())
+    result = UserService.create_user(data, performed_by)
     if not result["success"]:
         return error_response(result["message"], status_code=400)
     return success_response(result["message"], data=result["data"], status_code=201)
@@ -86,7 +87,8 @@ def update_user(user_id):
     if not data:
         return error_response("Request body must be JSON.", status_code=400)
 
-    result = UserService.update_user(user_id, data)
+    performed_by = int(get_jwt_identity())
+    result = UserService.update_user(user_id, data, performed_by)
     if not result["success"]:
         return error_response(result["message"], status_code=400)
     return success_response(result["message"], data=result["data"])
