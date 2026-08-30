@@ -7,6 +7,7 @@ from app.utils.response import success_response, error_response
 from app.utils.decorators import role_required
 from app.utils.constants import Roles
 from app.utils.dates import resolve_date_range
+from app.models.user import User
 
 health_files_bp = Blueprint("health_files", __name__)
 
@@ -38,14 +39,36 @@ def open_health_file():
 
 # ─────────────────────────────────────────────────────────────
 # PATCH /api/v1/health-files/<id>/forward-to-nurse
-# MHO forwards the file to the Nurse queue
+# MHO forwards the file to a specific on-duty Nurse
 # ─────────────────────────────────────────────────────────────
 @health_files_bp.route("/<int:health_file_id>/forward-to-nurse", methods=["PATCH"])
 @role_required(Roles.ADMIN, Roles.MEDICAL_HEALTH_OFFICER)
 def forward_to_nurse(health_file_id):
     user_id = int(get_jwt_identity())
-    result = HealthFileService.forward_to_nurse(health_file_id, user_id)
+    data = request.get_json(silent=True) or {}
+    nurse_id = data.get("nurse_id")
+    result = HealthFileService.forward_to_nurse(health_file_id, user_id, nurse_id)
 
+    if not result["success"]:
+        return error_response(result["message"], status_code=400)
+    return success_response(result["message"], data=result["data"])
+
+
+# ─────────────────────────────────────────────────────────────
+# PATCH /api/v1/health-files/<id>/reassign-nurse
+# Admin-only. Changes WHO a with_nurse file is assigned to, without
+# touching its status. Covers a nurse going off-duty mid-shift.
+# ─────────────────────────────────────────────────────────────
+@health_files_bp.route("/<int:health_file_id>/reassign-nurse", methods=["PATCH"])
+@role_required(Roles.ADMIN)
+def reassign_nurse(health_file_id):
+    admin_user_id = int(get_jwt_identity())
+    data = request.get_json(silent=True) or {}
+    new_nurse_id = data.get("nurse_id")
+    if not new_nurse_id:
+        return error_response("'nurse_id' is required.", status_code=400)
+
+    result = HealthFileService.reassign_nurse(health_file_id, new_nurse_id, admin_user_id)
     if not result["success"]:
         return error_response(result["message"], status_code=400)
     return success_response(result["message"], data=result["data"])
@@ -59,8 +82,31 @@ def forward_to_nurse(health_file_id):
 @role_required(Roles.ADMIN, Roles.NURSE)
 def forward_to_doctor(health_file_id):
     user_id = int(get_jwt_identity())
-    result = HealthFileService.forward_to_doctor(health_file_id, user_id)
+    data = request.get_json(silent=True) or {}
+    doctor_id = data.get("doctor_id")
+    result = HealthFileService.forward_to_doctor(health_file_id, user_id, doctor_id)
 
+    if not result["success"]:
+        return error_response(result["message"], status_code=400)
+    return success_response(result["message"], data=result["data"])
+
+
+# ─────────────────────────────────────────────────────────────
+# PATCH /api/v1/health-files/<id>/reassign-doctor
+# Admin-only. Changes WHO a with_doctor file is assigned to, without
+# touching its status. Covers a doctor going off-duty mid-shift, and
+# fixing any file that ended up with_doctor with no assigned doctor.
+# ─────────────────────────────────────────────────────────────
+@health_files_bp.route("/<int:health_file_id>/reassign-doctor", methods=["PATCH"])
+@role_required(Roles.ADMIN)
+def reassign_doctor(health_file_id):
+    admin_user_id = int(get_jwt_identity())
+    data = request.get_json(silent=True) or {}
+    new_doctor_id = data.get("doctor_id")
+    if not new_doctor_id:
+        return error_response("'doctor_id' is required.", status_code=400)
+
+    result = HealthFileService.reassign_doctor(health_file_id, new_doctor_id, admin_user_id)
     if not result["success"]:
         return error_response(result["message"], status_code=400)
     return success_response(result["message"], data=result["data"])
@@ -235,7 +281,30 @@ def get_queue(status):
     page     = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 20, type=int)
 
-    result = HealthFileService.get_queue(status, page=page, per_page=per_page)
+    # A Doctor viewing their own "with_doctor" queue only sees files
+    # assigned to them (see HealthFileService.forward_to_doctor). Admin
+    # is deliberately exempt -- Admin needs the full, unscoped view for
+    # oversight/audit purposes. Every other status/role combo is
+    # unaffected -- doctor_id stays None and the queue is unscoped.
+    doctor_id = None
+    if status == "with_doctor":
+        current_user = User.query.get(int(get_jwt_identity()))
+        if current_user and current_user.has_role(Roles.DOCTOR) and not current_user.has_role(Roles.ADMIN):
+            doctor_id = current_user.id
+
+    # Same pattern for a Nurse viewing their own "with_nurse" queue (see
+    # HealthFileService.forward_to_nurse). Admin AND MHO are exempt --
+    # Admin for oversight, MHO because they need the full list to pick
+    # a nurse to forward to in the first place.
+    nurse_id = None
+    if status == "with_nurse":
+        current_user = User.query.get(int(get_jwt_identity()))
+        if (current_user and current_user.has_role(Roles.NURSE)
+                and not current_user.has_role(Roles.ADMIN)
+                and not current_user.has_role(Roles.MEDICAL_HEALTH_OFFICER)):
+            nurse_id = current_user.id
+
+    result = HealthFileService.get_queue(status, page=page, per_page=per_page, doctor_id=doctor_id, nurse_id=nurse_id)
     if not result["success"]:
         return error_response(result["message"], status_code=400)
     return success_response(result["message"], data=result["data"])

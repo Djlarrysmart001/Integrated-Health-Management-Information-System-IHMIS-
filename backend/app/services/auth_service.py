@@ -113,6 +113,38 @@ class AuthService:
         return {"success": True, "message": "Profile updated successfully.", "data": user.to_dict()}
 
     @staticmethod
+    def set_duty_status(user_id: int, is_on_duty: bool) -> dict:
+        """
+        Lets a Doctor or Nurse toggle their own on-duty status. Deliberately
+        only touches this one field on the caller's own record -- same
+        narrow-self-service pattern as update_current_user. This is what
+        drives the Nurse's "which doctor is available" picker on Forward to
+        Doctor (see UserService.get_on_duty_doctors), and the MHO's "which
+        nurse is available" picker on Forward to Nurse (see
+        UserService.get_on_duty_nurses).
+        """
+        user = User.query.get(user_id)
+        if not user:
+            return {"success": False, "message": "User not found.", "data": None}
+        if not (user.has_role(Roles.DOCTOR) or user.has_role(Roles.NURSE)):
+            return {"success": False, "message": "Only Doctors and Nurses have an on-duty status.", "data": None}
+
+        user.is_on_duty = bool(is_on_duty)
+        db.session.commit()
+
+        from app.services.audit_service import AuditService
+        AuditService.log(
+            action      = "SET_DUTY_STATUS",
+            entity_type = "User",
+            entity_id   = user.id,
+            user_id     = user.id,
+            new_value   = {"is_on_duty": user.is_on_duty}
+        )
+
+        status_word = "on" if user.is_on_duty else "off"
+        return {"success": True, "message": f"You are now {status_word} duty.", "data": user.to_dict()}
+
+    @staticmethod
     def change_password(user_id: int, current_password: str, new_password: str) -> dict:
         user = User.query.get(user_id)
         if not user:

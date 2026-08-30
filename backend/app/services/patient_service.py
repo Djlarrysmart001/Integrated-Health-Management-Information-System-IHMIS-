@@ -4,9 +4,53 @@ from datetime import datetime, timezone
 from app.extensions import db
 from app.models.patient import Patient, StudentProfile, StaffProfile
 from app.models.medical_record import MedicalRecord
+from app.models.consultation import Consultation
 
 
 class PatientService:
+
+    @staticmethod
+    def get_doctor_patients(doctor_id: int, page=1, per_page=20, search=None):
+        """
+        This is what actually feeds a Doctor's "My Patients" page --
+        distinct patients this doctor has personally consulted
+        (Consultation.doctor_id), NOT the full clinic-wide patient
+        directory get_all_patients returns. Mirrors the same
+        Consultation.doctor_id scoping the Doctor dashboard already
+        uses for its stat cards.
+        """
+        query = (
+            Patient.query
+            .join(Consultation, Consultation.patient_id == Patient.id)
+            .filter(Consultation.doctor_id == doctor_id)
+        )
+
+        if search:
+            prefix_term = f"{search}%"
+            contains_term = f"%{search}%"
+            query = query.filter(
+                (Patient.first_name.ilike(prefix_term)) |
+                (Patient.last_name.ilike(prefix_term)) |
+                (Patient.patient_number.ilike(prefix_term)) |
+                (Patient.phone.ilike(contains_term))
+            )
+
+        query = query.distinct().order_by(Patient.created_at.desc())
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+
+        return {
+            "success": True,
+            "message": f"{pagination.total} patient(s) you've consulted.",
+            "data": {
+                "patients":     [p.to_dict() for p in pagination.items],
+                "total":        pagination.total,
+                "pages":        pagination.pages,
+                "current_page": page,
+                "per_page":     per_page,
+                "has_next":     pagination.has_next,
+                "has_prev":     pagination.has_prev,
+            }
+        }
 
     @staticmethod
     def generate_patient_number() -> str:

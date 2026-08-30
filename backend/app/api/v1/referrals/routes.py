@@ -6,6 +6,7 @@ from app.services.referral_service import ReferralService
 from app.utils.response import success_response, error_response
 from app.utils.decorators import role_required
 from app.utils.constants import Roles
+from app.models.user import User
 
 referrals_bp = Blueprint("referrals", __name__)
 
@@ -25,8 +26,16 @@ def get_all_referrals():
     status   = request.args.get("status")
     urgency  = request.args.get("urgency")
 
+    # Same auto-scope pattern as the queue and lab requests: a Doctor
+    # only sees referrals THEY issued. Admin, Nurse, MHO keep the full
+    # view for oversight/continuity of care.
+    doctor_id = None
+    current_user = User.query.get(int(get_jwt_identity()))
+    if current_user and current_user.has_role(Roles.DOCTOR) and not current_user.has_role(Roles.ADMIN):
+        doctor_id = current_user.id
+
     result = ReferralService.get_all_referrals(
-        page=page, per_page=per_page, status=status, urgency=urgency
+        page=page, per_page=per_page, status=status, urgency=urgency, doctor_id=doctor_id
     )
     return success_response(result["message"], data=result["data"])
 

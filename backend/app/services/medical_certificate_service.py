@@ -139,12 +139,14 @@ class MedicalCertificateService:
         }
 
     @staticmethod
-    def get_all_certificates(page=1, per_page=20, certificate_type=None, status=None):
+    def get_all_certificates(page=1, per_page=20, certificate_type=None, status=None, doctor_id=None):
         query = MedicalCertificate.query
         if certificate_type:
             query = query.filter(MedicalCertificate.certificate_type == certificate_type)
         if status:
             query = query.filter(MedicalCertificate.status == status)
+        if doctor_id is not None:
+            query = query.filter(MedicalCertificate.issued_by == doctor_id)
 
         query = query.order_by(MedicalCertificate.issued_at.desc())
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)

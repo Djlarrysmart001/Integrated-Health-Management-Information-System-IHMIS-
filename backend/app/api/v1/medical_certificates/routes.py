@@ -6,6 +6,7 @@ from app.services.medical_certificate_service import MedicalCertificateService
 from app.utils.response import success_response, error_response
 from app.utils.decorators import role_required
 from app.utils.constants import Roles
+from app.models.user import User
 
 medical_certificates_bp = Blueprint("medical_certificates", __name__)
 
@@ -27,8 +28,16 @@ def get_all_certificates():
     certificate_type = request.args.get("certificate_type")
     status           = request.args.get("status")
 
+    # Same auto-scope pattern as queue/lab/referrals: a Doctor only sees
+    # certificates THEY issued. Admin and MHO keep the full view.
+    doctor_id = None
+    current_user = User.query.get(int(get_jwt_identity()))
+    if current_user and current_user.has_role(Roles.DOCTOR) and not current_user.has_role(Roles.ADMIN):
+        doctor_id = current_user.id
+
     result = MedicalCertificateService.get_all_certificates(
-        page=page, per_page=per_page, certificate_type=certificate_type, status=status
+        page=page, per_page=per_page, certificate_type=certificate_type, status=status,
+        doctor_id=doctor_id
     )
     return success_response(result["message"], data=result["data"])
 

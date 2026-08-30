@@ -261,7 +261,7 @@
     tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="spinner-sm" style="margin:0 auto 0.5rem"></div><p>Loading...</p></div></td></tr>`;
 
     try {
-      let url = `/patients?page=${currentPage}&per_page=15`;
+      let url = `/patients/my-patients?page=${currentPage}&per_page=15`;
       if (searchQuery)  url += `&search=${encodeURIComponent(searchQuery)}`;
       if (genderFilter) url += `&gender=${genderFilter}`;
 

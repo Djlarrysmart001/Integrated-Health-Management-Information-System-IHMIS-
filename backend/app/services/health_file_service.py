@@ -140,12 +140,36 @@ class HealthFileService:
                 message = ACTION_MESSAGES.get(
                     action_name, "Patient {patient_name} requires your attention."
                 ).format(patient_name=patient_name)
-                NotificationService.broadcast_to_role(
-                    role_name         = role_name,
-                    title             = "Patient Flow Update",
-                    message           = message,
-                    notification_type = "patient_flow",
-                )
+
+                # with_doctor and with_nurse are each assigned to a SPECIFIC
+                # person, not a whole role -- everyone else on that team
+                # broadcasting "patient ready" for a file they were never
+                # forwarded is exactly the leak that motivated
+                # assigned_doctor_id / assigned_nurse_id in the first place.
+                # Every other status (Lab/Pharmacy/admitted) still
+                # broadcasts, since those queues are genuinely shared
+                # across the whole role.
+                if to_status == "with_doctor" and health_file.assigned_doctor_id:
+                    NotificationService.create_notification(
+                        recipient_id      = health_file.assigned_doctor_id,
+                        title             = "Patient Flow Update",
+                        message           = message,
+                        notification_type = "patient_flow",
+                    )
+                elif to_status == "with_nurse" and health_file.assigned_nurse_id:
+                    NotificationService.create_notification(
+                        recipient_id      = health_file.assigned_nurse_id,
+                        title             = "Patient Flow Update",
+                        message           = message,
+                        notification_type = "patient_flow",
+                    )
+                else:
+                    NotificationService.broadcast_to_role(
+                        role_name         = role_name,
+                        title             = "Patient Flow Update",
+                        message           = message,
+                        notification_type = "patient_flow",
+                    )
             except Exception:
                 pass
         # ──────────────────────────────────────────────────────────
@@ -156,7 +180,38 @@ class HealthFileService:
     # MHO -> Nurse
     # ──────────────────────────────────────────────────────────
     @staticmethod
-    def forward_to_nurse(health_file_id: int, user_id: int):
+    def forward_to_nurse(health_file_id: int, user_id: int, nurse_id: int = None):
+        """
+        nurse_id is REQUIRED -- a clinic with more than one nurse on duty
+        needs the MHO to pick which specific nurse a file goes to, exactly
+        the same reasoning as forward_to_doctor's doctor_id. Unlike the
+        Doctor assignment, there's no loop-back stage for Nurse, so this
+        is always a first-time assignment -- there's no "already assigned,
+        skip the picker" branch to worry about.
+        """
+        health_file = HealthFile.query.get(health_file_id)
+        if not health_file:
+            return {"success": False, "message": f"Health file with ID {health_file_id} not found.", "data": None}
+
+        if not nurse_id:
+            return {
+                "success": False,
+                "message": "'nurse_id' is required -- choose an on-duty nurse to forward to.",
+                "data": health_file.to_dict()
+            }
+
+        nurse = User.query.get(nurse_id)
+        if not nurse or not nurse.has_role(Roles.NURSE):
+            return {"success": False, "message": f"User {nurse_id} is not a Nurse.", "data": None}
+        if not nurse.is_active:
+            return {"success": False, "message": f"{nurse.full_name} is not an active account.", "data": None}
+        if not nurse.is_on_duty:
+            return {"success": False, "message": f"{nurse.full_name} is not currently on duty.", "data": None}
+
+        health_file.assigned_nurse_id = nurse_id
+        # Committed together with the status change below in _transition,
+        # so a failed transition never leaves an orphaned assignment.
+
         return HealthFileService._transition(
             health_file_id, ["with_mho"], "with_nurse", user_id, "FORWARD_TO_NURSE"
         )
@@ -171,17 +226,175 @@ class HealthFileService:
     # handoff reaches the Doctor.
     # ──────────────────────────────────────────────────────────
     @staticmethod
-    def forward_to_doctor(health_file_id: int, user_id: int):
+    def forward_to_doctor(health_file_id: int, user_id: int, doctor_id: int = None):
+        """
+        doctor_id is only REQUIRED the first time a file reaches a doctor
+        (i.e. when assigned_doctor_id is still unset). On the admitted
+        loop-back, the file already has an assigned_doctor_id from the
+        original forward -- we deliberately keep that same doctor rather
+        than asking the Nurse to pick again, so a patient's admission
+        review always goes back to the doctor who admitted them.
+        """
         health_file = HealthFile.query.get(health_file_id)
-        if health_file and not health_file.vital_signs:
+        if not health_file:
+            return {"success": False, "message": f"Health file with ID {health_file_id} not found.", "data": None}
+
+        if not health_file.vital_signs:
             return {
                 "success": False,
                 "message": "Cannot forward to Doctor before recording vital signs.",
                 "data": health_file.to_dict()
             }
+
+        if health_file.assigned_doctor_id is None:
+            # First-time forward -- a specific on-duty doctor must be chosen.
+            if not doctor_id:
+                return {
+                    "success": False,
+                    "message": "'doctor_id' is required -- choose an on-duty doctor to forward to.",
+                    "data": health_file.to_dict()
+                }
+
+            doctor = User.query.get(doctor_id)
+            if not doctor or not doctor.has_role(Roles.DOCTOR):
+                return {"success": False, "message": f"User {doctor_id} is not a Doctor.", "data": None}
+            if not doctor.is_active:
+                return {"success": False, "message": f"Dr. {doctor.full_name} is not an active account.", "data": None}
+            if not doctor.is_on_duty:
+                return {"success": False, "message": f"Dr. {doctor.full_name} is not currently on duty.", "data": None}
+
+            health_file.assigned_doctor_id = doctor_id
+            # Committed together with the status change below in _transition,
+            # so a failed transition never leaves an orphaned assignment.
+
         return HealthFileService._transition(
             health_file_id, ["with_nurse", "admitted"], "with_doctor", user_id, "FORWARD_TO_DOCTOR"
         )
+
+    # ──────────────────────────────────────────────────────────
+    # Admin-only escape hatch: reassign a file already sitting
+    # with_doctor to a different (or, for orphaned/legacy records, a
+    # first-time) doctor. Two real situations this covers:
+    #   1. A doctor goes off-duty mid-shift with patients still on
+    #      their queue and someone else needs to pick them up.
+    #   2. A file somehow ended up with_doctor but assigned_doctor_id
+    #      is still null (e.g. a bad request during testing/migration)
+    #      and is now stuck -- forward_to_doctor can't touch it because
+    #      its status guard only accepts with_nurse/admitted.
+    # Deliberately does NOT change status -- the file is already
+    # with_doctor and stays there, this only changes WHO it's with.
+    # ──────────────────────────────────────────────────────────
+    @staticmethod
+    def reassign_doctor(health_file_id: int, new_doctor_id: int, admin_user_id: int):
+        health_file = HealthFile.query.get(health_file_id)
+        if not health_file:
+            return {"success": False, "message": f"Health file with ID {health_file_id} not found.", "data": None}
+
+        if health_file.status != "with_doctor":
+            return {
+                "success": False,
+                "message": f"Health file is currently '{health_file.status}' -- reassignment only applies to files 'with_doctor'.",
+                "data": health_file.to_dict()
+            }
+
+        doctor = User.query.get(new_doctor_id)
+        if not doctor or not doctor.has_role(Roles.DOCTOR):
+            return {"success": False, "message": f"User {new_doctor_id} is not a Doctor.", "data": None}
+        if not doctor.is_active:
+            return {"success": False, "message": f"Dr. {doctor.full_name} is not an active account.", "data": None}
+        if not doctor.is_on_duty:
+            return {"success": False, "message": f"Dr. {doctor.full_name} is not currently on duty.", "data": None}
+
+        old_doctor_id = health_file.assigned_doctor_id
+        health_file.assigned_doctor_id = new_doctor_id
+        db.session.commit()
+
+        AuditService.log(
+            action      = "REASSIGN_DOCTOR",
+            entity_type = "HealthFile",
+            entity_id   = health_file.id,
+            user_id     = admin_user_id,
+            old_value   = {"assigned_doctor_id": old_doctor_id},
+            new_value   = {"assigned_doctor_id": new_doctor_id}
+        )
+
+        try:
+            from app.services.notification_service import NotificationService
+            patient_name = health_file.patient.full_name if health_file.patient else "A patient"
+            NotificationService.create_notification(
+                recipient_id      = new_doctor_id,
+                title             = "Patient Flow Update",
+                message           = f"Patient ready for consultation: {patient_name}.",
+                notification_type = "patient_flow",
+            )
+        except Exception:
+            pass
+
+        return {
+            "success": True,
+            "message": f"Reassigned to Dr. {doctor.full_name}.",
+            "data": health_file.to_dict()
+        }
+
+    # ──────────────────────────────────────────────────────────
+    # Admin-only escape hatch: reassign a file already sitting
+    # with_nurse to a different on-duty nurse. Covers a Nurse going
+    # off-duty mid-shift with patients still on their queue. Mirrors
+    # reassign_doctor exactly -- deliberately does NOT change status,
+    # the file is already with_nurse and stays there, this only
+    # changes WHO it's with.
+    # ──────────────────────────────────────────────────────────
+    @staticmethod
+    def reassign_nurse(health_file_id: int, new_nurse_id: int, admin_user_id: int):
+        health_file = HealthFile.query.get(health_file_id)
+        if not health_file:
+            return {"success": False, "message": f"Health file with ID {health_file_id} not found.", "data": None}
+
+        if health_file.status != "with_nurse":
+            return {
+                "success": False,
+                "message": f"Health file is currently '{health_file.status}' -- reassignment only applies to files 'with_nurse'.",
+                "data": health_file.to_dict()
+            }
+
+        nurse = User.query.get(new_nurse_id)
+        if not nurse or not nurse.has_role(Roles.NURSE):
+            return {"success": False, "message": f"User {new_nurse_id} is not a Nurse.", "data": None}
+        if not nurse.is_active:
+            return {"success": False, "message": f"{nurse.full_name} is not an active account.", "data": None}
+        if not nurse.is_on_duty:
+            return {"success": False, "message": f"{nurse.full_name} is not currently on duty.", "data": None}
+
+        old_nurse_id = health_file.assigned_nurse_id
+        health_file.assigned_nurse_id = new_nurse_id
+        db.session.commit()
+
+        AuditService.log(
+            action      = "REASSIGN_NURSE",
+            entity_type = "HealthFile",
+            entity_id   = health_file.id,
+            user_id     = admin_user_id,
+            old_value   = {"assigned_nurse_id": old_nurse_id},
+            new_value   = {"assigned_nurse_id": new_nurse_id}
+        )
+
+        try:
+            from app.services.notification_service import NotificationService
+            patient_name = health_file.patient.full_name if health_file.patient else "A patient"
+            NotificationService.create_notification(
+                recipient_id      = new_nurse_id,
+                title             = "Patient Flow Update",
+                message           = f"New patient waiting: {patient_name} needs vitals/triage.",
+                notification_type = "patient_flow",
+            )
+        except Exception:
+            pass
+
+        return {
+            "success": True,
+            "message": f"Reassigned to {nurse.full_name}.",
+            "data": health_file.to_dict()
+        }
 
     # ──────────────────────────────────────────────────────────
     # Doctor -> Lab
@@ -314,11 +527,29 @@ class HealthFileService:
     # Queues — one per role
     # ──────────────────────────────────────────────────────────
     @staticmethod
-    def get_queue(status: str, page=1, per_page=20):
+    def get_queue(status: str, page=1, per_page=20, doctor_id: int = None, nurse_id: int = None):
+        """
+        doctor_id, when provided, scopes the with_doctor queue to files
+        assigned to that specific doctor (see forward_to_doctor). Left
+        as None for every other status, and for Admin viewing with_doctor
+        -- Admin needs the unscoped, system-wide view for oversight.
+
+        nurse_id works identically for the with_nurse queue (see
+        forward_to_nurse) -- left as None for every other status, and
+        for Admin/MHO viewing with_nurse, who need the unscoped,
+        system-wide view (Admin for oversight, MHO to pick a nurse to
+        forward to in the first place).
+        """
         if status not in HealthFile.STATUSES:
             return {"success": False, "message": f"'{status}' is not a valid health file status.", "data": None}
 
-        pagination = HealthFile.query.filter_by(status=status).order_by(
+        query = HealthFile.query.filter_by(status=status)
+        if doctor_id is not None:
+            query = query.filter(HealthFile.assigned_doctor_id == doctor_id)
+        if nurse_id is not None:
+            query = query.filter(HealthFile.assigned_nurse_id == nurse_id)
+
+        pagination = query.order_by(
             HealthFile.updated_at.asc()  # oldest-waiting-first, like a real queue
         ).paginate(page=page, per_page=per_page, error_out=False)
 

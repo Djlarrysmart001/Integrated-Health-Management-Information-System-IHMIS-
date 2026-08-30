@@ -6,6 +6,7 @@ from app.models.laboratory import LabTest, LabTestCategory, LabRequest, LabResul
 from app.models.consultation import Consultation
 from app.models.patient import Patient
 from app.services.health_file_service import HealthFileService
+from app.utils.lab_test_defaults import get_lab_test_defaults
 
 VALID_INTERPRETATIONS = ["normal", "low", "high", "critical"]
 
@@ -202,12 +203,21 @@ class LaboratoryService:
         """
         Used only when a Doctor requests a test by typed name instead of
         picking a test_id from the catalogue (test not found there).
-        Mirrors PharmacyService.find_or_create_by_name exactly.
+        Mirrors PharmacyService.find_or_create_by_name, with one addition:
+        before falling back to a blank "needs setup" row, it checks a
+        static reference table (app/utils/lab_test_defaults.py) of common
+        school-clinic tests.
 
         - If a test with this name (case-insensitive) already exists,
           it's reused as-is — no duplicate is created.
-        - Otherwise, a brand-new LabTest row is created immediately as
-          is_active=True (so the request can go through right away) but
+        - Otherwise, if the typed name matches a known test (directly or
+          via alias) in the reference table, a new LabTest row is created
+          fully set up — category, normal_range, unit, turnaround_hours —
+          and is_pending_setup is left False, so it never shows up as
+          "needs setup" in the first place.
+        - Otherwise (genuinely unrecognised test name), the original
+          fallback applies: a brand-new LabTest row is created immediately
+          as is_active=True (so the request can go through right away) but
           flagged is_pending_setup=True, so Lab's dashboard can surface it
           as "needs setup" — category, normal_range, unit, and
           turnaround_hours still need to be filled in manually.
@@ -227,6 +237,29 @@ class LaboratoryService:
                 "message": f"Matched existing test '{existing.name}'.",
                 "data": existing,
                 "created": False,
+            }
+
+        defaults = get_lab_test_defaults(clean_name)
+
+        if defaults:
+            category_row = LaboratoryService._find_or_create_category(defaults["category"])
+            test = LabTest(
+                name             = clean_name,
+                category_id      = category_row.id,
+                normal_range     = defaults["normal_range"],
+                unit             = defaults["unit"],
+                turnaround_hours = defaults["turnaround_hours"],
+                is_active        = True,
+                is_pending_setup = False,
+            )
+            db.session.add(test)
+            db.session.commit()
+
+            return {
+                "success": True,
+                "message": f"New test '{test.name}' created and auto-filled from the reference catalogue.",
+                "data": test,
+                "created": True,
             }
 
         uncategorized = LaboratoryService._find_or_create_category("Uncategorized")
@@ -255,8 +288,12 @@ class LaboratoryService:
     # ──────────────────────────────────────────────────────────
     @staticmethod
     def get_all_requests(page=1, per_page=20, status=None,
-                          patient_id=None, priority=None, search=None):
-        """Returns paginated lab requests."""
+                          patient_id=None, priority=None, search=None, doctor_id=None):
+        """
+        doctor_id, when provided, scopes results to lab requests THAT
+        doctor raised (requested_by) -- mirrors the same pattern as
+        HealthFileService.get_queue's doctor_id scoping for the queue.
+        """
         query = LabRequest.query
 
         if status:
@@ -265,6 +302,8 @@ class LaboratoryService:
             query = query.filter(LabRequest.patient_id == patient_id)
         if priority:
             query = query.filter(LabRequest.priority == priority)
+        if doctor_id is not None:
+            query = query.filter(LabRequest.requested_by == doctor_id)
 
         if search:
             like = f"%{search.strip()}%"

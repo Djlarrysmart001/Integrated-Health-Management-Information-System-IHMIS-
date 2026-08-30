@@ -224,6 +224,35 @@
       </div>
     </div>
 
+    <!-- ── Choose Nurse Modal (on-duty nurses only) ── -->
+    <div class="modal-overlay" id="chooseNurseModal">
+      <div class="modal modal-sm">
+        <div class="modal-header">
+          <h3><i class="fa-solid fa-user-nurse" style="color:var(--primary);margin-right:0.5rem"></i>Forward to Nurse</h3>
+          <button class="modal-close" id="closeChooseNurse"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+          <p style="color:var(--text-light);font-size:0.85rem;margin-bottom:1rem">Choose which on-duty nurse to send this patient to.</p>
+          <div id="nurseListLoading" style="text-align:center;padding:1.5rem 0">
+            <div class="spinner-sm" style="margin:0 auto 0.5rem"></div>
+            <span style="color:var(--text-muted);font-size:0.85rem">Loading on-duty nurses...</span>
+          </div>
+          <div id="nurseListEmpty" class="alert alert-warning" style="display:none">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span>No nurses are currently on duty. Ask a nurse to set themselves on duty from their portal, or try again shortly.</span>
+          </div>
+          <div id="nurseList" style="display:none;display:flex;flex-direction:column;gap:0.5rem"></div>
+          <div class="alert alert-danger" id="nursePickError" style="display:none;margin-top:0.75rem">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span id="nursePickErrorMsg"></span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="cancelChooseNurse">Cancel</button>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -402,19 +431,84 @@
     document.getElementById('checkInBtn').disabled = state;
   }
 
-  /* ── Forward to Nurse (from either fresh check-in or an already-open file) ── */
-  async function forwardToNurse() {
+  /* ── Forward to Nurse -- choose an on-duty nurse first ── */
+  const chooseNurseModal = document.getElementById('chooseNurseModal');
+  const nurseList        = document.getElementById('nurseList');
+  const nurseListLoading = document.getElementById('nurseListLoading');
+  const nurseListEmpty   = document.getElementById('nurseListEmpty');
+  const nursePickError   = document.getElementById('nursePickError');
+  const nursePickErrorMsg= document.getElementById('nursePickErrorMsg');
+
+  function openChooseNurseModal() {
     if (!openHealthFileId) return;
+    chooseNurseModal.classList.add('open');
+    loadOnDutyNurses();
+  }
+  function closeChooseNurseModal() {
+    chooseNurseModal.classList.remove('open');
+  }
+  document.getElementById('closeChooseNurse').addEventListener('click', closeChooseNurseModal);
+  document.getElementById('cancelChooseNurse').addEventListener('click', closeChooseNurseModal);
+
+  async function loadOnDutyNurses() {
+    nurseListLoading.style.display = 'block';
+    nurseListEmpty.style.display   = 'none';
+    nurseList.style.display        = 'none';
+    nursePickError.style.display   = 'none';
+    nurseList.innerHTML = '';
+
     try {
-      await api.patch(`/health-files/${openHealthFileId}/forward-to-nurse`, {});
+      const res    = await api.get('/users/on-duty-nurses');
+      const nurses = (res.data && res.data.nurses) || [];
+
+      nurseListLoading.style.display = 'none';
+
+      if (nurses.length === 0) {
+        nurseListEmpty.style.display = 'block';
+        return;
+      }
+
+      nurses.forEach(n => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:0.7rem 0.9rem;border:1px solid var(--border-light);border-radius:8px';
+        row.innerHTML = `
+          <span style="font-weight:600;color:var(--text-dark);font-size:0.9rem">
+            <i class="fa-solid fa-user-nurse" style="color:var(--primary);margin-right:0.5rem"></i>${n.full_name}
+          </span>
+          <button class="btn btn-primary btn-sm select-nurse-btn" data-nurse-id="${n.id}">Select</button>
+        `;
+        nurseList.appendChild(row);
+      });
+      nurseList.style.display = 'flex';
+
+      document.querySelectorAll('.select-nurse-btn').forEach(btn => {
+        btn.addEventListener('click', () => forwardToNurse(btn.dataset.nurseId, btn));
+      });
+    } catch (err) {
+      nurseListLoading.style.display = 'none';
+      nursePickError.style.display = 'block';
+      nursePickErrorMsg.textContent = err.message || 'Could not load on-duty nurses.';
+    }
+  }
+
+  async function forwardToNurse(nurseId, triggerBtn) {
+    if (!openHealthFileId) return;
+    document.querySelectorAll('.select-nurse-btn').forEach(b => b.disabled = true);
+    if (triggerBtn) {
+      triggerBtn.innerHTML = '<span class="spinner-sm" style="border-color:rgba(255,255,255,0.3);border-top-color:#fff"></span>';
+    }
+    try {
+      await api.patch(`/health-files/${openHealthFileId}/forward-to-nurse`, { nurse_id: Number(nurseId) });
       showToast('Patient forwarded to Nurse.', 'success');
       window.location.href = 'queue.html';
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(err.message || 'Could not forward to Nurse', 'error');
+      document.querySelectorAll('.select-nurse-btn').forEach(b => b.disabled = false);
+      if (triggerBtn) triggerBtn.textContent = 'Select';
     }
   }
-  document.getElementById('forwardNurseBtn').addEventListener('click', forwardToNurse);
-  document.getElementById('forwardExistingBtn').addEventListener('click', forwardToNurse);
+  document.getElementById('forwardNurseBtn').addEventListener('click', openChooseNurseModal);
+  document.getElementById('forwardExistingBtn').addEventListener('click', openChooseNurseModal);
 </script>
 </body>
 </html>

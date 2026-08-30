@@ -6,6 +6,7 @@ from app.services.consultation_service import ConsultationService
 from app.utils.response import success_response, error_response
 from app.utils.decorators import role_required
 from app.utils.constants import Roles
+from app.models.user import User
 
 consultations_bp = Blueprint("consultations", __name__)
 
@@ -27,6 +28,16 @@ def get_all_consultations():
     doctor_id  = request.args.get("doctor_id", type=int)
     patient_id = request.args.get("patient_id", type=int)
     status     = request.args.get("status")
+
+    # A Doctor's "Consultations" page only ever shows THEIR OWN
+    # consultations. This deliberately overrides -- not just defaults --
+    # any client-supplied doctor_id: without this, a Doctor could pass
+    # ?doctor_id=<another doctor's id> and read someone else's
+    # consultation list directly. Admin and Nurse/MHO keep full control
+    # over the doctor_id filter for oversight / continuity-of-care use.
+    current_user = User.query.get(int(get_jwt_identity()))
+    if current_user and current_user.has_role(Roles.DOCTOR) and not current_user.has_role(Roles.ADMIN):
+        doctor_id = current_user.id
 
     result = ConsultationService.get_all_consultations(
         page=page, per_page=per_page,

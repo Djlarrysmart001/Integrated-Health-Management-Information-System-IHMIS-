@@ -46,6 +46,35 @@ def get_roles():
 
 
 # ─────────────────────────────────────────────────────────────
+# GET /api/v1/users/on-duty-doctors
+# Returns Doctors currently on duty -- feeds the Nurse's Forward to
+# Doctor picker (see health_files forward-to-doctor). Deliberately NOT
+# Admin-only like the rest of this blueprint: a Nurse needs this list
+# at the point of care, not just Admin browsing the user directory.
+# ─────────────────────────────────────────────────────────────
+@users_bp.route("/on-duty-doctors", methods=["GET"])
+@role_required(Roles.ADMIN, Roles.NURSE)
+def get_on_duty_doctors():
+    result = UserService.get_on_duty_doctors()
+    return success_response(result["message"], data=result["data"])
+
+
+# ─────────────────────────────────────────────────────────────
+# GET /api/v1/users/on-duty-nurses
+# Returns Nurses currently on duty -- feeds the MHO's Forward to
+# Nurse picker (see health_files forward-to-nurse). Mirrors
+# on-duty-doctors exactly, one stage earlier in the flow. Deliberately
+# NOT Admin-only like the rest of this blueprint: an MHO needs this
+# list at the point of care, not just Admin browsing the user directory.
+# ─────────────────────────────────────────────────────────────
+@users_bp.route("/on-duty-nurses", methods=["GET"])
+@role_required(Roles.ADMIN, Roles.MEDICAL_HEALTH_OFFICER)
+def get_on_duty_nurses():
+    result = UserService.get_on_duty_nurses()
+    return success_response(result["message"], data=result["data"])
+
+
+# ─────────────────────────────────────────────────────────────
 # GET /api/v1/users/<id>
 # Returns a single user by ID (Admin only)
 # ─────────────────────────────────────────────────────────────

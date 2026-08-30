@@ -8,6 +8,47 @@ from app.utils.constants import Roles
 class UserService:
 
     @staticmethod
+    def get_on_duty_doctors():
+        """
+        Doctors currently on duty and active -- this is the exact list the
+        Nurse's "Forward to Doctor" picker shows. Deliberately narrower
+        than get_all_users: no pagination, no search, just the small live
+        list a Nurse needs at the moment of forwarding a file.
+        """
+        doctors = (
+            User.query
+            .join(User.roles)
+            .filter(Role.name == Roles.DOCTOR, User.is_on_duty == True, User.is_active == True)
+            .order_by(User.first_name.asc())
+            .all()
+        )
+        return {
+            "success": True,
+            "message": f"{len(doctors)} doctor(s) currently on duty.",
+            "data": {"doctors": [d.to_dict() for d in doctors]}
+        }
+
+    @staticmethod
+    def get_on_duty_nurses():
+        """
+        Nurses currently on duty and active -- this is the exact list the
+        MHO's "Forward to Nurse" picker shows. Mirrors get_on_duty_doctors
+        exactly, one stage earlier in the flow.
+        """
+        nurses = (
+            User.query
+            .join(User.roles)
+            .filter(Role.name == Roles.NURSE, User.is_on_duty == True, User.is_active == True)
+            .order_by(User.first_name.asc())
+            .all()
+        )
+        return {
+            "success": True,
+            "message": f"{len(nurses)} nurse(s) currently on duty.",
+            "data": {"nurses": [n.to_dict() for n in nurses]}
+        }
+
+    @staticmethod
     def get_all_users(page=1, per_page=20, search=None, role=None, is_active=None):
         query = User.query
 

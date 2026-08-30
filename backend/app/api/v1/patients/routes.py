@@ -55,6 +55,27 @@ def get_all_patients():
 
 
 # ─────────────────────────────────────────────────────────────
+# GET /api/v1/patients/my-patients
+# The Doctor's "My Patients" page -- distinct patients THIS doctor has
+# personally consulted, not the full clinic-wide directory get_all_patients
+# returns. Doctor-only: Admin and every other role has get_all_patients /
+# the full directory for their own needs already.
+# ─────────────────────────────────────────────────────────────
+@patients_bp.route("/my-patients", methods=["GET"])
+@role_required(Roles.DOCTOR)
+def get_my_patients():
+    page     = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 20, type=int)
+    search   = request.args.get("search", None)
+
+    doctor_id = int(get_jwt_identity())
+    result = PatientService.get_doctor_patients(
+        doctor_id, page=page, per_page=per_page, search=search
+    )
+    return success_response(result["message"], data=result["data"])
+
+
+# ─────────────────────────────────────────────────────────────
 # GET /api/v1/patients/statistics
 # ─────────────────────────────────────────────────────────────
 @patients_bp.route("/statistics", methods=["GET"])

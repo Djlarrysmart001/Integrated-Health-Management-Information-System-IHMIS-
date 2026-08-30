@@ -6,6 +6,7 @@ from app.services.laboratory_service import LaboratoryService
 from app.utils.response import success_response, error_response
 from app.utils.decorators import role_required
 from app.utils.constants import Roles
+from app.models.user import User
 
 laboratory_bp = Blueprint("laboratory", __name__)
 
@@ -108,9 +109,21 @@ def get_all_requests():
     patient_id = request.args.get("patient_id", type=int)
     priority   = request.args.get("priority")
     search     = request.args.get("search")
-    result     = LaboratoryService.get_all_requests(
+
+    # A Doctor viewing their Laboratory tab only sees requests THEY
+    # raised (mirrors get_queue's with_doctor scoping). Admin, Nurse,
+    # Lab Tech, and MHO are exempt -- they each legitimately need the
+    # broader view (Lab Tech works every request; Admin/Nurse/MHO need
+    # oversight/continuity-of-care visibility across all doctors).
+    doctor_id = None
+    current_user = User.query.get(int(get_jwt_identity()))
+    if current_user and current_user.has_role(Roles.DOCTOR) and not current_user.has_role(Roles.ADMIN):
+        doctor_id = current_user.id
+
+    result = LaboratoryService.get_all_requests(
         page=page, per_page=per_page,
-        status=status, patient_id=patient_id, priority=priority, search=search
+        status=status, patient_id=patient_id, priority=priority, search=search,
+        doctor_id=doctor_id
     )
     return success_response(result["message"], data=result["data"])
 

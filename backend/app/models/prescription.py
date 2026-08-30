@@ -27,21 +27,24 @@ class Prescription(db.Model):
                                 onupdate=lambda: datetime.now(timezone.utc))
 
     # ── relationships ──────────────────────────────────────────
-    prescribed_by_user = db.relationship("User", foreign_keys=[prescribed_by],
-                                         backref="prescriptions_written")
-    items              = db.relationship("PrescriptionItem", backref="prescription",
-                                         lazy="joined", cascade="all, delete-orphan")
+    patient             = db.relationship("Patient", foreign_keys=[patient_id])
+    prescribed_by_user  = db.relationship("User", foreign_keys=[prescribed_by],
+                                          backref="prescriptions_written")
+    items               = db.relationship("PrescriptionItem", backref="prescription",
+                                          lazy="joined", cascade="all, delete-orphan")
 
     def to_dict(self):
         return {
-            "id":              self.id,
-            "consultation_id": self.consultation_id,
-            "patient_id":      self.patient_id,
-            "prescribed_by":   self.prescribed_by,
-            "status":          self.status,
-            "notes":           self.notes,
-            "items":           [item.to_dict() for item in self.items],
-            "created_at":      self.created_at.isoformat(),
+            "id":                  self.id,
+            "consultation_id":     self.consultation_id,
+            "patient_id":          self.patient_id,
+            "patient_name":        self.patient.full_name if self.patient else None,
+            "prescribed_by":       self.prescribed_by,
+            "prescribed_by_name":  self.prescribed_by_user.full_name if self.prescribed_by_user else None,
+            "status":              self.status,
+            "notes":               self.notes,
+            "items":               [item.to_dict() for item in self.items],
+            "created_at":          self.created_at.isoformat(),
         }
 
 

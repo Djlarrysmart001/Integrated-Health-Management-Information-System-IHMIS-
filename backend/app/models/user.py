@@ -58,6 +58,14 @@ class User(db.Model):
     # treated as "all defaults on" rather than requiring a row to exist
     # for every user up front.
     notification_preferences = db.Column(db.Text, nullable=True)
+    # Meaningful for the Doctor and Nurse roles. Toggled by the user
+    # themselves from their own portal (see AuthService.set_duty_status).
+    # Drives two pickers: the Nurse's "which doctor should this go to" on
+    # Forward to Doctor (UserService.get_on_duty_doctors), and the MHO's
+    # "which nurse should this go to" on Forward to Nurse
+    # (UserService.get_on_duty_nurses) — a user who's off duty simply
+    # won't appear in the relevant list.
+    is_on_duty    = db.Column(db.Boolean, default=False, nullable=False)
     created_at    = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at    = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
                               onupdate=lambda: datetime.now(timezone.utc), nullable=False)
@@ -112,6 +120,7 @@ class User(db.Model):
             "full_name":  self.full_name,
             "phone":      self.phone,
             "is_active":  self.is_active,
+            "is_on_duty": self.is_on_duty,
             "last_login": self.last_login.isoformat() if self.last_login else None,
             "roles":      self.get_role_names(),
             "created_at": self.created_at.isoformat(),

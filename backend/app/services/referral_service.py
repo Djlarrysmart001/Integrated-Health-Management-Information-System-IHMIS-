@@ -107,12 +107,14 @@ class ReferralService:
         }
 
     @staticmethod
-    def get_all_referrals(page=1, per_page=20, status=None, urgency=None):
+    def get_all_referrals(page=1, per_page=20, status=None, urgency=None, doctor_id=None):
         query = Referral.query
         if status:
             query = query.filter(Referral.status == status)
         if urgency:
             query = query.filter(Referral.urgency == urgency)
+        if doctor_id is not None:
+            query = query.filter(Referral.referred_by == doctor_id)
 
         query = query.order_by(Referral.created_at.desc())
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)

@@ -53,6 +53,19 @@ def update_me():
     return success_response(result["message"], data=result["data"])
 
 
+@auth_bp.route("/me/duty-status", methods=["PATCH"])
+@jwt_required()
+def set_duty_status():
+    data = request.get_json()
+    if data is None or "is_on_duty" not in data:
+        return error_response("'is_on_duty' is required.", status_code=400)
+    user_id = get_jwt_identity()
+    result = AuthService.set_duty_status(int(user_id), data["is_on_duty"])
+    if not result["success"]:
+        return error_response(result["message"], status_code=400)
+    return success_response(result["message"], data=result["data"])
+
+
 @auth_bp.route("/logout", methods=["POST"])
 @jwt_required()
 def logout():

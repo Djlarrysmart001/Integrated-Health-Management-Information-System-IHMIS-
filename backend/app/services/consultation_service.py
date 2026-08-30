@@ -147,6 +147,20 @@ class ConsultationService:
         if consultation.status == "closed":
             return {"success": False, "message": "Consultation is already closed.", "data": None}
 
+        # A closed consultation with zero clinical record of what was found
+        # isn't a real clinical record -- at least one diagnosis (even a
+        # provisional one) must be entered first. This deliberately checks
+        # the database directly rather than trusting consultation.diagnoses
+        # (an in-memory relationship that could be stale within the same
+        # request) to give an accurate answer at the moment of closing.
+        diagnosis_count = Diagnosis.query.filter_by(consultation_id=consultation_id).count()
+        if diagnosis_count == 0:
+            return {
+                "success": False,
+                "message": "Cannot close a consultation with no diagnosis recorded. Add at least one diagnosis first.",
+                "data": consultation.to_dict()
+            }
+
         consultation.status    = "closed"
         consultation.closed_at = datetime.now(timezone.utc)
 
