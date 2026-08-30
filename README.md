@@ -2,7 +2,7 @@
 
 A multi-role clinic management web platform built for the Federal Polytechnic Ilaro school health center, digitizing the full walk-in patient workflow from registration through discharge.
 
-> Final-year Computer Science software project — Federal Polytechnic Ilaro
+> Final-year Computer Science software project @ The Federal Polytechnic Ilaro
 > Supervisor: Mr. Akinode J. Lekan
 
 ---
