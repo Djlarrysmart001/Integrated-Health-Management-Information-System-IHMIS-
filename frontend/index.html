@@ -34,7 +34,12 @@
     .login-left-bg {
       position: absolute;
       inset: 0;
-      background-image: url('assets/img/hospital-login.webp');
+      background-color: #0f1423; /* visible fallback tint if no image loads at all */
+      background-image: url('assets/img/hospital-login.jpg');
+      background-image: image-set(
+        url('assets/img/hospital-login.webp') type('image/webp'),
+        url('assets/img/hospital-login.jpg') type('image/jpeg')
+      );
       background-size: cover;
       background-position: center;
       filter: blur(4px);
