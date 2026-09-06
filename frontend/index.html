@@ -34,16 +34,12 @@
     .login-left-bg {
       position: absolute;
       inset: 0;
-      background-color: #0f1423; /* visible fallback tint if no image loads at all */
-      background-image: url('assets/img/hospital-login.jpg');
-      background-image: image-set(
-        url('assets/img/hospital-login.webp') type('image/webp'),
-        url('assets/img/hospital-login.jpg') type('image/jpeg')
-      );
-      background-size: cover;
-      background-position: center;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
       filter: blur(4px);
       transform: scale(1.08);
+      background: #0f1423; /* visible while the image itself is loading */
     }
 
     /* Soft teal wash over the blurred photo — light enough that the
@@ -215,7 +211,7 @@
 
   <!-- Left: blurred hospital photo with branding text overlaid on top -->
   <div class="login-left">
-    <div class="login-left-bg" role="img" aria-label="Federal Polytechnic Ilaro Health Centre building"></div>
+    <img class="login-left-bg" src="assets/img/hospital-login.jpg" alt="" aria-hidden="true" />
     <div class="login-left-overlay"></div>
 
     <div class="login-left-content">
