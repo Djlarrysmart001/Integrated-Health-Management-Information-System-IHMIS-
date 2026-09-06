@@ -32,12 +32,12 @@ MHO (Registration & File Custody)
    Patient Discharged
 ```
 
-- **MHO / Records Officer** — first point of contact; registers patients, opens/searches health files, and forwards them onward. Can also manually close files.
-- **Nurse** — receives the forwarded file, records vital signs (weight, height, temperature, blood pressure), triages, and forwards to the Doctor.
-- **Doctor** — reviews history and vitals, diagnoses, prescribes, and may request a lab test or issue a certificate/referral/admission.
-- **Laboratory Technician** — receives test requests, records and uploads results back to the Doctor.
-- **Pharmacist** — receives the final prescription, dispenses medicine, updates drug inventory, and auto-closes the file (last stop in the flow).
-- **Admin** — manages users/roles, views audit logs and system-wide analytics.
+- **MHO / Records Officer**  first point of contact; registers patients, opens/searches health files, and forwards them onward. Can also manually close files.
+- **Nurse**  receives the forwarded file, records vital signs (weight, height, temperature, blood pressure), triages, and forwards to the Doctor.
+- **Doctor**  reviews history and vitals, diagnoses, prescribes, and may request a lab test or issue a certificate/referral/admission.
+- **Laboratory Technician**  receives test requests, records and uploads results back to the Doctor.
+- **Pharmacist**  receives the final prescription, dispenses medicine, updates drug inventory, and auto-closes the file (last stop in the flow).
+- **Admin**  manages users/roles, views audit logs and system-wide analytics.
 
 ## Key Features
 
@@ -45,13 +45,13 @@ MHO (Registration & File Custody)
 - **Two-layer RBAC**: dynamic role assignment at the database level, enforced by a static `role_required()` decorator at the API layer
 - **Full patient file lifecycle** across six tabs: Biodata, Visit History, Diagnoses, Prescriptions, Lab Results, and Documents
 - **Immutable audit logging** for every clinical read/write action
-- **AI-assisted clinical decision support** (Phase 1 — knowledge-based / rule-based, not model-trained):
-  - **Triage Assistant** — NEWS2-inspired vitals scoring for Nurses
-  - **Drug Interaction Checker** — flags interactions and recommendations for Doctors
-  - **Inventory Forecast** — stock-level prediction for Pharmacists
+- **AI-assisted clinical decision support** (Phase 1  knowledge-based / rule-based, not model-trained):
+  - **Triage Assistant**  NEWS2-inspired vitals scoring for Nurses
+  - **Drug Interaction Checker**  flags interactions and recommendations for Doctors
+  - **Inventory Forecast**  stock-level prediction for Pharmacists
 - **In-app notifications and profile management** across all six portals
 - **Admission workflow** with dedicated `admitted` patient status
-- **Hybrid deployment architecture** — on-premise application server with encrypted nightly cloud backup, so core clinic functions keep running through internet or power outages
+- **Hybrid deployment architecture**  on-premise application server with encrypted nightly cloud backup, so core clinic functions keep running through internet or power outages
 
 ## Tech Stack
 
@@ -127,13 +127,13 @@ python run.py
 
 ## Academic Context
 
-This project includes a full academic artifact set alongside the working software: system diagrams (component, class, sequence), an RBAC and data privacy addendum, a gap analysis, and a defense presentation. The AI layer is intentionally scoped as **Phase 1 — Knowledge-Based Decision Support** (rule-based, no model training); federated learning across institutions is documented as future work (Phase 2).
+This project includes a full academic artifact set alongside the working software: system diagrams (component, class, sequence), an RBAC and data privacy addendum, a gap analysis, and a defense presentation. The AI layer is intentionally scoped as **Phase 1 Knowledge-Based Decision Support** (rule-based, no model training); federated learning across institutions is documented as future work (Phase 2).
 
 ## Known Limitations
 
-- RBAC is currently enforced at the role level, not the object level (documented gap — e.g. a Nurse with a valid patient ID could technically query a patient not yet forwarded to them).
+- RBAC is currently enforced at the role level, not the object level (documented gap  e.g. a Nurse with a valid patient ID could technically query a patient not yet forwarded to them).
 - AI features are rule-based decision support, not predictive ML models, by design for this phase.
 
 ## License
 
-Academic project — Federal Polytechnic Ilaro, Department of Computer Science.
+Academic project  Federal Polytechnic Ilaro, Department of Computer Science.

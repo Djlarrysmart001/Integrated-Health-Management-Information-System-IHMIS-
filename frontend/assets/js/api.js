@@ -2,7 +2,18 @@
    IHMIS — api.js
    ============================================================ */
 
-const API_BASE = 'http://127.0.0.1:5000/api/v1';
+// Local dev via VS Code Live Server serves the frontend on its own port
+// (5500) while Flask runs separately on 5000 -- two different origins,
+// so API calls must point at the backend explicitly in that one case.
+// Everywhere else (Render, or any setup where Flask itself serves the
+// frontend), frontend and backend share the same origin, so a relative
+// path always resolves correctly regardless of the actual domain --
+// this is what makes the deployed app portable across environments
+// without a code change.
+const API_BASE = (
+  (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost')
+  && window.location.port === '5500'
+) ? 'http://127.0.0.1:5000/api/v1' : '/api/v1';
 
 async function apiRequest(endpoint, method = 'GET', body = null) {
   const token = sessionStorage.getItem('ihmis_token');

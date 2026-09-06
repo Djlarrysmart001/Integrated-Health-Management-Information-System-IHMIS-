@@ -35,3 +35,7 @@ Flask-Cors==5.0.0
 
 # Utilities
 python-dateutil==2.9.0
+
+# Production WSGI server (Render runs this via Procfile; Flask's own
+# dev server is not meant to serve real traffic)
+gunicorn==23.0.0

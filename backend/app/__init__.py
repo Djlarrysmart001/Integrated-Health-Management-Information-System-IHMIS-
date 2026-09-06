@@ -4,13 +4,22 @@ import logging
 import os
 from logging.handlers import RotatingFileHandler
 
-from flask import Flask
+from flask import Flask, send_from_directory, abort
 from dotenv import load_dotenv
 
 from app.config import config_map
 from app.extensions import db, migrate, jwt, bcrypt, mail, cors
 
 load_dotenv()
+
+# The frontend lives as a sibling directory to backend/, i.e.
+# repo_root/frontend, repo_root/backend/app/__init__.py (this file).
+# Resolved as an absolute path so this works the same whether Flask is
+# started from backend/ (local dev) or from the repo root (Render, whose
+# working directory depends on the configured Root Directory setting).
+FRONTEND_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "frontend")
+)
 
 
 def create_app(config_name: str = None) -> Flask:
@@ -46,6 +55,25 @@ def create_app(config_name: str = None) -> Flask:
     @flask_app.route("/health")
     def health_check():
         return {"status": "ok", "app": flask_app.config.get("APP_NAME")}, 200
+
+    # ─────────────────────────────────────────────────────────
+    # Serve the frontend directly from this same Flask app/origin.
+    # Registered last and deliberately excludes anything under "api/"
+    # (belt-and-braces on top of Werkzeug's own static-route-priority
+    # behavior) so it can never shadow a real API endpoint. Falls back
+    # to index.html for any unmatched path rather than a bare 404, so a
+    # stale/mistyped link still lands the user on the sign-in page
+    # instead of an ugly error screen.
+    # ─────────────────────────────────────────────────────────
+    @flask_app.route("/", defaults={"req_path": "index.html"})
+    @flask_app.route("/<path:req_path>")
+    def serve_frontend(req_path):
+        if req_path.startswith("api/"):
+            abort(404)
+        full_path = os.path.join(FRONTEND_DIR, req_path)
+        if os.path.isfile(full_path):
+            return send_from_directory(FRONTEND_DIR, req_path)
+        return send_from_directory(FRONTEND_DIR, "index.html")
 
     flask_app.logger.info(f"IHMIS started in [{config_name.upper()}] mode")
 

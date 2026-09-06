@@ -281,7 +281,7 @@
       return `With Dr. ${f.assigned_doctor_name.replace(/^Dr\.?\s*/i, '')}`;
     }
     if (f.status === 'with_nurse' && f.assigned_nurse_name) {
-      return `With Nurse ${f.assigned_nurse_name}`;
+      return `With Nurse ${f.assigned_nurse_name.replace(/^Nurse\.?\s*/i, '')}`;
     }
     return STATUS_LABELS[f.status] || f.status;
   }

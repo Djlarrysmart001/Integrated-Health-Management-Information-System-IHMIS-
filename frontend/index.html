@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>IHMIS — Sign In</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#107A57" />
+  <link rel="apple-touch-icon" href="assets/img/icon-192.png" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <link rel="stylesheet" href="assets/css/main.css" />
   <style>
@@ -285,5 +288,21 @@
 
   <script src="assets/js/api.js"></script>
   <script src="assets/js/auth.js"></script>
+  <script>
+    // Registers the service worker so the browser (and PWABuilder, when
+    // generating the Android APK) recognizes this as an installable app.
+    // Silently no-ops on http:// / non-secure contexts, which is expected
+    // for local dev over plain HTTP -- installability only matters once
+    // this is served over HTTPS in production.
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js').catch(() => {
+          // Non-fatal: app still works fully without the service worker,
+          // it just won't be installable as a PWA on this load.
+        });
+      });
+    }
+  </script>
 </body>
+
 </html>
