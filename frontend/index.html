@@ -185,8 +185,24 @@
     .login-page-footer { margin-top: 2rem; text-align: center; font-size: 0.8rem; color: var(--text-light); }
 
     @media (max-width: 900px) {
-      .login-left { display: none; }
-      .login-right { width: 100%; padding: 2.5rem 1.75rem; box-shadow: none; }
+      body { flex-direction: column; }
+      .login-left {
+        flex: none;
+        width: 100%;
+        height: 220px;
+        padding: 1.5rem;
+      }
+      .brand-features { display: none; }
+      .login-right {
+        width: 100%;
+        padding: 2rem 1.75rem;
+        box-shadow: none;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .login-left { height: 160px; }
+      .brand-tagline { font-size: 0.8rem; }
     }
   </style>
 </head>
