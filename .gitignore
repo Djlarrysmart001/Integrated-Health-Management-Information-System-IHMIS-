@@ -9,5 +9,4 @@ logs/
 *.log
 instance/
 .DS_Store
-certs/
 *.sql
