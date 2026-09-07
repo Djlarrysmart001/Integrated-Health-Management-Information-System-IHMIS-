@@ -307,10 +307,11 @@
 
     } catch (err) {
       setText('statQueue', '—');
+      setText('statQueueSub', err.message || 'Could not load');
       listDiv.innerHTML = `
         <div class="empty-state" style="padding:1.5rem 0">
           <i class="fa-solid fa-circle-exclamation" style="color:var(--danger)"></i>
-          <p>Could not load the queue</p>
+          <p>Could not load the queue: ${err.message || 'unknown error'}</p>
         </div>`;
     }
   }
@@ -383,6 +384,8 @@
     } catch(err) {
       console.warn('Doctor dashboard error:', err.message);
       ['statConsultations','statLabResults','statPrescriptions'].forEach(id => setText(id, '—'));
+      setText('statConsultationsSub', err.message || 'Could not load');
+      setText('statLabSub', err.message || 'Could not load');
     }
   }
 
