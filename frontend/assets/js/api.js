@@ -23,8 +23,18 @@ async function apiRequest(endpoint, method = 'GET', body = null) {
   const config = { method, headers };
   if (body) config.body = JSON.stringify(body);
 
+  // fetch() has no built-in timeout -- on a network that silently drops
+  // packets (common on restrictive/filtered WiFi) instead of actively
+  // refusing the connection, a request can hang forever with no error
+  // ever firing. This AbortController forces it to fail after 15s so the
+  // UI can show a real error instead of spinning/"Loading..." indefinitely.
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+  config.signal = controller.signal;
+
   try {
     const response = await fetch(`${API_BASE}${endpoint}`, config);
+    clearTimeout(timeoutId);
     const data = await response.json();
 
     if (!response.ok) {
@@ -38,8 +48,12 @@ async function apiRequest(endpoint, method = 'GET', body = null) {
 
     return data;
   } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('Request timed out — check your network connection.');
+    }
     if (error.message === 'Failed to fetch') {
-      throw new Error('Cannot connect to server. Make sure Flask is running on port 5000.');
+      throw new Error('Cannot connect to server. Check your internet connection.');
     }
     throw error;
   }
