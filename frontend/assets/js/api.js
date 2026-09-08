@@ -15,6 +15,41 @@ const API_BASE = (
   && window.location.port === '5500'
 ) ? 'http://127.0.0.1:5000/api/v1' : '/api/v1';
 
+// ── UTC timestamp fix ─────────────────────────────────────────
+// The backend stores datetimes correctly as UTC (datetime.now(timezone.utc)),
+// but MySQL's DATETIME column type has no concept of timezone -- it silently
+// strips the tzinfo on write. When SQLAlchemy reads the value back and the
+// model calls .isoformat(), the result is a naive string with no "Z" or
+// "+00:00" suffix, e.g. "2026-09-08T11:41:00" instead of
+// "2026-09-08T11:41:00Z". new Date() on a string with no timezone marker is
+// interpreted as LOCAL time, not UTC -- so every "time ago" / wait-time
+// calculation across the app comes out shifted by the browser's UTC offset
+// (exactly +1h in Lagos/WAT, which is why it always showed ~1h too much).
+//
+// Rather than patch this at 30+ call sites across 18 files, every API
+// response is walked once here and any bare ISO datetime string (one that
+// has a "T" time component but no trailing Z/+hh:mm/-hh:mm) gets a "Z"
+// appended, so it is always parsed as UTC everywhere in the app.
+const BARE_ISO_DATETIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?$/;
+
+function fixServerDates(value) {
+  if (Array.isArray(value)) {
+    return value.map(fixServerDates);
+  }
+  if (value && typeof value === 'object') {
+    for (const key in value) {
+      if (Object.prototype.hasOwnProperty.call(value, key)) {
+        value[key] = fixServerDates(value[key]);
+      }
+    }
+    return value;
+  }
+  if (typeof value === 'string' && BARE_ISO_DATETIME.test(value)) {
+    return value + 'Z';
+  }
+  return value;
+}
+
 async function apiRequest(endpoint, method = 'GET', body = null) {
   const token = sessionStorage.getItem('ihmis_token');
   const headers = { 'Content-Type': 'application/json' };
@@ -35,7 +70,8 @@ async function apiRequest(endpoint, method = 'GET', body = null) {
   try {
     const response = await fetch(`${API_BASE}${endpoint}`, config);
     clearTimeout(timeoutId);
-    const data = await response.json();
+    let data = await response.json();
+    data = fixServerDates(data);
 
     if (!response.ok) {
       if (response.status === 401) {
