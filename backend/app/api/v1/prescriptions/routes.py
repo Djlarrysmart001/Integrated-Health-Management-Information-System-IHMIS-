@@ -11,9 +11,9 @@ from app.utils.constants import Roles
 prescriptions_bp = Blueprint("prescriptions", __name__)
 
 
-# MHO added -- read-only viewing of past prescriptions for the Patient
-# File page. Not granted on /pending (Pharmacist's working queue), or
-# on write/dispense/cancel actions below.
+# MHO and Nurse added -- read-only viewing of past prescriptions for the
+# Patient File page. Not granted on /pending (Pharmacist's working queue),
+# or on write/dispense/cancel actions below.
 @prescriptions_bp.route("", methods=["GET"])
 @role_required(Roles.ADMIN, Roles.DOCTOR, Roles.PHARMACIST, Roles.MEDICAL_HEALTH_OFFICER)
 def get_all_prescriptions():
@@ -40,7 +40,7 @@ def get_pending_prescriptions():
 
 
 @prescriptions_bp.route("/<int:prescription_id>", methods=["GET"])
-@role_required(Roles.ADMIN, Roles.DOCTOR, Roles.PHARMACIST, Roles.MEDICAL_HEALTH_OFFICER)
+@role_required(Roles.ADMIN, Roles.DOCTOR, Roles.PHARMACIST, Roles.MEDICAL_HEALTH_OFFICER, Roles.NURSE)
 def get_prescription(prescription_id):
     result = PrescriptionService.get_prescription_by_id(prescription_id)
     if not result["success"]:
@@ -49,7 +49,7 @@ def get_prescription(prescription_id):
 
 
 @prescriptions_bp.route("/patients/<int:patient_id>", methods=["GET"])
-@role_required(Roles.ADMIN, Roles.DOCTOR, Roles.PHARMACIST, Roles.MEDICAL_HEALTH_OFFICER)
+@role_required(Roles.ADMIN, Roles.DOCTOR, Roles.PHARMACIST, Roles.MEDICAL_HEALTH_OFFICER, Roles.NURSE)
 def get_patient_prescriptions(patient_id):
     page     = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 10, type=int)

@@ -491,7 +491,24 @@
       const res = await api.get(`/prescriptions/patients/${id}?per_page=20`);
       const prescriptions = res.data?.prescriptions || res.data?.items || [];
       if (prescriptions.length === 0) { box.innerHTML = `<div class="empty-state"><i class="fa-solid fa-pills"></i><p>No previous prescriptions</p></div>`; return; }
-      box.innerHTML = prescriptions.map(rx => `
+      box.innerHTML = prescriptions.map(rx => {
+        const items = rx.items || [];
+        const itemsHtml = items.length
+          ? `<table class="data-table" style="margin-top:0.6rem">
+               <thead><tr><th>Drug</th><th>Dosage</th><th>Frequency</th><th>Duration</th><th>Qty</th></tr></thead>
+               <tbody>
+                 ${items.map(it => `
+                   <tr>
+                     <td>${it.drug_name || '—'}${it.drug_is_pending_setup ? ' <span class="badge badge-warning" style="font-size:0.62rem">NEW</span>' : ''}</td>
+                     <td>${it.dosage || '—'}</td>
+                     <td>${it.frequency || '—'}</td>
+                     <td>${it.duration || '—'}</td>
+                     <td>${it.quantity ?? '—'}</td>
+                   </tr>`).join('')}
+               </tbody>
+             </table>`
+          : `<p class="text-muted" style="margin-top:0.5rem;font-size:0.85rem">No drug items recorded on this prescription.</p>`;
+        return `
         <div class="record-item">
           <div class="record-item-header">
             <div class="record-item-title">Prescription #${rx.id}</div>
@@ -500,8 +517,10 @@
           <div class="record-item-body">
             Status: <span class="badge ${rx.status === 'dispensed' ? 'badge-success' : 'badge-warning'}" style="font-size:0.68rem">${capitalize(rx.status || '—')}</span>
             ${rx.prescribed_by_name ? ` · Prescribed by ${rx.prescribed_by_name}` : ''}
+            ${itemsHtml}
           </div>
-        </div>`).join('');
+        </div>`;
+      }).join('');
     } catch (err) {
       box.innerHTML = `<div class="empty-state"><i class="fa-solid fa-circle-info"></i><p>No prescription records available</p></div>`;
     }
@@ -513,14 +532,42 @@
       const res = await api.get(`/laboratory/requests/patients/${id}?per_page=20`);
       const requests = res.data?.requests || res.data?.items || [];
       if (requests.length === 0) { box.innerHTML = `<div class="empty-state"><i class="fa-solid fa-flask"></i><p>No previous lab tests</p></div>`; return; }
-      box.innerHTML = requests.map(r => `
+      const interpBadge = { normal: 'badge-success', low: 'badge-warning', high: 'badge-warning', critical: 'badge-danger' };
+      box.innerHTML = requests.map(r => {
+        const tests   = r.tests   || [];
+        const results = r.results || [];
+        const rowsHtml = tests.length
+          ? `<table class="data-table" style="margin-top:0.6rem">
+               <thead><tr><th>Test</th><th>Result</th><th>Reference Range</th><th>Status</th></tr></thead>
+               <tbody>
+                 ${tests.map(t => {
+                   const result = results.find(res2 => res2.lab_test_id === t.id);
+                   if (!result) {
+                     return `<tr><td>${t.name}</td><td class="muted">—</td><td class="muted">${t.normal_range || '—'}</td><td><span class="badge badge-info" style="font-size:0.62rem">Pending</span></td></tr>`;
+                   }
+                   const valueDisplay = `${result.result_value || '—'}${result.unit ? ' ' + result.unit : ''}`;
+                   return `<tr>
+                     <td>${t.name}</td>
+                     <td>${valueDisplay}</td>
+                     <td class="muted">${result.reference_range || t.normal_range || '—'}</td>
+                     <td><span class="badge ${interpBadge[result.interpretation] || 'badge-success'}" style="font-size:0.62rem">${capitalize(result.interpretation || 'Done')}</span></td>
+                   </tr>`;
+                 }).join('')}
+               </tbody>
+             </table>`
+          : `<p class="text-muted" style="margin-top:0.5rem;font-size:0.85rem">No tests recorded on this request.</p>`;
+        return `
         <div class="record-item">
           <div class="record-item-header">
-            <div class="record-item-title">${r.test_name || r.test_names || 'Lab Request #' + r.id}</div>
+            <div class="record-item-title">${tests.length ? tests.map(t => t.name).join(', ') : 'Lab Request #' + r.id}</div>
             <div class="record-item-date">${formatDate(r.created_at || r.requested_at)}</div>
           </div>
-          <div class="record-item-body">Status: <span class="badge ${r.status === 'completed' ? 'badge-success' : 'badge-info'}" style="font-size:0.68rem">${capitalize(r.status || '—')}</span></div>
-        </div>`).join('');
+          <div class="record-item-body">
+            Status: <span class="badge ${r.status === 'completed' ? 'badge-success' : 'badge-info'}" style="font-size:0.68rem">${capitalize(r.status || '—')}</span>
+            ${rowsHtml}
+          </div>
+        </div>`;
+      }).join('');
     } catch (err) {
       box.innerHTML = `<div class="empty-state"><i class="fa-solid fa-circle-info"></i><p>No lab records available</p></div>`;
     }
