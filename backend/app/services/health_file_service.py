@@ -582,6 +582,45 @@ class HealthFileService:
 
         return {"success": True, "message": "Health file retrieved successfully.", "data": data}
 
+    # ──────────────────────────────────────────────────────────
+    @staticmethod
+    def _visit_summary(hf):
+        """
+        A health file's own to_dict() only carries queue/status metadata --
+        it has no idea what the visit was actually about. This pulls the
+        chief complaint, every drug prescribed, and every lab test
+        requested during that visit's consultation (if one exists yet)
+        into one flat, frontend-ready summary, so a single Visit History
+        row can show "what they came in for" alongside what was done
+        about it, instead of just a status badge.
+        """
+        data = hf.to_dict()
+        data["reason_for_visit"] = None
+        data["drugs_prescribed"] = []
+        data["lab_tests"] = []
+
+        consultation = hf.consultation
+        if not consultation:
+            return data
+
+        data["reason_for_visit"] = consultation.chief_complaint
+
+        for prescription in consultation.prescriptions:
+            for item in prescription.items:
+                data["drugs_prescribed"].append({
+                    "name":   item.drug.name if item.drug else "Unknown drug",
+                    "dosage": item.dosage,
+                })
+
+        for lab_request in consultation.lab_requests:
+            for test in lab_request.tests:
+                data["lab_tests"].append({
+                    "name":   test.name,
+                    "status": lab_request.status,
+                })
+
+        return data
+
     @staticmethod
     def get_patient_health_files(patient_id: int, page=1, per_page=10):
         patient = Patient.query.get(patient_id)
@@ -598,7 +637,7 @@ class HealthFileService:
             "data": {
                 "patient_id":   patient_id,
                 "patient_name": patient.full_name,
-                "health_files": [hf.to_dict() for hf in pagination.items],
+                "health_files": [HealthFileService._visit_summary(hf) for hf in pagination.items],
                 "total":        pagination.total,
                 "pages":        pagination.pages,
                 "current_page": page,

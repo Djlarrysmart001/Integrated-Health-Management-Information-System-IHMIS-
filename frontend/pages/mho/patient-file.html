@@ -251,7 +251,7 @@
           <div class="table-wrapper">
             <table class="data-table">
               <thead>
-                <tr><th>Date</th><th>Queue #</th><th>Status</th><th>Outcome</th></tr>
+                <tr><th>Date</th><th>Reason for Visit</th><th>Queue #</th><th>Status</th><th>Drugs &amp; Labs</th></tr>
               </thead>
               <tbody id="historyTableBody">
                 <tr><td colspan="4"><div class="empty-state"><div class="spinner-sm" style="margin:0 auto"></div></div></td></tr>
@@ -527,7 +527,7 @@
       const files = res.data?.health_files || [];
 
       if (files.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><i class="fa-solid fa-calendar-xmark"></i><p>No previous visits</p></div></td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><i class="fa-solid fa-calendar-xmark"></i><p>No previous visits</p></div></td></tr>`;
         return;
       }
 
@@ -536,16 +536,33 @@
         with_lab: 'At Laboratory', with_pharmacy: 'At Pharmacy', closed: 'Completed'
       };
 
-      tbody.innerHTML = files.map(f => `
+      const labStatusBadge = {
+        pending: 'badge-muted', sample_collected: 'badge-info', in_progress: 'badge-info',
+        completed: 'badge-success', cancelled: 'badge-danger'
+      };
+
+      tbody.innerHTML = files.map(f => {
+        const drugsHtml = (f.drugs_prescribed && f.drugs_prescribed.length)
+          ? f.drugs_prescribed.map(d => `<div>${d.name}${d.dosage ? ' · ' + d.dosage : ''}</div>`).join('')
+          : '';
+        const labsHtml = (f.lab_tests && f.lab_tests.length)
+          ? f.lab_tests.map(t => `<div>${t.name} <span class="badge ${labStatusBadge[t.status] || 'badge-muted'}" style="margin-left:4px">${t.status.replace('_',' ')}</span></div>`).join('')
+          : '';
+        const drugsLabsHtml = (drugsHtml || labsHtml)
+          ? `${drugsHtml}${labsHtml}`
+          : '<span class="text-muted">—</span>';
+
+        return `
         <tr>
           <td>${formatDate(f.opened_at)}</td>
+          <td>${f.reason_for_visit || '<span class="text-muted">—</span>'}</td>
           <td>${f.queue_number ?? '—'}</td>
           <td><span class="badge ${f.status === 'closed' ? 'badge-success' : 'badge-info'}">${statusLabels[f.status] || f.status}</span></td>
-          <td class="muted">${f.status === 'closed' ? 'Visit completed' : 'In progress'}</td>
-        </tr>
-      `).join('');
+          <td style="font-size:0.8rem">${drugsLabsHtml}</td>
+        </tr>`;
+      }).join('');
     } catch (err) {
-      tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><i class="fa-solid fa-circle-exclamation"></i><p>Could not load visit history</p></div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><i class="fa-solid fa-circle-exclamation"></i><p>Could not load visit history</p></div></td></tr>`;
     }
   }
 
