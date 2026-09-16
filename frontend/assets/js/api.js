@@ -103,6 +103,24 @@ const api = {
   delete: (endpoint)       => apiRequest(endpoint, 'DELETE'),
 };
 
+// ── Authenticated image loading ─────────────────────────────────
+// A plain <img src="..."> request never carries the Authorization
+// header, so pointing one directly at a JWT-protected endpoint (e.g.
+// the patient photo route) 401s on every real page load/refresh --
+// it only ever looked fine right after an upload because that preview
+// came from a local FileReader data URI, not this endpoint. This
+// fetches the bytes with the token attached and hands back a local
+// blob URL that an <img> can use safely.
+async function loadAuthImage(url) {
+  const token = sessionStorage.getItem('ihmis_token');
+  const headers = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await fetch(url, { headers });
+  if (!response.ok) throw new Error('Could not load image');
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
+}
+
 // NOTE: sessionStorage (not localStorage) is deliberate here. localStorage
 // is shared across every tab of the same origin, so with multiple role
 // portals open in different tabs, logging into one would silently

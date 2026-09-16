@@ -375,7 +375,7 @@
 
   function selectPatientFromSearch(patient) { selectPatient(patient); }
 
-  function selectPatient(patient) {
+  async function selectPatient(patient) {
     selectedPatient = patient;
     document.getElementById('searchStep').style.display = 'none';
     document.getElementById('documentsStep').style.display = 'block';
@@ -393,11 +393,16 @@
 
     // Show existing photo if there is one
     if (patient.has_photo) {
-      const img = `<img src="${apiPhotoUrl(patient.id)}" />`;
-      document.getElementById('selectedAvatar').innerHTML = img;
-      document.getElementById('photoPreview').src = apiPhotoUrl(patient.id);
-      document.getElementById('photoPreview').style.display = 'block';
-      document.getElementById('photoPlaceholder').style.display = 'none';
+      try {
+        const objectUrl = await loadAuthImage(apiPhotoUrl(patient.id));
+        document.getElementById('selectedAvatar').innerHTML = `<img src="${objectUrl}" />`;
+        document.getElementById('photoPreview').src = objectUrl;
+        document.getElementById('photoPreview').style.display = 'block';
+        document.getElementById('photoPlaceholder').style.display = 'none';
+      } catch (err) {
+        document.getElementById('photoPreview').style.display = 'none';
+        document.getElementById('photoPlaceholder').style.display = 'flex';
+      }
     } else {
       document.getElementById('photoPreview').style.display = 'none';
       document.getElementById('photoPlaceholder').style.display = 'flex';
@@ -458,7 +463,12 @@
       showToast('Photo uploaded successfully.', 'success');
       pendingPhotoBase64 = null;
       selectedPatient.has_photo = true;
-      document.getElementById('selectedAvatar').innerHTML = `<img src="${apiPhotoUrl(selectedPatient.id)}?t=${Date.now()}" />`;
+      try {
+        const objectUrl = await loadAuthImage(apiPhotoUrl(selectedPatient.id));
+        document.getElementById('selectedAvatar').innerHTML = `<img src="${objectUrl}" />`;
+      } catch (avatarErr) {
+        // Avatar refresh is cosmetic -- the upload itself already succeeded above.
+      }
     } catch (err) {
       showToast(err.message, 'error');
     } finally {

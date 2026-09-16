@@ -711,11 +711,17 @@
     return `${API_BASE}/patients/${id}/photo`;
   }
 
-  function renderPhotoBox(p) {
+  async function renderPhotoBox(p) {
     if (p.has_photo) {
-      document.getElementById('photoPreview').src = `${apiPhotoUrl(p.id)}?t=${Date.now()}`;
-      document.getElementById('photoPreview').style.display = 'block';
-      document.getElementById('photoPlaceholder').style.display = 'none';
+      try {
+        const objectUrl = await loadAuthImage(apiPhotoUrl(p.id));
+        document.getElementById('photoPreview').src = objectUrl;
+        document.getElementById('photoPreview').style.display = 'block';
+        document.getElementById('photoPlaceholder').style.display = 'none';
+      } catch (err) {
+        document.getElementById('photoPreview').style.display = 'none';
+        document.getElementById('photoPlaceholder').style.display = 'flex';
+      }
     }
   }
 
@@ -752,7 +758,12 @@
       });
       showToast('Photo uploaded successfully.', 'success');
       pendingPhotoBase64 = null;
-      document.getElementById('fileAvatar').innerHTML = `<img src="${apiPhotoUrl(patientId)}?t=${Date.now()}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" />`;
+      try {
+        const objectUrl = await loadAuthImage(apiPhotoUrl(patientId));
+        document.getElementById('fileAvatar').innerHTML = `<img src="${objectUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" />`;
+      } catch (avatarErr) {
+        // Avatar refresh is cosmetic -- the upload itself already succeeded above.
+      }
     } catch (err) {
       showToast(err.message, 'error');
     } finally {

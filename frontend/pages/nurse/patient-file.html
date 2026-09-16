@@ -575,11 +575,17 @@
 
   function apiPhotoUrl(id) { return `${API_BASE}/patients/${id}/photo`; }
 
-  function renderPhotoBox(p) {
+  async function renderPhotoBox(p) {
     if (p.has_photo) {
-      document.getElementById('photoPreview').src = `${apiPhotoUrl(p.id)}?t=${Date.now()}`;
-      document.getElementById('photoPreview').style.display = 'block';
-      document.getElementById('photoPlaceholder').style.display = 'none';
+      try {
+        const objectUrl = await loadAuthImage(apiPhotoUrl(p.id));
+        document.getElementById('photoPreview').src = objectUrl;
+        document.getElementById('photoPreview').style.display = 'block';
+        document.getElementById('photoPlaceholder').style.display = 'none';
+      } catch (err) {
+        document.getElementById('photoPreview').style.display = 'none';
+        document.getElementById('photoPlaceholder').style.display = 'flex';
+      }
     }
   }
 
