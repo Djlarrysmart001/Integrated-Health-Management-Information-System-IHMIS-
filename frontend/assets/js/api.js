@@ -50,7 +50,7 @@ function fixServerDates(value) {
   return value;
 }
 
-async function apiRequest(endpoint, method = 'GET', body = null) {
+async function apiRequest(endpoint, method = 'GET', body = null, isRetry = false) {
   const token = sessionStorage.getItem('ihmis_token');
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -74,6 +74,20 @@ async function apiRequest(endpoint, method = 'GET', body = null) {
     data = fixServerDates(data);
 
     if (!response.ok) {
+      // The access token is deliberately short-lived (15 min by default).
+      // Before this fix, a 401 here went straight to a forced logout, so
+      // anyone mid-consultation got kicked back to the login screen the
+      // moment the token expired, even though the backend has always had
+      // a working /auth/refresh endpoint -- the frontend just never called
+      // it. Now: on a 401 (and only once, and never for the login/refresh
+      // calls themselves), try a silent refresh and retry the original
+      // request before giving up.
+      if (response.status === 401 && !isRetry && endpoint !== '/auth/refresh' && endpoint !== '/auth/login') {
+        const refreshed = await tryRefreshToken();
+        if (refreshed) {
+          return apiRequest(endpoint, method, body, true);
+        }
+      }
       if (response.status === 401) {
         clearSession();
         window.location.href = '/index.html';
@@ -92,6 +106,29 @@ async function apiRequest(endpoint, method = 'GET', body = null) {
       throw new Error('Cannot connect to server. Check your internet connection.');
     }
     throw error;
+  }
+}
+
+// Uses the long-lived refresh token (7 days) to silently obtain a new
+// access token. Returns true/false rather than throwing, since a failed
+// refresh should just fall through to the normal forced-logout path in
+// apiRequest above, not surface its own error.
+async function tryRefreshToken() {
+  const refreshToken = sessionStorage.getItem('ihmis_refresh_token');
+  if (!refreshToken) return false;
+  try {
+    const response = await fetch(`${API_BASE}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${refreshToken}` },
+    });
+    if (!response.ok) return false;
+    const data = await response.json();
+    const newAccessToken = data?.data?.access_token;
+    if (!newAccessToken) return false;
+    sessionStorage.setItem('ihmis_token', newAccessToken);
+    return true;
+  } catch (err) {
+    return false;
   }
 }
 
@@ -128,9 +165,10 @@ async function loadAuthImage(url) {
 // "jumps" to whichever role most recently logged in anywhere in the
 // browser. sessionStorage is isolated per tab, so each open portal keeps
 // its own independent session.
-function saveSession(token, user) {
+function saveSession(token, user, refreshToken) {
   sessionStorage.setItem('ihmis_token', token);
   sessionStorage.setItem('ihmis_user', JSON.stringify(user));
+  if (refreshToken) sessionStorage.setItem('ihmis_refresh_token', refreshToken);
 }
 
 function getUser() {
@@ -141,6 +179,7 @@ function getUser() {
 function clearSession() {
   sessionStorage.removeItem('ihmis_token');
   sessionStorage.removeItem('ihmis_user');
+  sessionStorage.removeItem('ihmis_refresh_token');
 }
 
 function isLoggedIn() {

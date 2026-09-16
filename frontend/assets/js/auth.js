@@ -71,8 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log('Full response:', response);
 
       // Backend wraps the payload in a "data" field:
-      // { data: { access_token, user }, message, success }
-      const { access_token, user } = response.data;
+      // { data: { access_token, refresh_token, user }, message, success }
+      const { access_token, refresh_token, user } = response.data;
 
       if (!access_token || !user) {
         throw new Error('Unexpected response from server. Check the console log above.');
@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      saveSession(access_token, user);
+      saveSession(access_token, user, refresh_token);
       console.log('Session saved. Redirecting to:', user.role);
 
       redirectByRole(user.role);
