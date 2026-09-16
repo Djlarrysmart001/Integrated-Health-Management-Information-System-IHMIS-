@@ -317,7 +317,7 @@
     }
   }
 
-  function renderHeader(p) {
+  async function renderHeader(p) {
     document.getElementById('fileAvatar').textContent = `${(p.first_name?.[0]||'')}${(p.last_name?.[0]||'')}`;
     document.getElementById('fileName').textContent = p.full_name;
     document.getElementById('filePatientNumber').textContent = p.patient_number;
@@ -326,6 +326,15 @@
       `${p.age != null ? 'Age ' + p.age : 'Age —'} · ${capitalize(p.gender || '—')}`;
     document.getElementById('fileBloodGroup').textContent = p.blood_group || 'Unknown';
     document.getElementById('fileGenotype').textContent = p.genotype || '—';
+
+    if (p.has_photo) {
+      try {
+        const objectUrl = await loadAuthImage(apiPhotoUrl(p.id));
+        document.getElementById('fileAvatar').innerHTML = `<img src="${objectUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" />`;
+      } catch (err) {
+        // Falls back to the initials already set above.
+      }
+    }
   }
 
   async function loadMedicalAlerts(id) {
